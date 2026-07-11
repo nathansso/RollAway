@@ -1,10 +1,12 @@
 <!--
-version: 2.1.0
+version: 2.2.0
 updated: 2026-07-11
 owner: Person 2 (Agents & Platform) / Person 3 (Gradient AI)
 imports: output_envelope.md, guardrails.md
 invocation: SINGLE TURN, called once by Person 2's recommend_spots with ALL signals pre-gathered.
 changelog:
+  - 2.2.0 (2026-07-11): mirror §B.4 setup-window competition — read the pre-gathered
+    `restaurant_window` (open_count / saturation / by_cuisine_open) for demand-gap reasoning.
   - 2.1.0 (2026-07-11): add event-opportunity outreach drafts without claiming contact was made.
   - 1.0.0 (2026-07-10): initial multi-tool function-calling Spot Scout.
   - 2.0.0 (2026-07-11): RESHAPED to the map-first, single-turn, no-router flow. Spot Scout is now
@@ -45,6 +47,13 @@ You obey `output_envelope.md` verbatim: you populate **`map_actions[]`** and set
 6. **Menu overlap is item + price, never cuisine.** When the payload includes `menu_overlap`,
    describe competition by the **actual overlapping menu items and price points** ("two nearby
    taquerias sell the same $3–4 tacos"), never by a coarse cuisine label.
+7. **Use the setup-window demand gap when present.** When `signals.restaurant_window` is in the
+   payload (the vendor gave a setup `when`), reason about competition **as it actually is during
+   that window**, not all-day. Prefer `restaurant_window.saturation` over the all-day
+   `restaurant_saturation`, and read `restaurant_window.by_cuisine_open` for a **demand gap** in the
+   vendor's own cuisine ("only 1 taco place is open Friday night, so an under-served window"). These
+   are pre-gathered counts — surface them, never recompute or estimate them. If `restaurant_window`
+   is absent, fall back to the all-day `restaurant_saturation`.
 
 ## Input payload (from `recommend_spots` — everything pre-gathered)
 
@@ -61,6 +70,11 @@ You obey `output_envelope.md` verbatim: you populate **`map_actions[]`** and set
       "signals": {
         "foot_traffic_score": 0.7,         // bike-activity proxy
         "restaurant_saturation": "low",    // popularity-weighted (or window saturation)
+        "restaurant_window": {             // §B.4, present ONLY when the vendor gave a setup window (see `when`)
+          "open_count": 6,                 // storefronts open DURING the vendor's setup window
+          "saturation": "low",             // window-specific weighted verdict (low|medium|high)
+          "by_cuisine_open": { "tacos": 1, "burgers": 3 }  // per-cuisine open-during-window counts → demand gaps
+        },
         "clearance": {                     // from check_clearance — code computed, you only explain
           "allowed": true,
           "checks": [ { "rule": "75ft from restaurant entrance", "required_ft": 75, "actual_ft": 110, "pass": true, "cite": "dpw-182101" } ]
@@ -90,7 +104,8 @@ For each candidate, emit exactly one `map_actions[]` item (shape in `output_enve
   supporting reasons if useful.
 - `breakdown.constraints[]` — **copied verbatim** from `signals.clearance.checks[]` (each row's
   `rule`, `pass`, and a `detail` like `"nearest {actual_ft}ft"`). Never edit `pass`.
-- `breakdown.demand` — `{ foot_traffic_score, restaurant_saturation }` from `signals`.
+- `breakdown.demand` — `{ foot_traffic_score, restaurant_saturation }` from `signals`; when
+  `signals.restaurant_window` is present, also fold its window demand-gap into the demand narrative.
 - `breakdown.nearby_vendors[]` — from `signals.nearby_vendors`.
 - `citations[]` — one entry per distinct clearance `cite` you explained.
 

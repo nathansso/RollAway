@@ -1,0 +1,41 @@
+# DigitalOcean App Platform spec — Rollaway frontend (static site).
+#
+# Usage:  doctl apps create --spec .do/app.yaml
+#         (or import via the DO dashboard: Apps -> Create App -> Edit Spec)
+#
+# After integration, flip `branch: feat/frontend` -> `branch: main`.
+# Set the SECRET value for VITE_MAPBOX_TOKEN in the dashboard — never commit it.
+
+name: rollaway
+region: sfo
+
+static_sites:
+  - name: rollaway-frontend
+    github:
+      repo: nathansso/RollAway
+      branch: feat/frontend
+      deploy_on_push: true
+    source_dir: frontend
+    build_command: npm ci && npm run build
+    output_dir: dist
+    # SPA routing: serve index.html for every path.
+    catchall_document: index.html
+    envs:
+      # Mapbox public token (pk.*). Paste the value in the DO dashboard;
+      # it is baked into the JS bundle at build time.
+      - key: VITE_MAPBOX_TOKEN
+        type: SECRET
+        scope: BUILD_TIME
+      # Person 2's routed /chat endpoint. Leave empty while on fixtures.
+      - key: VITE_CHAT_ENDPOINT
+        scope: BUILD_TIME
+        value: ""
+      # Person 3's get_vendors?format=geojson URL. Empty -> bundled fixture.
+      - key: VITE_VENDORS_URL
+        scope: BUILD_TIME
+        value: ""
+      # "true" = canned fixture answers (demo-safe). Flip to "false" once
+      # VITE_CHAT_ENDPOINT is live.
+      - key: VITE_USE_FIXTURES
+        scope: BUILD_TIME
+        value: "true"

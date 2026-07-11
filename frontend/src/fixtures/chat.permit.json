@@ -1,0 +1,127 @@
+{
+  "agent": "permit_copilot",
+  "reply_markdown": "Here's your permit path for a **pushcart without cooking** (like ice cream or packaged food). Good news: it's the lightest route — no DMV registration and no fire permit for most no-heat carts.\n\nYou'll deal with **four city bodies, in this order**: the Treasurer (business registration), Public Health (food safety), Public Works (your location permit), and — only if you add heat later — the Fire Department.\n\nThe clocks to watch: the **30-day public notice** after you apply for the location permit, the **90-day window** to gather your documents, and the **15-day appeal window** after a decision.\n\nOne heads-up that surprises people: you'll need a **restroom agreement** — a business within 200 feet must sign a letter letting your staff use their restroom.\n\nWork the checklist below top to bottom. And to be straight with you: this is a guide to the process, not legal clearance — confirm the final details with the SF Permit Center before you spend money.",
+  "citations": [
+    {
+      "label": "DPW Order 182,101 §2 — MFF permit requirements",
+      "source": "dpw-182101",
+      "quote": "No person shall maintain or operate a Mobile Food Facility on any public street... without first obtaining a permit from the Department of Public Works."
+    },
+    {
+      "label": "DPW Order 182,101 §4 — public notice period",
+      "source": "dpw-182101",
+      "quote": "Upon submission of a complete application, the Department shall post notice at the proposed location for a period of thirty (30) days."
+    },
+    {
+      "label": "Vendor-type checklist — pushcart (no cooking)",
+      "source": "checklist-pushcart-nocook",
+      "quote": "Push carts that do not cook, heat, or hold hot food are exempt from Fire Department permit requirements and DMV registration."
+    }
+  ],
+  "map_actions": null,
+  "checklist": {
+    "vendor_type": "pushcart_nocook",
+    "steps": [
+      {
+        "order": 1,
+        "agency": "Treasurer & Tax Collector",
+        "title": "Register your business",
+        "detail": "Get a Business Account Number (BAN) online. Free for small businesses under the SF gross receipts threshold. You need this number for every other application.",
+        "deadline_days": null,
+        "deadline_label": null,
+        "cite": "checklist-pushcart-nocook",
+        "status": "todo"
+      },
+      {
+        "order": 2,
+        "agency": "Public Health",
+        "title": "Get a food handler / manager card",
+        "detail": "At least one person needs a Food Safety Manager certificate; everyone else handling food needs a California Food Handler card (online course, same day).",
+        "deadline_days": null,
+        "deadline_label": null,
+        "cite": "checklist-pushcart-nocook",
+        "status": "todo"
+      },
+      {
+        "order": 3,
+        "agency": "Public Health",
+        "title": "Apply for your Mobile Food Facility health permit",
+        "detail": "Submit cart plans/spec sheet to DPH Environmental Health. A no-cook cart has the lightest review — no hood, no grease, no water heater requirements.",
+        "deadline_days": null,
+        "deadline_label": null,
+        "cite": "checklist-pushcart-nocook",
+        "status": "todo"
+      },
+      {
+        "order": 4,
+        "agency": "Public Health",
+        "title": "Line up your commissary",
+        "detail": "Even a packaged-goods cart must be stored and serviced at a permitted commissary. Get the commissary agreement letter signed — DPH will ask for it.",
+        "deadline_days": null,
+        "deadline_label": null,
+        "cite": "checklist-pushcart-nocook",
+        "status": "todo"
+      },
+      {
+        "order": 5,
+        "agency": "Public Works",
+        "title": "Pick your location(s) and check clearances",
+        "detail": "Pushcarts need wider sidewalk clearance than trucks — keep a clear pedestrian path. Check the 75 ft restaurant-entrance rule and school buffers before you apply. Use the map side of this app to test a spot.",
+        "deadline_days": null,
+        "deadline_label": null,
+        "cite": "dpw-182101",
+        "status": "todo"
+      },
+      {
+        "order": 6,
+        "agency": "Public Works",
+        "title": "Get your restroom agreement signed",
+        "detail": "A business within 200 ft of your spot must sign a letter allowing your staff to use their restroom during operating hours. Bring this with your application.",
+        "deadline_days": null,
+        "deadline_label": null,
+        "cite": "dpw-182101",
+        "status": "todo"
+      },
+      {
+        "order": 7,
+        "agency": "Public Works",
+        "title": "Submit your MFF location permit application",
+        "detail": "File with DPW including site plan, health permit proof, commissary letter, and restroom agreement. You have a 90-day window to complete the document package once you start.",
+        "deadline_days": 90,
+        "deadline_label": "90-day document window",
+        "cite": "dpw-182101",
+        "status": "todo"
+      },
+      {
+        "order": 8,
+        "agency": "Public Works",
+        "title": "Wait out the 30-day public notice",
+        "detail": "DPW posts notice at your proposed location for 30 days. Neighbors can object during this period — have a backup spot in mind in case one draws protests.",
+        "deadline_days": 30,
+        "deadline_label": "30-day public notice",
+        "cite": "dpw-182101",
+        "status": "todo"
+      },
+      {
+        "order": 9,
+        "agency": "Public Works",
+        "title": "Decision + appeal window",
+        "detail": "After the notice period, DPW approves or denies. Either side has 15 days to appeal. If approved with no appeal, you pay the permit fee and get your location permit.",
+        "deadline_days": 15,
+        "deadline_label": "15-day appeal window",
+        "cite": "dpw-182101",
+        "status": "todo"
+      },
+      {
+        "order": 10,
+        "agency": "Fire Department",
+        "title": "Fire permit — not needed (no cooking)",
+        "detail": "A cart with no cooking, heating, or open flame doesn't need an SFFD permit. If you ever add a hot-food element (coffee urns, warmers), come back to this step.",
+        "deadline_days": null,
+        "deadline_label": null,
+        "cite": "checklist-pushcart-nocook",
+        "status": "todo"
+      }
+    ]
+  }
+}

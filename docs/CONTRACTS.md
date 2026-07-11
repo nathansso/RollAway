@@ -170,3 +170,23 @@ halal, pizza, seafood, desserts, drinks, other`
 
 Vendor types (canonical strings, shared everywhere):
 `truck, trailer, pushcart_cooking, pushcart_nocook`.
+
+---
+
+## E. Source IDs (Person 2 owns; the `source`/`cite` vocabulary)
+
+> **Additive appendix.** Nothing in §A–§D changes; this only pins the string vocabulary
+> already used by §A `citations[].source` and §B's clearance `cite`. Authoritative copy
+> lives in `agents/kb/SOURCES.md`; this table is the in-contract mirror. Adding/renaming an
+> id pings Person 1 (renders citations) and Person 3 (returns `cite`).
+
+Every `citations[].source` (§A) and every clearance `cite` (§B) MUST be one of:
+
+`dpw-182101, sfpw-mff, sfpw-fees, sfdph-mff, sffd-permit, ttx-cert, ca-dmv, clearance-ref,
+checklist-truck, checklist-trailer, checklist-pushcart-cooking, checklist-pushcart-nocook`
+
+- `dpw-182101` — DPW Order No. 182,101 (core placement law + clearance distances). **This is
+  the `cite` Person 3 returns from the clearance geometry check for every distance row.**
+- The distance values are frozen in §B and owned by `dpw-182101`: **75 ft** restaurant
+  entrance, **7 ft** hydrant, **500 ft** school (school hours).
+- Full descriptions of every id: `agents/kb/SOURCES.md`.

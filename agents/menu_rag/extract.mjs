@@ -83,7 +83,14 @@ async function extractFromImage({ image_data_url, vendor_id, vendor_type }) {
     ],
     { max_tokens: 1400, temperature: 0 },
   );
-  const parsed = extractJson(output);
+  let parsed;
+  try {
+    parsed = extractJson(output);
+  } catch {
+    // Blank/unreadable image: the model answered in prose, not menu JSON.
+    // Return no items so the caller shows a friendly "try a clearer photo".
+    return { vendor_id: String(vendor_id), vendor_type: String(vendor_type), currency: "USD", items: [] };
+  }
   const items = (Array.isArray(parsed.items) ? parsed.items : [])
     .map((it) => ({
       name: String(it && it.name || "").trim(),

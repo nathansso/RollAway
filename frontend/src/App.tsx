@@ -12,18 +12,15 @@ import { useAppStore } from './store'
 
 export default function App() {
   const activeTab = useAppStore((state) => state.activeTab)
-  const profile = useAppStore((state) => state.profile)
-  const locationStatus = useAppStore((state) => state.locationStatus)
+  const location = useAppStore((state) => state.location)
+  const when = useAppStore((state) => state.when)
+  const profileEditorOpen = useAppStore((state) => state.profileEditorOpen)
+  const selectedSpotId = useAppStore((state) => state.selectedSpotId)
   const loadBaseData = useAppStore((state) => state.loadBaseData)
-  const requestLocation = useAppStore((state) => state.requestLocation)
 
   useEffect(() => {
     void loadBaseData()
-  }, [loadBaseData])
-
-  useEffect(() => {
-    if (profile && locationStatus === 'idle') requestLocation()
-  }, [profile, locationStatus, requestLocation])
+  }, [loadBaseData, location.lat, location.lng, when.date, when.time_from, when.time_to])
 
   return (
     <OfflineGate>
@@ -32,22 +29,28 @@ export default function App() {
       </a>
       <div className="relative h-dvh w-full overflow-hidden bg-background">
         <div
-          id="map-content"
-          className={`absolute inset-0 ${activeTab === 'map' ? 'visible' : 'invisible'}`}
-          aria-hidden={activeTab !== 'map'}
+          className="contents"
+          inert={profileEditorOpen || selectedSpotId ? true : undefined}
         >
-          <MapView />
-          <AppHeader />
-          <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4.25rem)] z-20 px-[max(0.75rem,env(safe-area-inset-left))]">
-            <SessionControls />
+          <div
+            id="map-content"
+            tabIndex={-1}
+            className={`absolute inset-0 ${activeTab === 'map' ? 'visible' : 'invisible'}`}
+            aria-hidden={activeTab !== 'map'}
+          >
+            <MapView />
+            <AppHeader />
+            <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4.25rem)] z-20 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))]">
+              <SessionControls />
+            </div>
+            <div className="absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20">
+              <RecommendationTray />
+            </div>
           </div>
-          <div className="absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20">
-            <RecommendationTray />
-          </div>
-        </div>
 
-        {activeTab === 'permits' && <PermitChecklist />}
-        <BottomNav />
+          {activeTab === 'permits' && <PermitChecklist />}
+          <BottomNav />
+        </div>
         {activeTab === 'map' && <SpotPanel />}
         <ProfileEditor />
       </div>

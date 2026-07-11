@@ -209,7 +209,8 @@ button:disabled {
 
 .bottom-nav {
   position: fixed;
-  inset-inline: max(0.75rem, env(safe-area-inset-left));
+  left: max(0.75rem, env(safe-area-inset-left));
+  right: max(0.75rem, env(safe-area-inset-right));
   bottom: max(0.5rem, env(safe-area-inset-bottom));
   z-index: 35;
   display: grid;
@@ -260,7 +261,10 @@ button:disabled {
   gap: 0.65rem;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding: 0.25rem max(0.75rem, env(safe-area-inset-left)) 0.45rem;
+  padding-top: 0.25rem;
+  padding-right: max(0.75rem, env(safe-area-inset-right));
+  padding-bottom: 0.45rem;
+  padding-left: max(0.75rem, env(safe-area-inset-left));
   scrollbar-width: none;
 }
 
@@ -678,7 +682,8 @@ button:disabled {
 
 .connection-banner {
   position: fixed;
-  inset-inline: max(0.75rem, env(safe-area-inset-left));
+  left: max(0.75rem, env(safe-area-inset-left));
+  right: max(0.75rem, env(safe-area-inset-right));
   top: max(0.75rem, env(safe-area-inset-top));
   z-index: 150;
   display: flex;

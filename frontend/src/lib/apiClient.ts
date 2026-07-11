@@ -1,11 +1,12 @@
 import type {
   ClosuresResponse,
-  LegacyAddSpotAction,
   LegacyChatResponse,
   PermitChecklist,
   RecommendSpotsRequest,
   RecommendSpotsResponse,
   RecommendationSpot,
+  SessionWhen,
+  LatLng,
   VendorCollection,
   VendorFeature,
   VendorType,
@@ -53,8 +54,12 @@ function isPoint(value: unknown): boolean {
     isRecord(value) &&
     typeof value.lat === 'number' &&
     Number.isFinite(value.lat) &&
+    value.lat >= -90 &&
+    value.lat <= 90 &&
     typeof value.lng === 'number' &&
     Number.isFinite(value.lng)
+    && value.lng >= -180 &&
+    value.lng <= 180
   )
 }
 
@@ -109,7 +114,14 @@ function isRecommendation(value: unknown): value is RecommendationSpot {
 function hasNumericCoordinates(value: unknown): boolean {
   if (!Array.isArray(value) || value.length === 0) return false
   if (value.every((coordinate) => typeof coordinate === 'number')) {
-    return value.length >= 2 && value.every(Number.isFinite)
+    return (
+      value.length >= 2 &&
+      value.every(Number.isFinite) &&
+      value[0] >= -180 &&
+      value[0] <= 180 &&
+      value[1] >= -90 &&
+      value[1] <= 90
+    )
   }
   return value.every(hasNumericCoordinates)
 }
@@ -220,10 +232,118 @@ function blockLabelFromId(id: string): string {
   return known[id] ?? 'Suggested block'
 }
 
-function travelEstimate(spot: LegacyAddSpotAction, request: RecommendSpotsRequest): number {
-  const latMiles = (spot.point.lat - request.location.lat) * 69
+export function adaptNativeRecommendations(
+  body: unknown,
+  request: RecommendSpotsRequest,
+): RecommendSpotsResponse | null {
+  if (!isRecord(body) || !Array.isArray(body.spots) || body.spots.length > 5) {
+    return null
+  }
+  const recommendations: RecommendationSpot[] = []
+  for (const candidate of body.spots) {
+    if (
+      !isRecord(candidate) ||
+      typeof candidate.rank !== 'number' ||
+      !isPoint(candidate.point) ||
+      typeof candidate.block_label !== 'string' ||
+      typeof candidate.why_one_line !== 'string' ||
+      !isRecord(candidate.score_breakdown)
+    ) {
+      return null
+    }
+    const breakdown = candidate.score_breakdown
+    if (
+      typeof breakdown.foot_traffic !== 'number' ||
+      typeof breakdown.competition !== 'number' ||
+      !isRecord(breakdown.legality) ||
+      typeof breakdown.legality.pass !== 'boolean' ||
+      typeof breakdown.legality.rule !== 'string' ||
+      typeof breakdown.travel_minutes !== 'number'
+    ) {
+      return null
+    }
+    const score = Math.min(
+      1,
+      Math.max(0, Number(candidate.total_score ?? candidate.score ?? 0)),
+    )
+    const traffic = Math.min(1, Math.max(0, breakdown.foot_traffic))
+    const competition = Math.min(1, Math.max(0, breakdown.competition))
+    const hasClosure = Boolean(breakdown.closures)
+    const legal = breakdown.legality.pass && !hasClosure
+    recommendations.push({
+      id:
+        typeof candidate.id === 'string'
+          ? candidate.id
+          : `spot-${candidate.rank}-${candidate.block_label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      rank: candidate.rank,
+      point: candidate.point as LatLng,
+      block_label: candidate.block_label,
+      score,
+      verdict: VERDICTS.has(candidate.verdict as Verdict)
+        ? (candidate.verdict as Verdict)
+        : legal
+          ? score >= 0.7
+            ? 'good'
+            : 'caution'
+          : 'avoid',
+      why_one_line: candidate.why_one_line,
+      foot_traffic: {
+        level: traffic >= 0.7 ? 'high' : traffic >= 0.4 ? 'moderate' : 'low',
+        score: traffic,
+        basis: 'bay_wheels',
+        time_context: request.when.label,
+        detail: 'Estimated from nearby Bay Wheels activity.',
+      },
+      competition: {
+        overlap_count:
+          typeof breakdown.overlap_count === 'number'
+            ? Math.max(0, breakdown.overlap_count)
+            : Math.round(competition * 3),
+        saturation: competition >= 0.67 ? 'high' : competition >= 0.34 ? 'medium' : 'low',
+        menu_matches: Array.isArray(breakdown.menu_matches)
+          ? breakdown.menu_matches.filter((match): match is string => typeof match === 'string')
+          : [],
+        price_tier: request.user_profile.menu.price_tier,
+        detail:
+          typeof breakdown.competition_detail === 'string'
+            ? breakdown.competition_detail
+            : 'Estimated overlap for your menu and price point.',
+      },
+      legality: {
+        pass: legal,
+        status: legal ? 'pass' : 'fail',
+        rule: breakdown.legality.rule,
+        detail:
+          typeof breakdown.legality.detail === 'string'
+            ? breakdown.legality.detail
+            : legal
+              ? 'Returned placement checks pass.'
+              : 'A returned placement check needs attention.',
+        cite:
+          typeof breakdown.legality.cite === 'string'
+            ? breakdown.legality.cite
+            : 'dpw-182101',
+      },
+      closure: {
+        active: hasClosure,
+        detail:
+          typeof breakdown.closure_detail === 'string'
+            ? breakdown.closure_detail
+            : hasClosure
+              ? 'An active closure affects this point.'
+              : 'No active closure reported for this point.',
+        source: hasClosure ? 'sfmta_event' : null,
+      },
+      travel_minutes: Math.max(0, breakdown.travel_minutes),
+    })
+  }
+  return { contract_version: 2, generated_for: request.when, recommendations }
+}
+
+function travelEstimate(point: LatLng, request: RecommendSpotsRequest): number {
+  const latMiles = (point.lat - request.location.lat) * 69
   const lngMiles =
-    (spot.point.lng - request.location.lng) *
+    (point.lng - request.location.lng) *
     69 *
     Math.cos((request.location.lat * Math.PI) / 180)
   return Math.max(3, Math.round(Math.hypot(latMiles, lngMiles) * 5 + 3))
@@ -268,7 +388,7 @@ export function adaptLegacyRecommendations(
           overlap_count: overlap.length,
           saturation: action.breakdown?.demand?.restaurant_saturation ?? 'medium',
           menu_matches: [...new Set(overlap.map((vendor) => vendor.cuisine))],
-          price_tier: request.menu.price_tier,
+          price_tier: request.user_profile.menu.price_tier,
           detail:
             overlap.length === 0
               ? 'No scheduled vendor directly overlaps your menu.'
@@ -289,7 +409,7 @@ export function adaptLegacyRecommendations(
               : 'No active closure reported for this point.',
           source: failed && /closure/i.test(failed.rule) ? 'sfmta_event' : null,
         },
-        travel_minutes: travelEstimate(action, request),
+        travel_minutes: travelEstimate(action.point, request),
       }
     })
   return {
@@ -297,6 +417,64 @@ export function adaptLegacyRecommendations(
     generated_for: request.when,
     recommendations,
   }
+}
+
+export function buildFunctionUrl(
+  base: string,
+  params: Record<string, string | number>,
+): string {
+  const url = new URL(base)
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, String(value))
+  }
+  return url.toString()
+}
+
+function fixtureRecommendations(request: RecommendSpotsRequest): RecommendSpotsResponse {
+  const response = structuredClone(recommendationFixture) as RecommendSpotsResponse
+  response.generated_for = request.when
+  const hasFridayClosure = request.when.date === '2026-07-10'
+  response.recommendations = response.recommendations.map((spot) => ({
+    ...spot,
+    foot_traffic: {
+      ...spot.foot_traffic,
+      time_context: request.when.label,
+    },
+    competition: {
+      ...spot.competition,
+      price_tier: request.user_profile.menu.price_tier,
+    },
+    travel_minutes: travelEstimate(spot.point, request),
+    ...(spot.id === 'spot-mission-5th' && !hasFridayClosure
+      ? {
+          score: 0.56,
+          verdict: 'caution' as const,
+          why_one_line: 'Strong activity, with direct menu competition worth checking.',
+          legality: {
+            ...spot.legality,
+            pass: true,
+            status: 'conditional' as const,
+            rule: 'Verify posted curb and placement rules',
+            detail: 'No fixture closure is active for the selected date.',
+          },
+          closure: {
+            active: false,
+            detail: 'No fixture closure is active for the selected date.',
+            source: null,
+          },
+        }
+      : {}),
+  }))
+  return response
+}
+
+function fixtureClosures(when: SessionWhen): ClosuresResponse {
+  const closures = (structuredClone(closureFixture) as ClosuresResponse).closures.filter(
+    (closure) =>
+      closure.active_from.slice(0, 10) <= when.date &&
+      closure.active_to.slice(0, 10) >= when.date,
+  )
+  return { closures, count: closures.length }
 }
 
 async function requestJson(url: string, init?: RequestInit): Promise<unknown> {
@@ -325,9 +503,12 @@ function normalizeVendors(value: unknown): VendorCollection | null {
         feature.geometry.type === 'Point' &&
         Array.isArray(feature.geometry.coordinates) &&
         feature.geometry.coordinates.length === 2 &&
-        feature.geometry.coordinates.every(
-          (coordinate) => typeof coordinate === 'number' && Number.isFinite(coordinate),
-        ) &&
+        typeof feature.geometry.coordinates[0] === 'number' &&
+        feature.geometry.coordinates[0] >= -180 &&
+        feature.geometry.coordinates[0] <= 180 &&
+        typeof feature.geometry.coordinates[1] === 'number' &&
+        feature.geometry.coordinates[1] >= -90 &&
+        feature.geometry.coordinates[1] <= 90 &&
         isRecord(feature.properties) &&
         typeof feature.properties.permit_id === 'string' &&
         typeof feature.properties.name === 'string' &&
@@ -393,31 +574,57 @@ export const apiClient = {
   ): Promise<RecommendSpotsResponse> {
     if (USE_FIXTURES) {
       await wait(options.delayMs ?? DEFAULT_DELAY)
-      return structuredClone(recommendationFixture) as RecommendSpotsResponse
+      return fixtureRecommendations(request)
     }
     const body = await requestJson(RECOMMEND_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(request),
+      body: JSON.stringify({
+        user_profile: request.user_profile,
+        when: request.when,
+        location: request.location,
+      }),
     })
     const native = validateRecommendationResponse(body)
     if (native) return native
+    const planned = adaptNativeRecommendations(body, request)
+    if (planned) return planned
     if (isRecord(body) && Array.isArray(body.map_actions)) {
       return adaptLegacyRecommendations(body as unknown as LegacyChatResponse, request)
     }
     throw new ApiClientError('INVALID_RESPONSE', 'Recommendations were not in a supported format.')
   },
 
-  async getVendors(): Promise<VendorCollection> {
+  async getVendors(location: LatLng, when: SessionWhen): Promise<VendorCollection> {
     if (USE_FIXTURES) return structuredClone(vendorFixture) as VendorCollection
-    const normalized = normalizeVendors(await requestJson(VENDORS_URL))
+    const normalized = normalizeVendors(
+      await requestJson(
+        buildFunctionUrl(VENDORS_URL, {
+          lat: location.lat,
+          lng: location.lng,
+          radius_m: 1500,
+          day: when.day,
+          time: when.time_from,
+        }),
+      ),
+    )
     if (!normalized) throw new ApiClientError('INVALID_RESPONSE', 'Vendor data was malformed.')
     return normalized
   },
 
-  async getClosures(): Promise<ClosuresResponse> {
-    if (USE_FIXTURES) return structuredClone(closureFixture) as ClosuresResponse
-    const closures = validateClosuresResponse(await requestJson(CLOSURES_URL))
+  async getClosures(location: LatLng, when: SessionWhen): Promise<ClosuresResponse> {
+    if (USE_FIXTURES) return fixtureClosures(when)
+    const closures = validateClosuresResponse(
+      await requestJson(
+        buildFunctionUrl(CLOSURES_URL, {
+          lat: location.lat,
+          lng: location.lng,
+          radius_m: 1800,
+          date_from: when.date,
+          date_to: when.date,
+        }),
+      ),
+    )
     if (!closures) {
       throw new ApiClientError('INVALID_RESPONSE', 'Closure data was malformed.')
     }

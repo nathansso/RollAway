@@ -51,7 +51,7 @@ export default function EasyApplyModal({
           </button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
           {ready ? (
             <div className="flex min-h-72 flex-col items-center justify-center text-center">
               <span className="flex h-16 w-16 items-center justify-center rounded-full bg-good/15 text-good">

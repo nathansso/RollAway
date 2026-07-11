@@ -24,7 +24,9 @@ function FallbackMap() {
       <div className="fallback-map__grid" aria-hidden="true" />
       <div className="fallback-map__street fallback-map__street--one" aria-hidden="true" />
       <div className="fallback-map__street fallback-map__street--two" aria-hidden="true" />
-      <div className="fallback-map__closure" aria-hidden="true" />
+      {(closures?.count ?? 0) > 0 && (
+        <div className="fallback-map__closure" aria-hidden="true" />
+      )}
       <div className="fallback-map__label fallback-map__label--one">Howard St</div>
       <div className="fallback-map__label fallback-map__label--two">Mission St</div>
       <div className="fallback-map__user" aria-label="Approximate location" />
@@ -81,6 +83,7 @@ export default function MapView() {
   const recommendations = useAppStore((state) => state.recommendations)
   const location = useAppStore((state) => state.location)
   const locationStatus = useAppStore((state) => state.locationStatus)
+  const baseDataError = useAppStore((state) => state.baseDataError)
 
   useEffect(() => {
     if (!MAP_ENABLED || !containerRef.current) return
@@ -260,6 +263,14 @@ export default function MapView() {
         aria-label="Interactive map of recommendations, permitted vendors, closures, and your location"
       />
       {(failed || !mapReady) && <FallbackMap />}
+      {baseDataError && (
+        <div
+          role="alert"
+          className="absolute inset-x-3 top-[17rem] z-10 mx-auto max-w-sm rounded-xl border border-destructive/30 bg-white/95 px-4 py-3 text-sm font-medium text-destructive shadow-md"
+        >
+          {baseDataError}
+        </div>
+      )}
     </div>
   )
 }

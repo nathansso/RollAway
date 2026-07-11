@@ -69,11 +69,9 @@ export interface SessionWhen {
 }
 
 export interface RecommendSpotsRequest {
-  vendor_type: VendorType
-  menu: MenuProfile
+  user_profile: VendorProfile
   location: LatLng
   when: SessionWhen
-  max_travel: VendorProfile['max_travel']
 }
 
 export interface LegalitySignal {

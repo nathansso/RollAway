@@ -23,6 +23,8 @@ export type LocationStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'una
 
 const SOMA_FALLBACK = { lat: 37.7793, lng: -122.4013 }
 const PERMIT_PROGRESS_KEY = 'rollaway.permit-progress.v1'
+let latestRecommendationRequest = 0
+let latestBaseRequest = 0
 
 function permitProgressKey(profile: VendorProfile | null): string {
   return `${PERMIT_PROGRESS_KEY}.${profile?.vendor_type ?? 'none'}`
@@ -96,13 +98,27 @@ export const useAppStore = create<AppState>((set, get) => {
         permitChecklist: null,
         permitStatus: 'idle',
         completedPermitItems: loadStringArray(permitProgressKey(profile)),
+        recommendations: [],
+        recommendationStatus: 'idle',
+        selectedSpotId: null,
       })
+      latestRecommendationRequest += 1
       saveJson(PROFILE_STORAGE_KEY, profile)
       return true
     },
 
     when: createPresetWhen('today_lunch'),
-    setWhen: (when) => set({ when }),
+    setWhen: (when) => {
+      latestRecommendationRequest += 1
+      set({
+        when,
+        recommendations: [],
+        recommendationStatus: 'idle',
+        recommendationError: null,
+        selectedSpotId: null,
+        closures: null,
+      })
+    },
     locationStatus: 'idle',
     location: SOMA_FALLBACK,
     requestLocation: () => {
@@ -110,18 +126,35 @@ export const useAppStore = create<AppState>((set, get) => {
         set({ locationStatus: 'unavailable', location: SOMA_FALLBACK })
         return
       }
-      set({ locationStatus: 'requesting' })
+      latestRecommendationRequest += 1
+      set({
+        locationStatus: 'requesting',
+        recommendations: [],
+        recommendationStatus: 'idle',
+        recommendationError: null,
+        selectedSpotId: null,
+      })
       navigator.geolocation.getCurrentPosition(
-        ({ coords }) =>
+        ({ coords }) => {
+          latestRecommendationRequest += 1
           set({
             locationStatus: 'granted',
             location: { lat: coords.latitude, lng: coords.longitude },
-          }),
-        (error) =>
+            recommendations: [],
+            recommendationStatus: 'idle',
+            selectedSpotId: null,
+          })
+        },
+        (error) => {
+          latestRecommendationRequest += 1
           set({
             locationStatus: error.code === error.PERMISSION_DENIED ? 'denied' : 'unavailable',
             location: SOMA_FALLBACK,
-          }),
+            recommendations: [],
+            recommendationStatus: 'idle',
+            selectedSpotId: null,
+          })
+        },
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 120000 },
       )
     },
@@ -130,13 +163,17 @@ export const useAppStore = create<AppState>((set, get) => {
     closures: null,
     baseDataError: null,
     loadBaseData: async () => {
+      const requestId = ++latestBaseRequest
+      const { location, when } = get()
       try {
         const [vendors, closures] = await Promise.all([
-          apiClient.getVendors(),
-          apiClient.getClosures(),
+          apiClient.getVendors(location, when),
+          apiClient.getClosures(location, when),
         ])
+        if (requestId !== latestBaseRequest) return
         set({ vendors, closures, baseDataError: null })
       } catch (error) {
+        if (requestId !== latestBaseRequest) return
         set({
           baseDataError: errorMessage(error, 'Base map data is temporarily unavailable.'),
         })
@@ -148,22 +185,27 @@ export const useAppStore = create<AppState>((set, get) => {
     recommendations: [],
     requestRecommendations: async () => {
       const { profile, location, when, recommendationStatus } = get()
-      if (!profile || recommendationStatus === 'loading') return
+      if (
+        !profile ||
+        recommendationStatus === 'loading' ||
+        get().locationStatus === 'requesting'
+      ) return
+      const requestId = ++latestRecommendationRequest
       set({ recommendationStatus: 'loading', recommendationError: null, selectedSpotId: null })
       const request: RecommendSpotsRequest = {
-        vendor_type: profile.vendor_type,
-        menu: profile.menu,
+        user_profile: profile,
         location,
         when,
-        max_travel: profile.max_travel,
       }
       try {
         const response = await apiClient.recommendSpots(request)
+        if (requestId !== latestRecommendationRequest) return
         set({
           recommendations: response.recommendations,
           recommendationStatus: 'success',
         })
       } catch (error) {
+        if (requestId !== latestRecommendationRequest) return
         set({
           recommendationStatus: 'error',
           recommendationError: errorMessage(

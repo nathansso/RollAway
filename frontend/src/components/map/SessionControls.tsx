@@ -111,7 +111,9 @@ export default function SessionControls() {
         <button
           type="button"
           onClick={() => void requestRecommendations()}
-          disabled={recommendationStatus === 'loading'}
+          disabled={
+            recommendationStatus === 'loading' || locationStatus === 'requesting'
+          }
           className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white shadow-md transition hover:bg-primary/90 disabled:opacity-60"
         >
           <ClockIcon className="h-4 w-4" />

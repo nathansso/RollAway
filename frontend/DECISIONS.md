@@ -3,17 +3,19 @@
 1. **The native UI contract is `recommend_spots` v2.** Components render a strict
    `RecommendationSpot` with rank, block label, verdict, foot-traffic proxy, menu/price
    overlap, legality citation, closure context, and travel time.
-2. **Legacy compatibility lives only in `lib/apiClient.ts`.** A live service may still
-   return the frozen `/chat` `map_actions` envelope. `adaptLegacyRecommendations`
-   converts it once; components never branch on old versus new payloads. Markdown and
-   chat prose are discarded.
+2. **Compatibility lives only in `lib/apiClient.ts`.** The boundary accepts the planned
+   `{spots, score_breakdown}` orchestrator response, the normalized frontend v2 response,
+   or the frozen `/chat` `map_actions` envelope. Components never branch on these shapes;
+   markdown and chat prose are discarded.
 3. **The native backend contract is not frozen in shared `docs/CONTRACTS.md` yet.**
    Frontend v2 is therefore documented and defended locally until Persons 2/3 publish
-   the orchestrator shape. The unresolved live endpoint is configured by
+   the final orchestrator shape. Requests send `{user_profile, when, location}`, matching
+   the implementation outline; the live endpoint is configured by
    `VITE_RECOMMEND_SPOTS_URL`.
 4. **Fixture mode is the demo authority.** With `VITE_USE_FIXTURES=true`, recommendations,
    vendors, closures, and permit guidance are imported locally and no API `fetch` occurs.
-   Optional artificial latency demonstrates the truck loader.
+   Selected date, time label, location, and price tier are applied deterministically to
+   the canned scenario. Optional artificial latency demonstrates the truck loader.
 5. **The shared SoMa scenario remains stable:** 2nd & Howard, Folsom & 1st, Mission &
    5th, Friday lunch. Bay Wheels is explicitly described as an estimate/proxy.
 6. **Profile schema version 1 is local-only.** Corrupt, incomplete, future, and

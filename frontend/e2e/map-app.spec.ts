@@ -31,6 +31,8 @@ test('first launch, map recommendations, details, permits, and EasyApply', async
   await expect(page.getByRole('region', { name: 'Schematic map of SoMa' })).toBeVisible()
   expect(externalRequests).toEqual([])
   await expect(page.getByRole('region', { name: 'Recommendation setup' })).toBeVisible()
+  await page.getByRole('button', { name: /Use my location/ }).click()
+  await expect(page.getByText(/Using SoMa · location denied|Using SoMa · unavailable/)).toBeVisible()
 
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Tell us about your business' })).toBeHidden()
@@ -44,6 +46,10 @@ test('first launch, map recommendations, details, permits, and EasyApply', async
   await expect(page.getByText('2nd & Howard', { exact: true })).toBeVisible()
   await expect(page.getByText('Folsom & 1st', { exact: true })).toBeVisible()
   await expect(page.getByText('Mission & 5th', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Tomorrow dinner' }).click()
+  await expect(page.getByText('2nd & Howard', { exact: true })).toBeHidden()
+  await page.getByRole('button', { name: 'Find spots' }).click()
+  await expect(page.getByText('2nd & Howard', { exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: /Open details for rank 1/ }).click()
   await expect(page.getByRole('dialog', { name: /2nd & Howard/ })).toBeVisible()
@@ -121,6 +127,7 @@ test('granted geolocation updates the session state', async ({ browser }) => {
     )
   })
   await page.reload()
+  await page.getByRole('button', { name: /Use my location/ }).click()
   await expect(page.getByText('Live location')).toBeVisible()
   await context.close()
 })

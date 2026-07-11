@@ -5,8 +5,9 @@ import { hasPdfFieldMap } from '../../lib/pdfFieldMaps'
 type Status = 'loading' | 'ready' | 'unsupported' | 'error'
 
 // Renders the REAL agency PDF, auto-filled from the vendor's data, on the page. Fetches the verified
-// PDF via the runtime proxy (agency hosts have no CORS), fills the AcroForm with pdf-lib, and shows
-// the result in an <iframe> with a Download. Falls back to a link if the PDF can't be loaded.
+// PDF via the runtime proxy (agency hosts have no CORS), fills the AcroForm with pdf-lib (fields stay
+// editable — not flattened), and shows the result in an <iframe> with a Download. Falls back to a
+// link if the PDF can't be loaded.
 export default function FilledPdfView({
   source,
   values,

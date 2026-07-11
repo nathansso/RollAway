@@ -28,9 +28,11 @@ export function fillableTextFieldCount(
   return Object.values(map.text).filter((key) => (values[key] ?? '').trim() !== '').length
 }
 
-// Fill the AcroForm text fields (and the vendor-type checkbox) from the supplied values, then
-// flatten so the values render in every viewer and the record can't be edited by accident.
-// Unmapped or blank fields are left untouched — never guessed.
+// Fill the AcroForm text fields (and the vendor-type checkbox) from the supplied values, keeping
+// every field LIVE and editable in the output PDF — we do NOT flatten. The autofilled value becomes
+// the field's current value, but the box stays editable so the user can correct it in any PDF
+// reader before submitting. Unmapped or blank fields are left untouched — never guessed. (Flattening
+// to lock the form is deliberately deferred to a future explicit "lock/submit" step.)
 export async function fillFormPdf(
   source: string,
   values: Record<string, string>,
@@ -58,16 +60,12 @@ export async function fillFormPdf(
       }
     }
   }
+  // Regenerate appearance streams so the filled values render in every viewer, WITHOUT flattening —
+  // the fields stay editable.
   try {
-    form.flatten()
+    form.updateFieldAppearances()
   } catch {
-    // Some AcroForms (e.g. with signature widgets) resist flattening; fall back to appearances so
-    // the filled values still render.
-    try {
-      form.updateFieldAppearances()
-    } catch {
-      /* ignore */
-    }
+    /* ignore — values are still set as field /V even if appearances can't be regenerated */
   }
   return doc.save()
 }

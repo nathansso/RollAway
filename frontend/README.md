@@ -43,5 +43,16 @@ npm run test:pwa
 token; its browser test intercepts and fulfills the Mapbox style, vector-tile, and
 telemetry requests, so no real token or Mapbox network access is used.
 
+## Live backend mode
+
+The frontend has four explicit backend boundaries. Set all of these in `.env.local` or as App Platform build-time variables, then set `VITE_USE_FIXTURES=false`:
+
+- `VITE_RECOMMEND_SPOTS_URL`: DigitalOcean `recommend_spots`
+- `VITE_VENDORS_URL`: DigitalOcean `get_vendors`
+- `VITE_CLOSURES_URL`: DigitalOcean `get_closures`
+- `VITE_PERMIT_CHECKLIST_URL`: Gradient runtime `/permit_copilot`
+
+The recommendation Function is separately configured with `SPOT_SCOUT_URL` (`/spot_scout`), `MENU_RAG_URL` (`/menu_overlap`), and `FUNCTIONS_BASE_URL`. Live responses are validated and adapted at `src/lib/apiClient.ts`; malformed responses fail visibly instead of falling back to fixture data.
+
 The app stores the versioned vendor profile and permit progress in localStorage only.
 See `DECISIONS.md` for contract choices and `DEPLOY.md` for DigitalOcean App Platform.

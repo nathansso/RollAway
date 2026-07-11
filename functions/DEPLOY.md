@@ -79,11 +79,9 @@ for f in get_vendors get_closures get_foot_traffic get_restaurants get_events ch
   echo "$f: $(doctl serverless functions get rollaway/$f --url)"
 done
 ```
-- **Person 1** gets: `<get_vendors URL>?format=geojson` (citywide seed layer) and
-  the `recommend_spots` URL (the `POST /chat` → `map_actions` source).
-- **Person 2** gets: all six base URLs for tool registration; set
-  `FUNCTIONS_BASE_URL` on `recommend_spots` to the namespace base so it fans out
-  to the deployed siblings.
+- **Frontend** gets the `recommend_spots`, `get_vendors`, and `get_closures` URLs through the matching `VITE_*` build-time variables.
+- **recommend_spots** gets the Functions namespace in `FUNCTIONS_BASE_URL`, plus the direct agent `/spot_scout` and `/menu_overlap` URLs in `SPOT_SCOUT_URL` and `MENU_RAG_URL`.
+- The frontend permit URL points directly to the agent runtime `/permit_copilot` endpoint.
 
 ## Local testing without deploying
 ```bash

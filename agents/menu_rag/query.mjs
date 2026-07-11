@@ -35,6 +35,14 @@ export function resolveMenu(menu_kb_id) {
   return null;
 }
 
+// Load the demo vendor's manifest (whatever its current menu_kb_id — local id offline, real KB
+// uuid after a live ingest). Lets `--demo`/evals resolve the id without hardcoding it.
+export function demoManifest() {
+  try { return JSON.parse(readFileSync(resolve(__dir, "menu_kb.demo-el-sabor.json"), "utf8")); }
+  catch { return null; }
+}
+export function demoMenuKbId() { return demoManifest()?.menu_kb_id || null; }
+
 // Built-in demo competitors — normalized items + price points, NO cuisine label anywhere.
 export const DEMO_COMPETITORS = [
   { name: "Taqueria Cancún", items: ["street taco", "carne asada burrito", "quesadilla", "chips and guacamole"], price_points: [3.25, 10.0, 8.5, 6.0] },
@@ -102,8 +110,8 @@ async function main() {
     menu_kb_id = menu_kb_id || loaded.menu_kb_id || null;
   }
   if (!menu_kb_id && !menu) {
-    // default to the demo vendor's manifest if present
-    const demo = resolveMenu("menu-kb-demo-el-sabor-local");
+    // default to the demo vendor's manifest if present (works for local id or a real live KB uuid)
+    const demo = demoManifest();
     if (demo) { menu_kb_id = demo.menu_kb_id; }
     else { console.error("No --menu-kb-id / --menu-file, and no demo manifest. Run: node ingest.mjs --mock"); process.exit(1); }
   }

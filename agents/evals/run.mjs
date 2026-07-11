@@ -16,7 +16,7 @@ import { validateEnvelope, validateChecklist } from "./lib/schema.mjs";
 import { payloads, clearancePayload, restaurantsPayload } from "../fixtures/payloads.mjs";
 import { mockNormalize, CACHEABLE_PREFIX, PREFIX_SHA } from "../enrichment/normalize_fooditems.mjs";
 import { competitionOverlapCore } from "../menu_rag/overlap.mjs";
-import { DEMO_COMPETITORS } from "../menu_rag/query.mjs";
+import { DEMO_COMPETITORS, demoMenuKbId } from "../menu_rag/query.mjs";
 import { runSpotScoutSingleTurn } from "../runtime/agents.mjs";
 import { readFileSync as _rfs } from "node:fs";
 
@@ -412,11 +412,12 @@ async function runLive() {
   }
 
   const base = url.replace(/\/$/, "");
+  const demoKbId = demoMenuKbId() || "menu-kb-demo-el-sabor-local";   // real KB uuid after a live ingest
 
   // Direct single-turn Spot Scout: pre-gathered signals, must be valid §A with 0 tool calls.
   try {
     const payload = {
-      user_profile: { vendor_type: "truck", cuisine: "tacos", menu_kb_id: "menu-kb-demo-el-sabor-local" },
+      user_profile: { vendor_type: "truck", cuisine: "tacos", menu_kb_id: demoKbId },
       candidates: [
         { id: "spot-1", point: { lat: 37.7852, lng: -122.3969 },
           signals: { foot_traffic_score: 0.7, restaurant_saturation: "low",
@@ -443,7 +444,7 @@ async function runLive() {
 
   // Direct Menu-RAG competition overlap: items+prices, never cuisine.
   try {
-    const body = { menu_kb_id: "menu-kb-demo-el-sabor-local", competitors: [
+    const body = { menu_kb_id: demoKbId, competitors: [
       { name: "Taqueria Cancún", items: ["street taco", "burrito", "quesadilla"], price_points: [3.25, 10, 8.5] },
       { name: "Blue Bottle Coffee", items: ["latte", "pastry"], price_points: [5.5, 4] }
     ] };

@@ -2,6 +2,8 @@ import type {
   AreaInsights,
   ClosuresResponse,
   EasyApplyFieldKey,
+  EventOpportunity,
+  OutreachDraft,
   LegacyChatResponse,
   PermitChecklist,
   RecommendSpotsRequest,
@@ -72,6 +74,20 @@ function isNonNegativeFiniteNumber(value: unknown): value is number {
 
 function isNullableNonNegativeNumber(value: unknown): boolean {
   return value === null || isNonNegativeFiniteNumber(value)
+}
+
+function isEventOpportunity(value: unknown): value is EventOpportunity {
+  return isRecord(value) &&
+    typeof value.event_name === 'string' &&
+    typeof value.venue === 'string' &&
+    typeof value.start === 'string' &&
+    isNonNegativeFiniteNumber(value.expected_attendance) &&
+    (value.event_url === null || typeof value.event_url === 'string') &&
+    (value.promoter_name === null || typeof value.promoter_name === 'string')
+}
+
+function isOutreachDraft(value: unknown): value is OutreachDraft {
+  return isRecord(value) && typeof value.subject === 'string' && typeof value.body === 'string'
 }
 
 function isAreaInsights(value: unknown): value is AreaInsights {
@@ -154,6 +170,9 @@ function isRecommendation(value: unknown): value is RecommendationSpot {
     typeof value.closure.detail === 'string' &&
     (value.closure.source === null || typeof value.closure.source === 'string') &&
     (value.area_insights === undefined || isAreaInsights(value.area_insights)) &&
+    (value.event_opportunity === undefined || value.event_opportunity === null || isEventOpportunity(value.event_opportunity)) &&
+    (value.outreach_draft === undefined || value.outreach_draft === null || isOutreachDraft(value.outreach_draft)) &&
+    (!value.outreach_draft || Boolean(value.event_opportunity)) &&
     isNonNegativeFiniteNumber(value.travel_minutes) &&
     isNonNegativeFiniteNumber(value.travel_distance_miles)
   )
@@ -435,6 +454,12 @@ export function adaptNativeRecommendations(
       area_insights: isAreaInsights(candidate.area_insights)
         ? candidate.area_insights
         : undefined,
+      event_opportunity: isEventOpportunity(candidate.event_opportunity)
+        ? candidate.event_opportunity
+        : null,
+      outreach_draft: isEventOpportunity(candidate.event_opportunity) && isOutreachDraft(candidate.outreach_draft)
+        ? candidate.outreach_draft
+        : null,
     })
   }
   return { contract_version: 2, generated_for: request.when, recommendations }
@@ -547,6 +572,9 @@ export function adaptLegacyRecommendations(
         },
         travel_minutes: travel.minutes,
         travel_distance_miles: travel.miles,
+        event_opportunity: isEventOpportunity(action.event_opportunity) ? action.event_opportunity : null,
+        outreach_draft: isEventOpportunity(action.event_opportunity) && isOutreachDraft(action.outreach_draft)
+          ? action.outreach_draft : null,
       }
     })
   return {

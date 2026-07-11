@@ -134,3 +134,11 @@ node functions/scripts/invoke_local.js recommend_spots \
   '{"user_profile":{"vendor_type":"truck","menu":[{"item":"al pastor taco","price":4.5}]},"location":{"lat":37.78,"lng":-122.40,"radius_m":500}}'
 cd functions/packages/rollaway/recommend_spots && npm test
 ```
+
+## Event opportunities and outreach
+
+For each candidate, `recommend_spots` deterministically selects the nearest event within the
+candidate radius that has a numeric `expected_attendance`. It attaches nullable
+`event_opportunity` data copied from `get_events`. When Spot Scout is configured, the agent may
+return an `outreach_draft` containing reviewable `{ subject, body }` copy. The draft is never a
+sent message, and missing promoter contact remains null; no email or phone is inferred.

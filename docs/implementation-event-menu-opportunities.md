@@ -58,3 +58,10 @@ This branch owns event opportunities, vendor outreach drafts, and a dedicated Gr
 
 All boundaries are typed and versioned, uncertainty and data freshness are visible, no outreach is sent automatically, and fixture and live builds pass their test suites.
 
+## Implemented contract additions
+
+- Ticketmaster event results expose only API-provided `event_url` and nullable `promoter_name`.
+- Attendance-backed events inside the candidate radius become deterministic `event_opportunity` blocks.
+- Spot Scout emits draft-only outreach copy and cannot claim contact was made.
+- Raw menu text is parsed by a dedicated Gradient instruction, then code drops every item whose price cannot be traced to the source before calling the existing menu ingest boundary.
+

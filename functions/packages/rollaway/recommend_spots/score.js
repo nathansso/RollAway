@@ -74,6 +74,30 @@ function demandScore(point, signals) {
   return { demand, foot, restDensity, sat, eventBonus: bonus, eventNearest: nearest };
 }
 
+function pickEventOpportunity(point, eventsBody, radiusM) {
+  const events = (eventsBody && eventsBody.events) || [];
+  const limit = Number.isFinite(Number(radiusM)) ? Math.max(0, Number(radiusM)) : 0;
+  let nearest = null;
+  let nearestMeters = Infinity;
+  for (const event of events) {
+    if (!event || !event.point || typeof event.expected_attendance !== 'number'
+        || !Number.isFinite(event.expected_attendance) || event.expected_attendance <= 0) continue;
+    const distance = haversineMeters(point.lat, point.lng, event.point.lat, event.point.lng);
+    if (distance > limit || distance >= nearestMeters) continue;
+    nearestMeters = distance;
+    nearest = {
+      event_name: String(event.name || 'Nearby event'),
+      venue: String(event.venue || 'Venue not provided'),
+      start: String(event.start || ''),
+      expected_attendance: event.expected_attendance,
+      event_url: typeof event.event_url === 'string' && event.event_url ? event.event_url : null,
+      promoter_name: typeof event.promoter_name === 'string' && event.promoter_name
+        ? event.promoter_name : null,
+    };
+  }
+  return nearest;
+}
+
 /** Event-proximity bonus (0..EVENT_BONUS_MAX) and the driving event's name. */
 function eventProximity(point, eventsBody) {
   const events = (eventsBody && eventsBody.events) || [];
@@ -208,4 +232,4 @@ function scoreCandidate({ candidate, signals, competition, travel, maxTravelMinu
   };
 }
 
-module.exports = { scoreCandidate, WEIGHTS, HARD, SATURATION_DEMAND, VERDICT, verdictFor };
+module.exports = { scoreCandidate, pickEventOpportunity, WEIGHTS, HARD, SATURATION_DEMAND, VERDICT, verdictFor };

@@ -210,6 +210,45 @@ function templateWhy(cand) {
   return bits.join(", ") + " (foot traffic is a bike-activity proxy; the clearance checker is a guide, not legal clearance).";
 }
 
+function deterministicOutreachDraft(event, profile = {}) {
+  if (!event) return null;
+  const vendorName = profile.business_name || profile.vendor_name || "our food truck";
+  const greeting = event.promoter_name ? `Hello ${event.promoter_name},` : "Hello event team,";
+  const contactLine = event.event_url
+    ? `I found the event listing at ${event.event_url}.`
+    : "I found the public event listing and would like to learn about vendor opportunities.";
+  return {
+    subject: `Food vendor inquiry for ${event.event_name}`,
+    body: `${greeting}
+
+I'm writing on behalf of ${vendorName}. We'd like to ask about bringing our food truck to ${event.event_name} at ${event.venue} on ${event.start}. ${contactLine}
+
+Could you share vendor requirements, availability, fees, and the appropriate next steps?
+
+Thank you,`,
+  };
+}
+
+function safeOutreachDraft(candidate, proposed, profile) {
+  const event = candidate.event_opportunity;
+  if (!event) return null;
+  if (!event.promoter_name) return deterministicOutreachDraft(event, profile);
+  if (!proposed || typeof proposed.subject !== "string" || typeof proposed.body !== "string")
+    return deterministicOutreachDraft(event, profile);
+  if (/@|\b(?:emailed|contacted|sent the message|reached out)\b/i.test(`${proposed.subject} ${proposed.body}`))
+    return deterministicOutreachDraft(event, profile);
+  return { subject: proposed.subject.slice(0, 180), body: proposed.body.slice(0, 1600) };
+}
+
+function safeOutreachReply(reply, mapActions) {
+  if (!mapActions.some((action) => action.outreach_draft)) return reply;
+  if (!reply || /\b(?:i|we)(?:'ve| have)?\s+(?:contacted|emailed|messaged|reached out|sent)\b/i.test(reply))
+    return "A nearby event may be a vendor opportunity. Here's a draft you can send after reviewing the event listing and organizer details.";
+  return /draft you can send/i.test(reply)
+    ? reply
+    : `${reply} Here's a draft you can send after reviewing the event listing and organizer details.`;
+}
+
 // Compact menu-overlap summary for the model + the reason line (items+prices, never cuisine).
 function overlapSummary(mo) {
   if (!mo) return null;
@@ -243,7 +282,7 @@ export async function runSpotScoutSingleTurn(payload = {}) {
   }
 
   // 3. Ask the model ONCE for a why_one_line per candidate + a short reply. Single completion.
-  let whys = null, reply = "";
+  let whys = null, outreachDrafts = null, reply = "";
   if (haveKey() && candidates.length) {
     const brief = candidates.map((c) => ({
       id: c.id, score: c.score, verdict: c.verdict,
@@ -251,7 +290,8 @@ export async function runSpotScoutSingleTurn(payload = {}) {
       restaurant_saturation: c.signals?.restaurant_saturation,
       clearance_allowed: c.signals?.clearance?.allowed,
       nearby_vendors: (c.signals?.nearby_vendors || []).map((v) => v.name),
-      menu_overlap: overlapSummary(c.signals?.menu_overlap)
+      menu_overlap: overlapSummary(c.signals?.menu_overlap),
+      event_opportunity: c.event_opportunity || null
     }));
     const sys =
       "You are Rollaway's Spot Scout, a SINGLE-TURN explainer. You are given candidate spots with " +
@@ -259,15 +299,23 @@ export async function runSpotScoutSingleTurn(payload = {}) {
       "scores or legality. For each candidate write ONE tight sentence ('why_one_line') explaining why " +
       "it earned its score — cover demand (foot traffic is a bike-activity PROXY), competition (describe " +
       "menu overlap by ITEMS + PRICES, never a cuisine label), and legality (the clearance checker is a " +
-      "GUIDE, not legal clearance). Then write a 2-3 sentence overall 'reply_markdown' naming the top pick. " +
-      "Output ONLY JSON: {\"reply_markdown\":\"...\",\"why_one_line\":{\"<id>\":\"...\"}}.";
+      "GUIDE, not legal clearance). When event_opportunity is present, draft a short vendor outreach " +
+      "message using ONLY the supplied event fields. Never invent an email, phone, organizer name, or claim " +
+      "that contact was made. Describe it in reply_markdown as 'here's a draft you can send'. Then write a " +
+      "2-3 sentence overall reply naming the top pick. Output ONLY JSON: " +
+      "{\"reply_markdown\":\"...\",\"why_one_line\":{\"<id>\":\"...\"}," +
+      "\"outreach_draft\":{\"<id>\":{\"subject\":\"...\",\"body\":\"...\"}}}.";
     try {
       const out = await complete([
         { role: "system", content: sys },
         { role: "user", content: `Candidates: ${JSON.stringify(brief)}` }
       ], { max_tokens: 500 });
       const parsed = extractEnvelope(out);
-      if (parsed && parsed.why_one_line) { whys = parsed.why_one_line; reply = parsed.reply_markdown || ""; }
+      if (parsed && parsed.why_one_line) {
+        whys = parsed.why_one_line;
+        outreachDrafts = parsed.outreach_draft || null;
+        reply = parsed.reply_markdown || "";
+      }
     } catch { /* fall through to templates */ }
   }
 
@@ -279,6 +327,8 @@ export async function runSpotScoutSingleTurn(payload = {}) {
     const reasons = [why];
     const mo = overlapSummary(sig.menu_overlap);
     if (mo && mo.top && mo.top.length) reasons.push(`Menu overlap: ${mo.top.join("; ")}`);
+    const outreach_draft = safeOutreachDraft(c,
+      outreachDrafts && (outreachDrafts[c.id] || outreachDrafts[String(c.id)]), profile);
     return {
       type: "add_spot",
       id: c.id,
@@ -286,6 +336,7 @@ export async function runSpotScoutSingleTurn(payload = {}) {
       verdict: c.verdict,
       score: c.score,
       reasons,
+      ...(c.event_opportunity ? { event_opportunity: c.event_opportunity, outreach_draft } : {}),
       breakdown: {
         constraints: constraintsFrom(sig.clearance),
         demand: {
@@ -312,6 +363,7 @@ export async function runSpotScoutSingleTurn(payload = {}) {
       : "No candidate spots were provided.";
   }
 
+  reply = safeOutreachReply(reply, map_actions);
   const env = { agent: "spot_scout", reply_markdown: reply, citations, map_actions, checklist: null };
   return { env, trace: [] };
 }

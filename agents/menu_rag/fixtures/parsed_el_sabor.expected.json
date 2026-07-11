@@ -1,0 +1,10 @@
+{
+  "vendor_id": "el-sabor",
+  "vendor_type": "truck",
+  "currency": "USD",
+  "items": [
+    { "name": "Carne Asada Taco", "keywords": ["carne", "asada", "taco"], "price": 4.5 },
+    { "name": "Veggie Burrito", "keywords": ["veggie", "burrito"], "price": 11 },
+    { "name": "Horchata", "keywords": ["horchata"], "price": 3 }
+  ]
+}

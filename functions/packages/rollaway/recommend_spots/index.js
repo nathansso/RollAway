@@ -24,7 +24,7 @@ const {
 } = require('./shared');
 const { travelMatrix } = require('./travel');
 const { menuCompetition } = require('./menu_competition');
-const { scoreCandidate } = require('./score');
+const { scoreCandidate, pickEventOpportunity } = require('./score');
 const { buildAreaInsights } = require('./area_insights');
 const { makeCandidates, signalArgs } = require('./candidates');
 
@@ -146,6 +146,7 @@ async function attachWhyLines(spots, ctx) {
             verdict: s.verdict,
             eliminated: s.eliminated,
             violations: s.violations,
+            event_opportunity: s.event_opportunity,
             signals: {
               foot_traffic_score: s.score_breakdown.foot_traffic,
               restaurant_saturation: s.score_breakdown.competition.penalty >= 0.67
@@ -164,11 +165,16 @@ async function attachWhyLines(spots, ctx) {
       });
       const envelope = res && res.envelope ? res.envelope : res;
       const actions = envelope && Array.isArray(envelope.map_actions) ? envelope.map_actions : [];
-      const map = new Map(actions.map((action) => [
-        action.id,
-        Array.isArray(action.reasons) ? action.reasons[0] : action.why_one_line,
-      ]));
-      for (const s of spots) s.why_one_line = map.get(s.id) || templateWhy(s, ctx);
+      const actionMap = new Map(actions.map((action) => [action.id, action]));
+      for (const s of spots) {
+        const action = actionMap.get(s.id);
+        s.why_one_line = (action && (Array.isArray(action.reasons)
+          ? action.reasons[0] : action.why_one_line)) || templateWhy(s, ctx);
+        const draft = action && action.outreach_draft;
+        s.outreach_draft = s.event_opportunity && draft
+          && typeof draft.subject === 'string' && typeof draft.body === 'string'
+          ? { subject: draft.subject, body: draft.body } : null;
+      }
       return;
     } catch (err) {
       console.error('SPOT_SCOUT_URL degraded to templated why-lines:', err && err.message ? err.message : err);
@@ -301,6 +307,7 @@ exports.main = guard(async (args) => {
       travel: travelRows[i],
       maxTravelMinutes: ctx.max_travel_minutes,
     });
+    spot.event_opportunity = pickEventOpportunity(candidate.point, signals.events, ctx.radius_m);
     spot.area_insights = buildAreaInsights({
       point: candidate.point,
       signals,
@@ -335,6 +342,8 @@ exports.main = guard(async (args) => {
     violations: s.violations,
     score_breakdown: s.score_breakdown,
     area_insights: s.area_insights,
+    event_opportunity: s.event_opportunity,
+    outreach_draft: s.event_opportunity ? (s.outreach_draft || null) : null,
     why_one_line: s.why_one_line,
   }));
 

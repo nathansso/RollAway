@@ -45,6 +45,12 @@ Response (streamed or whole):
       "verdict": "good | caution | avoid",
       "score": 0.82,
       "reasons": ["High lunch foot traffic", "No taco trucks scheduled Fri"],
+      "event_opportunity": {
+        "event_name": "SF Giants vs Dodgers", "venue": "Oracle Park",
+        "start": "2026-07-11T18:45:00", "expected_attendance": 40000,
+        "event_url": "https://www.ticketmaster.com/event/123", "promoter_name": null
+      },
+      "outreach_draft": { "subject": "Food vendor inquiry", "body": "Hello event team, ..." },
       "breakdown": {
         "constraints": [
           { "rule": "75ft from restaurant entrance", "pass": true, "detail": "nearest 110ft" }
@@ -166,9 +172,12 @@ raw storefront count — **same field name, same enum**, so this is invisible to
     "name": "SF Giants vs Dodgers", "venue": "Oracle Park",
     "point": { "lat": 37.778, "lng": -122.389 },
     "start": "2026-07-11T18:45:00", "expected_attendance": 40000,
+    "event_url": "https://www.ticketmaster.com/event/123", "promoter_name": null,
     "source": "ticketmaster"
 } ], "count": 1 }
 ```
+`event_url` is copied from Ticketmaster's event page URL. `promoter_name` is copied only when the
+API supplies it; otherwise it is null. There are deliberately no email or phone fields.
 
 ### `check_clearance` — clearance geometry check (called by Spot Scout, implemented by P3)
 
@@ -266,3 +275,11 @@ additive field for parking/setup guidance and navigation:
 Consumers must not describe `recommended` as guaranteed legal parking. Posted curb
 signs, temporary restrictions, and current street conditions still require on-site
 verification.
+
+## Additive raw-menu parsing contract
+
+`agents/menu_rag/parse.mjs` accepts untrusted raw menu text and produces the existing menu-ingest
+shape: `{ vendor_id, vendor_type, currency, items: [{ name, keywords, price }] }`. Gradient extracts
+the structure. Deterministic code then retains an item only when its numeric price can be traced to
+the source text, allowing currency-symbol and decimal-format variance. Untraceable items are logged
+and dropped before the unchanged `ingestMenu()` boundary.

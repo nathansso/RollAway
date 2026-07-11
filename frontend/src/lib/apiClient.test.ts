@@ -64,6 +64,8 @@ describe('fixture API client', () => {
     expect(response.recommendations[0].travel_minutes).toBeGreaterThanOrEqual(3)
     expect(response.recommendations[0].travel_distance_miles).toBeGreaterThanOrEqual(0)
     expect(response.recommendations[0].area_insights?.parking.suitability).toBe('recommended')
+    expect(response.recommendations[0].event_opportunity?.event_name).toBe('SF Giants vs Dodgers')
+    expect(response.recommendations[0].outreach_draft?.subject).toMatch(/Food vendor inquiry/)
     expect(response.recommendations[0].area_insights?.parking.permit_checks.every((check) => !/hydrant/i.test(check.rule))).toBe(true)
     for (const spot of response.recommendations) {
       expect({
@@ -174,6 +176,11 @@ describe('recommendation network boundary', () => {
                 estimated: false,
               },
             },
+            event_opportunity: {
+              event_name: 'Market Night', venue: 'Civic Plaza', start: '2026-07-18T18:00:00',
+              expected_attendance: 5000, event_url: 'https://www.ticketmaster.com/event/123', promoter_name: null,
+            },
+            outreach_draft: { subject: 'Vendor inquiry', body: 'Hello event team.' },
             why_one_line: 'Strong lunch demand',
           },
         ],
@@ -190,6 +197,8 @@ describe('recommendation network boundary', () => {
         local_cuisine: { opportunity: 'low_direct_overlap' },
         navigation: { mode: 'driving' },
       },
+      event_opportunity: { event_name: 'Market Night', promoter_name: null },
+      outreach_draft: { subject: 'Vendor inquiry' },
     })
   })
 

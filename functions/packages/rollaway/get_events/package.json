@@ -3,5 +3,8 @@
   "version": "1.0.0",
   "description": "Rollaway: nearby ticketed events in a date range (CONTRACTS.md B.5)",
   "main": "index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test"
+  }
 }

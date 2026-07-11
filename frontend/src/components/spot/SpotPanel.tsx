@@ -189,6 +189,29 @@ export default function SpotPanel() {
           <p className="rounded-xl border border-border bg-white px-4 py-3 text-sm font-medium leading-snug text-foreground">
             {spot.why_one_line}
           </p>
+          {spot.event_opportunity && (
+            <section className="mt-3 rounded-xl border border-border bg-white p-4" aria-labelledby="event-opportunity-title">
+              <h3 id="event-opportunity-title" className="text-sm font-bold text-foreground">Nearby event opportunity</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {spot.event_opportunity.event_name} at {spot.event_opportunity.venue} ? {spot.event_opportunity.start}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Promoter: {spot.event_opportunity.promoter_name ?? 'Not provided by Ticketmaster'}
+              </p>
+              {spot.event_opportunity.event_url && (
+                <a href={spot.event_opportunity.event_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex text-sm font-bold text-primary underline">
+                  Open Ticketmaster event page
+                </a>
+              )}
+              {spot.outreach_draft && (
+                <div className="mt-3 rounded-lg bg-muted p-3 text-sm">
+                  <p className="font-bold text-foreground">Here's a draft you can send</p>
+                  <p className="mt-2 font-semibold text-foreground">{spot.outreach_draft.subject}</p>
+                  <p className="mt-1 whitespace-pre-line text-muted-foreground">{spot.outreach_draft.body}</p>
+                </div>
+              )}
+            </section>
+          )}
           <a
             href={navigationUrl}
             target="_blank"

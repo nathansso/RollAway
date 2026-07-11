@@ -1,8 +1,9 @@
 <!--
-version: 1.0.0
-updated: 2026-07-10
+version: 1.1.0
+updated: 2026-07-11
 owner: Person 2 (Agents & Platform)
 changelog:
+  - 1.1.0 (2026-07-11): add nullable event_opportunity and outreach_draft fields to Spot Scout map actions.
   - 1.0.0 (2026-07-10): initial shared envelope contract. Both agents import this verbatim.
 -->
 
@@ -51,6 +52,12 @@ and every `cite` in a checklist step must resolve in `kb/SOURCES.md`.
   "verdict": "good | caution | avoid",
   "score": 0.82,                              // 0..1
   "reasons": ["High lunch foot traffic", "No taco trucks scheduled Fri"],
+  "event_opportunity": {
+    "event_name": "SF Giants vs Dodgers", "venue": "Oracle Park",
+    "start": "2026-07-11T18:45:00", "expected_attendance": 40000,
+    "event_url": "https://www.ticketmaster.com/event/123", "promoter_name": null
+  },
+  "outreach_draft": { "subject": "Food vendor inquiry", "body": "Hello event team, ..." },
   "breakdown": {
     "constraints": [
       { "rule": "75ft from restaurant entrance", "pass": true, "detail": "nearest 110ft" }
@@ -63,6 +70,13 @@ and every `cite` in a checklist step must resolve in `kb/SOURCES.md`.
 
 > `constraints[]` rows come **verbatim from the clearance geometry tool** (`rule`, `pass`,
 > `detail` from its `checks[]`). The model never computes or edits `pass`/distances.
+
+`event_opportunity` is nullable/additive and is copied verbatim from deterministic
+`recommend_spots` output. `outreach_draft` is nullable/additive and may be populated only when
+`event_opportunity` is present. It contains `{ subject, body }` copy for the vendor to review and
+send. It never means a message was sent or contact was made. If `promoter_name` is null, the draft
+must use the supplied `event_url` as the public contact surface and must not invent a name, email,
+or phone number.
 
 ## `checklist` shape (Permit Copilot) — §D
 

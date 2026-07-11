@@ -101,6 +101,18 @@
           "minutes": 8,
           "estimated": true
         }
+      },
+      "event_opportunity": {
+        "event_name": "SF Giants vs Dodgers",
+        "venue": "Oracle Park",
+        "start": "2026-07-10T18:45:00",
+        "expected_attendance": 40000,
+        "event_url": "https://www.ticketmaster.com/event/123",
+        "promoter_name": null
+      },
+      "outreach_draft": {
+        "subject": "Food vendor inquiry for SF Giants vs Dodgers",
+        "body": "Hello event team,\n\nWe'd like to ask about bringing our food truck to SF Giants vs Dodgers at Oracle Park. Please share vendor requirements, availability, fees, and next steps.\n\nThank you,"
       }
     },
     {
@@ -193,7 +205,9 @@
           "minutes": 11,
           "estimated": true
         }
-      }
+      },
+      "event_opportunity": null,
+      "outreach_draft": null
     },
     {
       "id": "spot-mission-5th",
@@ -288,7 +302,9 @@
           "minutes": 7,
           "estimated": true
         }
-      }
+      },
+      "event_opportunity": null,
+      "outreach_draft": null
     }
   ]
 }

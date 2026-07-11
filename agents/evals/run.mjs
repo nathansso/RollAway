@@ -17,6 +17,7 @@ import { payloads, clearancePayload, restaurantsPayload } from "../fixtures/payl
 import { mockNormalize, CACHEABLE_PREFIX, PREFIX_SHA } from "../enrichment/normalize_fooditems.mjs";
 import { competitionOverlapCore } from "../menu_rag/overlap.mjs";
 import { DEMO_COMPETITORS, demoMenuKbId } from "../menu_rag/query.mjs";
+import { parseMenuText, verifyPricesInSource } from "../menu_rag/parse.mjs";
 import { runSpotScoutSingleTurn } from "../runtime/agents.mjs";
 import { readFileSync as _rfs } from "node:fs";
 
@@ -42,7 +43,7 @@ const B = {
   get_closures:     { in: ["lat","lng","radius_m","date_from","date_to"], out: ["closures","count"], item: ["id","reason","source","geometry","active_from","active_to"], itemKey: "closures" },
   get_foot_traffic: { in: ["lat","lng","radius_m","day","hour"], out: ["score","basis","nearby_stations","live_activity","historical_avg"] },
   get_restaurants:  { in: ["lat","lng","radius_m","day","time_from","time_to"], out: ["total","by_cuisine","by_price","saturation"] },
-  get_events:       { in: ["lat","lng","radius_m","date_from","date_to"], out: ["events","count"], item: ["name","venue","point","start","expected_attendance","source"], itemKey: "events" },
+  get_events:       { in: ["lat","lng","radius_m","date_from","date_to"], out: ["events","count"], item: ["name","venue","point","start","expected_attendance","event_url","promoter_name","source"], itemKey: "events" },
   check_clearance:  { in: ["lat","lng","vendor_type"], out: ["allowed","checks"], item: ["rule","required_ft","actual_ft","pass","cite"], itemKey: "checks" }
 };
 
@@ -66,6 +67,12 @@ const envelopeExamples = extractJsonBlocks(read("instructions/output_envelope.md
 // OFFLINE CHECKS
 // ---------------------------------------------------------------------------------------
 async function runOffline() {
+  const rawMenuFixture = read("menu_rag/fixtures/raw_menu_el_sabor.txt");
+  const expectedParsedMenu = JSON.parse(read("menu_rag/fixtures/parsed_el_sabor.expected.json"));
+  let parsedMenuFixture = null;
+  try {
+    parsedMenuFixture = await parseMenuText({ text: rawMenuFixture, vendor_id: "el-sabor", vendor_type: "truck", mock: true });
+  } catch (error) { parsedMenuFixture = { __error: error.message }; }
   // Precompute the single-turn Spot Scout result once (async), then assert synchronously below.
   const SPOT_FIXTURE = {
     user_profile: { vendor_type: "truck", cuisine: "tacos", menu_kb_id: "menu-kb-demo-el-sabor-local" },
@@ -83,13 +90,21 @@ async function runOffline() {
           nearby_vendors: [], competitors: [] } }
     ]
   };
-  let spotSingle = null, spotSingleTrace = null;
+  let spotSingle = null, spotSingleTrace = null, spotEvent = null;
   try { const r = await runSpotScoutSingleTurn(structuredClone(SPOT_FIXTURE)); spotSingle = r.env; spotSingleTrace = r.trace; }
   catch (e) { spotSingle = { __error: e.message }; }
+  try {
+    const withEvent = structuredClone(SPOT_FIXTURE);
+    withEvent.candidates[0].event_opportunity = {
+      event_name: "SF Giants vs Dodgers", venue: "Oracle Park", start: "2026-07-18T18:45:00",
+      expected_attendance: 40000, event_url: "https://www.ticketmaster.com/event/123", promoter_name: null
+    };
+    spotEvent = (await runSpotScoutSingleTurn(withEvent)).env;
+  } catch (e) { spotEvent = { __error: e.message }; }
 
   // 1. instruction files versioned
   check("instructions are versioned", () => {
-    const files = ["router.md", "output_envelope.md", "spot_scout.md", "permit_copilot.md", "guardrails.md"];
+    const files = ["router.md", "output_envelope.md", "spot_scout.md", "permit_copilot.md", "menu_parser.md", "guardrails.md"];
     const missing = files.filter((f) => !/version:\s*\d+\.\d+\.\d+/.test(read(`instructions/${f}`)));
     return missing.length ? bad(`no version header: ${missing.join(", ")}`) : ok(`${files.length} files carry version:`);
   });
@@ -313,6 +328,29 @@ async function runOffline() {
     return ok(`ranked ${spotSingle.map_actions.map((a) => a.id).join(">")}, 0 tools, cites dpw-182101`);
   });
 
+  check("event outreach absent without nearby event", () => {
+    const emitted = (spotSingle.map_actions || []).filter((action) => Object.hasOwn(action, "outreach_draft"));
+    return emitted.length ? bad(`${emitted.length} drafts emitted without event`) : ok("no event means no outreach_draft field");
+  });
+
+  check("event outreach with null promoter uses only public event URL", () => {
+    if (!spotEvent || spotEvent.__error) return bad(`runtime threw: ${spotEvent?.__error}`);
+    const action = spotEvent.map_actions.find((item) => item.id === "spot-1");
+    if (!action?.outreach_draft) return bad("missing outreach draft");
+    const text = `${action.outreach_draft.subject} ${action.outreach_draft.body}`;
+    if (!text.includes("https://www.ticketmaster.com/event/123")) return bad("draft omitted event URL");
+    if (/@/.test(text)) return bad("draft fabricated an email address");
+    if (!/Hello event team/i.test(text)) return bad("null promoter should use generic event-team greeting");
+    return ok("draft uses event URL and generic event-team greeting");
+  });
+
+  check("event outreach reply never claims contact was made", () => {
+    if (/(?:i|we)(?:'ve| have)?\s+(?:contacted|emailed|messaged|reached out|sent)/i.test(spotEvent.reply_markdown))
+      return bad(`reply claims contact: ${spotEvent.reply_markdown}`);
+    if (!/draft you can send/i.test(spotEvent.reply_markdown)) return bad("reply does not label copy as a draft");
+    return ok("reply clearly labels unsent draft");
+  });
+
   // 17. Menu-RAG overlap reasons over ITEMS + PRICES, never a cuisine label
   check("menu_rag overlap: item+price overlap, not a cuisine label", () => {
     const menu = JSON.parse(_rfs(new URL("../menu_rag/menu.demo.json", import.meta.url), "utf8"));
@@ -328,6 +366,22 @@ async function runOffline() {
     const hasPrice = r.competitors.some((x) => x.overlapping_items.some((o) => o.price_gap !== null));
     if (!hasPrice) return bad("no price comparison present");
     return ok(`taqueria overlap=${taqueria.overlap_score}, coffee=0, item+price pairs present`);
+  });
+
+  check("menu parser: raw text becomes ingest-compatible structured menu", () => {
+    if (!parsedMenuFixture || parsedMenuFixture.__error) return bad(parsedMenuFixture?.__error || "no parser output");
+    return JSON.stringify(parsedMenuFixture) === JSON.stringify(expectedParsedMenu)
+      ? ok(`${parsedMenuFixture.items.length} structured items match expected ingest shape`)
+      : bad(`parsed ${JSON.stringify(parsedMenuFixture)} != expected`);
+  });
+
+  check("menu parser: hallucinated price is dropped deterministically", () => {
+    const oldWarn = console.warn;
+    console.warn = () => {};
+    let items;
+    try { items = verifyPricesInSource("Taco $4.50", [{ name: "Taco", keywords: ["taco"], price: 99.99 }]); }
+    finally { console.warn = oldWarn; }
+    return items.length === 0 ? ok("untraceable $99.99 item dropped") : bad("hallucinated price survived guardrail");
   });
 
   // 18. fooditems normalizer: items+keywords, RAW PRESERVED, cache prefix constant

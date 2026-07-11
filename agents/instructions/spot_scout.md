@@ -1,10 +1,11 @@
 <!--
-version: 2.0.0
+version: 2.1.0
 updated: 2026-07-11
 owner: Person 2 (Agents & Platform) / Person 3 (Gradient AI)
 imports: output_envelope.md, guardrails.md
 invocation: SINGLE TURN, called once by Person 2's recommend_spots with ALL signals pre-gathered.
 changelog:
+  - 2.1.0 (2026-07-11): add event-opportunity outreach drafts without claiming contact was made.
   - 1.0.0 (2026-07-10): initial multi-tool function-calling Spot Scout.
   - 2.0.0 (2026-07-11): RESHAPED to the map-first, single-turn, no-router flow. Spot Scout is now
     invoked ONCE with all signals + deterministic scores already gathered by recommend_spots. It

@@ -26,6 +26,10 @@ recommend_spots ──▶ query.mjs competitionOverlap({ menu_kb_id, competitors
 ## Run
 
 ```bash
+# 0. Parse raw menu text and ingest it
+node agents/menu_rag/parse.mjs --text menu.txt --vendor-id el-sabor --mock
+node agents/menu_rag/parse_and_ingest.mjs --text menu.txt --vendor-id el-sabor --mock
+
 # 1. Ingest the demo menu (offline: local KB manifest; with a token: a REAL Gradient KB)
 node agents/menu_rag/ingest.mjs --mock                       # offline
 DIGITALOCEAN_ACCESS_TOKEN=... node agents/menu_rag/ingest.mjs # live -> real menu_kb_id

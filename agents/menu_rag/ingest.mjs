@@ -130,7 +130,10 @@ function parseArgs(argv) {
 
 async function main() {
   const args = parseArgs(process.argv);
-  const menu = JSON.parse(readFileSync(resolve(__dir, args.menu), "utf8"));
+  const input = !process.stdin.isTTY
+    ? readFileSync(0, "utf8")
+    : readFileSync(resolve(__dir, args.menu), "utf8");
+  const menu = JSON.parse(input);
   const live = !args.mock && haveToken();
   console.log(`[ingest] mode: ${live ? "LIVE (real Gradient KB)" : "MOCK/local"}  vendor=${menu.vendor_id}  items=${(menu.items || []).length}`);
   if (!args.mock && !haveToken()) console.log("[ingest] DIGITALOCEAN_ACCESS_TOKEN not set -> local KB manifest (offline). Set the token to provision a real Gradient KB.");

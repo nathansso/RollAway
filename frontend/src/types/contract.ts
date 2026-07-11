@@ -120,6 +120,20 @@ export interface AreaInsights {
   }
 }
 
+export interface EventOpportunity {
+  event_name: string
+  venue: string
+  start: string
+  expected_attendance: number
+  event_url: string | null
+  promoter_name: string | null
+}
+
+export interface OutreachDraft {
+  subject: string
+  body: string
+}
+
 export interface RecommendationSpot {
   id: string
   rank: number
@@ -151,6 +165,8 @@ export interface RecommendationSpot {
   travel_minutes: number
   travel_distance_miles: number
   area_insights?: AreaInsights
+  event_opportunity?: EventOpportunity | null
+  outreach_draft?: OutreachDraft | null
 }
 
 export interface RecommendSpotsResponse {
@@ -252,6 +268,8 @@ export interface LegacyAddSpotAction {
   verdict: Verdict
   score: number
   reasons: string[]
+  event_opportunity?: EventOpportunity | null
+  outreach_draft?: OutreachDraft | null
   breakdown: {
     constraints: LegacyConstraintCheck[]
     demand: { foot_traffic_score: number; restaurant_saturation: Saturation }

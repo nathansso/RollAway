@@ -55,6 +55,30 @@ function expectedAttendance(venueName) {
   return null;
 }
 
+function mapTicketmasterEvent(e, dateFrom, dateTo) {
+  const venue = e && e._embedded && e._embedded.venues && e._embedded.venues[0];
+  if (!venue) return null;
+  const city = venue.city && venue.city.name;
+  if (city !== 'San Francisco') return null;
+  const loc = venue.location || {};
+  const start = e.dates && e.dates.start;
+  const localDate = start && start.localDate;
+  if (!localDate || localDate < dateFrom || localDate > dateTo) return null;
+  const promoter = (e.promoter && e.promoter.name)
+    || (Array.isArray(e.promoters) && e.promoters[0] && e.promoters[0].name)
+    || null;
+  return {
+    name: e.name,
+    venue: venue.name,
+    point: { lat: Number(loc.latitude), lng: Number(loc.longitude) },
+    start: `${localDate}T${start.localTime || '00:00:00'}`,
+    expected_attendance: expectedAttendance(venue.name),
+    event_url: typeof e.url === 'string' && e.url ? e.url : null,
+    promoter_name: typeof promoter === 'string' && promoter ? promoter : null,
+    source: 'ticketmaster',
+  };
+}
+
 let SAMPLE_EVENTS = [];
 try {
   SAMPLE_EVENTS = JSON.parse(
@@ -85,25 +109,7 @@ async function fetchTicketmaster(lat, lng, radius_m, dateFrom, dateTo) {
     const res = await fetchJSON(url, { timeoutMs: 8000, retries: 2, ...demoFetchOpts() });
     const raw = (res._embedded && res._embedded.events) || [];
     return raw
-      .map((e) => {
-        const venue = e._embedded && e._embedded.venues && e._embedded.venues[0];
-        if (!venue) return null;
-        const city = venue.city && venue.city.name;
-        if (city !== 'San Francisco') return null; // SF-relevant venues only
-        const loc = venue.location || {};
-        const start = e.dates && e.dates.start;
-        // localDate is the venue's (SF) calendar date — the field we scope on.
-        const localDate = start && start.localDate;
-        if (!localDate || localDate < dateFrom || localDate > dateTo) return null;
-        return {
-          name: e.name,
-          venue: venue.name,
-          point: { lat: Number(loc.latitude), lng: Number(loc.longitude) },
-          start: `${localDate}T${start.localTime || '00:00:00'}`,
-          expected_attendance: expectedAttendance(venue.name),
-          source: 'ticketmaster',
-        };
-      })
+      .map((e) => mapTicketmasterEvent(e, dateFrom, dateTo))
       .filter(Boolean)
       .filter((e) => Number.isFinite(e.point.lat) && Number.isFinite(e.point.lng));
   } catch (err) {
@@ -123,6 +129,8 @@ function fixtureEvents(lat, lng, radius_m, dateFrom) {
     point: e.point,
     start: `${addDays(dateFrom, i % 3)}T${e.local_time}`,
     expected_attendance: expectedAttendance(e.venue),
+    event_url: typeof e.event_url === 'string' && e.event_url ? e.event_url : null,
+    promoter_name: typeof e.promoter_name === 'string' && e.promoter_name ? e.promoter_name : null,
     source: 'ticketmaster',
   }));
 }
@@ -152,3 +160,7 @@ exports.main = guard(async (args) => {
 
   return ok(body);
 });
+
+exports.mapTicketmasterEvent = mapTicketmasterEvent;
+exports.fixtureEvents = fixtureEvents;
+exports.expectedAttendance = expectedAttendance;

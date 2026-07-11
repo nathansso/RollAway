@@ -37,6 +37,20 @@ function validateMapAction(a, p) {
   if (!VERDICTS.includes(a.verdict)) e.push(`${p}.verdict invalid: ${a.verdict}`);
   if (!isNum(a.score) || a.score < 0 || a.score > 1) e.push(`${p}.score must be 0..1`);
   if (!isArr(a.reasons) || !a.reasons.every(isStr)) e.push(`${p}.reasons must be string[]`);
+  if (!(a.event_opportunity === undefined || a.event_opportunity === null || isObj(a.event_opportunity)))
+    e.push(`${p}.event_opportunity must be object|null when present`);
+  if (isObj(a.event_opportunity)) {
+    const ev = a.event_opportunity;
+    for (const key of ["event_name", "venue", "start"]) if (!isStr(ev[key])) e.push(`${p}.event_opportunity.${key} must be string`);
+    if (!isNum(ev.expected_attendance)) e.push(`${p}.event_opportunity.expected_attendance must be number`);
+    if (!(ev.event_url === null || isStr(ev.event_url))) e.push(`${p}.event_opportunity.event_url must be string|null`);
+    if (!(ev.promoter_name === null || isStr(ev.promoter_name))) e.push(`${p}.event_opportunity.promoter_name must be string|null`);
+  }
+  if (!(a.outreach_draft === undefined || a.outreach_draft === null || isObj(a.outreach_draft)))
+    e.push(`${p}.outreach_draft must be object|null when present`);
+  if (isObj(a.outreach_draft) && (!isStr(a.outreach_draft.subject) || !isStr(a.outreach_draft.body)))
+    e.push(`${p}.outreach_draft must be {subject:string, body:string}`);
+  if (!a.event_opportunity && a.outreach_draft) e.push(`${p}.outreach_draft requires event_opportunity`);
   const b = a.breakdown;
   if (!isObj(b)) { e.push(`${p}.breakdown missing`); return e; }
   if (!isArr(b.constraints)) e.push(`${p}.breakdown.constraints must be array`);

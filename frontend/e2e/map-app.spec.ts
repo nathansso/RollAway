@@ -310,6 +310,8 @@ test('first launch, map recommendations, details, permits, and EasyApply', async
   await expect(page.getByText('Parking & setup target')).toBeVisible()
   await expect(page.getByText('Permit placement metrics (excluding hydrants)')).toBeVisible()
   await expect(page.getByText('Local cuisine mix')).toBeVisible()
+  await expect(page.getByText('Nearby event opportunity')).toBeVisible()
+  await expect(page.getByText("Here's a draft you can send")).toBeVisible()
   await expect(page.getByRole('link', { name: 'Navigate to suggested parking' })).toHaveAttribute('href', /origin=.*destination=/)
   await expect(page.getByText('Legality check')).toBeVisible()
   await page.keyboard.press('Escape')

@@ -55,15 +55,18 @@ test('adapts the direct Menu RAG response to deterministic scoring input', async
 
 test('extracts why lines from the direct Spot Scout agent envelope', async () => {
   const server = http.createServer((req, res) => {
-    req.resume();
+    let raw = '';
+    req.on('data', (chunk) => { raw += chunk; });
     req.on('end', () => {
+      const request = JSON.parse(raw);
+      assert.equal(request.candidates[0].event_opportunity.event_name, 'Market Night');
       res.setHeader('content-type', 'application/json');
       res.end(JSON.stringify({
         agent: 'spot_scout',
         reply_markdown: 'Top pick.',
         citations: [],
         checklist: null,
-        map_actions: [{ id: 'spot-1', reasons: ['Live agent explanation.'] }],
+        map_actions: [{ id: 'spot-1', reasons: ['Live agent explanation.'], outreach_draft: { subject: 'Vendor inquiry', body: 'Hello event team.' } }],
       }));
     });
   });
@@ -73,6 +76,7 @@ test('extracts why lines from the direct Spot Scout agent envelope', async () =>
   const spot = {
     id: 'spot-1', point: { lat: 37.78, lng: -122.4 }, block_label: 'Test block',
     score: 0.8, verdict: 'good', eliminated: false, violations: [],
+    event_opportunity: { event_name: 'Market Night', venue: 'Civic Plaza', start: '2026-07-18T18:00:00', expected_attendance: 5000, event_url: 'https://www.ticketmaster.com/event/123', promoter_name: null },
     score_breakdown: {
       foot_traffic: 0.8,
       competition: { penalty: 0.1, overlapping: [] },
@@ -86,6 +90,7 @@ test('extracts why lines from the direct Spot Scout agent envelope', async () =>
       dayFull: 'Friday', mealLabel: 'lunch',
     });
     assert.equal(spot.why_one_line, 'Live agent explanation.');
+    assert.deepEqual(spot.outreach_draft, { subject: 'Vendor inquiry', body: 'Hello event team.' });
   } finally {
     if (previous === undefined) delete process.env.SPOT_SCOUT_URL;
     else process.env.SPOT_SCOUT_URL = previous;

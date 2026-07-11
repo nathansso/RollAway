@@ -66,10 +66,19 @@ KBs (matched by name) instead of duplicating them.
 ### 0d. Menu KB ingest + query (Person 3's Menu RAG)
 
 ```bash
+# Raw text -> guarded structured menu (every retained price must occur in the source)
+node agents/menu_rag/parse.mjs --text menu.txt --vendor-id el-sabor --vendor-type truck --mock
+node agents/menu_rag/parse.mjs --text menu.txt --vendor-id el-sabor --mock | node agents/menu_rag/ingest.mjs --mock
+node agents/menu_rag/parse_and_ingest.mjs --text menu.txt --vendor-id el-sabor --vendor-type truck --mock
+
 node agents/menu_rag/ingest.mjs --mock                        # offline: local KB manifest
 DIGITALOCEAN_ACCESS_TOKEN=... node agents/menu_rag/ingest.mjs  # live: real Gradient KB -> menu_kb_id
 node agents/menu_rag/query.mjs --demo                         # competition overlap (items+prices)
 ```
+
+`parse.mjs` uses the Gradient-backed `instructions/menu_parser.md` extractor in live mode. Code then
+verifies each parsed numeric price occurs in the untrusted source text; an untraceable item is
+logged and dropped before `ingestMenu()` receives the menu.
 
 `recommend_spots` imports `competitionOverlap({ menu_kb_id, competitors })` from
 `menu_rag/query.mjs`. Menu ingestion into the KB may require a Spaces bucket on some account tiers;

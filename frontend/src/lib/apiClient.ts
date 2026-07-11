@@ -1,5 +1,6 @@
 import type {
   ClosuresResponse,
+  EasyApplyFieldKey,
   LegacyChatResponse,
   PermitChecklist,
   RecommendSpotsRequest,
@@ -279,6 +280,9 @@ export function adaptNativeRecommendations(
   }
   const recommendations: RecommendationSpot[] = []
   for (const candidate of body.spots) {
+    if (isRecord(candidate) && (candidate.eliminated === true || candidate.rank === null)) {
+      continue
+    }
     if (
       !isRecord(candidate) ||
       typeof candidate.rank !== 'number' ||
@@ -293,7 +297,7 @@ export function adaptNativeRecommendations(
     const breakdown = candidate.score_breakdown
     if (
       typeof breakdown.foot_traffic !== 'number' ||
-      typeof breakdown.competition !== 'number' ||
+      (typeof breakdown.competition !== 'number' && !isRecord(breakdown.competition)) ||
       !isRecord(breakdown.legality) ||
       typeof breakdown.legality.pass !== 'boolean' ||
       typeof breakdown.legality.rule !== 'string' ||
@@ -306,8 +310,22 @@ export function adaptNativeRecommendations(
       Math.max(0, Number(candidate.total_score ?? candidate.score ?? 0)),
     )
     const traffic = Math.min(1, Math.max(0, breakdown.foot_traffic))
-    const competition = Math.min(1, Math.max(0, breakdown.competition))
-    const hasClosure = Boolean(breakdown.closures)
+    const competitionRecord = isRecord(breakdown.competition)
+      ? breakdown.competition
+      : null
+    const competition = Math.min(
+      1,
+      Math.max(
+        0,
+        Number(competitionRecord?.penalty ?? breakdown.competition) || 0,
+      ),
+    )
+    const overlapRows = Array.isArray(competitionRecord?.overlapping)
+      ? competitionRecord.overlapping.filter(isRecord)
+      : []
+    const hasClosure = isRecord(breakdown.closures)
+      ? Boolean(breakdown.closures.blocked)
+      : Boolean(breakdown.closures)
     const legal = breakdown.legality.pass && !hasClosure
     const travel = estimateTravel(candidate.point as LatLng, request.location)
     recommendations.push({
@@ -336,13 +354,11 @@ export function adaptNativeRecommendations(
       },
       competition: {
         overlap_count:
-          typeof breakdown.overlap_count === 'number'
-            ? Math.max(0, breakdown.overlap_count)
-            : Math.round(competition * 3),
+          overlapRows.length > 0 ? overlapRows.length : Math.round(competition * 3),
         saturation: competition >= 0.67 ? 'high' : competition >= 0.34 ? 'medium' : 'low',
-        menu_matches: Array.isArray(breakdown.menu_matches)
-          ? breakdown.menu_matches.filter((match): match is string => typeof match === 'string')
-          : [],
+        menu_matches: overlapRows
+          .map((match) => (typeof match.name === 'string' ? match.name : ''))
+          .filter(Boolean),
         price_tier: request.user_profile.menu.price_tier,
         detail:
           typeof breakdown.competition_detail === 'string'
@@ -374,7 +390,7 @@ export function adaptNativeRecommendations(
               : 'No active closure reported for this point.',
         source: hasClosure ? 'sfmta_event' : null,
       },
-      travel_minutes: travel.minutes,
+      travel_minutes: competitionRecord ? breakdown.travel_minutes : travel.minutes,
       travel_distance_miles: travel.miles,
     })
   }
@@ -640,6 +656,59 @@ export function normalizeVendors(value: unknown): VendorCollection | null {
   return { type: 'FeatureCollection', features }
 }
 
+
+export function adaptAgentPermitChecklist(
+  value: unknown,
+  vendorType: VendorType,
+): PermitChecklist | null {
+  if (!isRecord(value)) return null
+  const envelope = isRecord(value.envelope) ? value.envelope : value
+  const raw = isRecord(envelope.checklist) ? envelope.checklist : null
+  if (!raw || !Array.isArray(raw.steps)) return null
+  const rawSteps: unknown[] = raw.steps
+
+  const agencies = ['Public Works', 'Public Health', 'Fire', 'Treasurer'] as const
+  const sections = agencies.map((agency) => ({
+    agency,
+    items: rawSteps
+      .filter((step): step is Record<string, unknown> =>
+        isRecord(step) && step.agency === agency,
+      )
+      .map((step, index) => {
+        const autofill = typeof step.autofill_field === 'string' ? step.autofill_field : null
+        const allowedAutofill = [
+          'owner_name', 'business_name', 'email', 'phone', 'address', 'city',
+          'state', 'postal_code', 'vendor_type', 'menu', 'location',
+        ]
+        return {
+          id: typeof step.id === 'string'
+            ? step.id
+            : `${agency.toLowerCase().replace(/[^a-z]+/g, '-')}-${Number(step.order) || index + 1}`,
+          order: Number(step.order) || index + 1,
+          title: String(step.title ?? 'Permit step'),
+          detail: String(step.detail ?? ''),
+          deadline_days: typeof step.deadline_days === 'number' ? step.deadline_days : null,
+          deadline_label: typeof step.deadline_label === 'string' ? step.deadline_label : null,
+          cite: String(step.cite ?? ''),
+          easy_apply: Boolean(autofill),
+          fields: autofill && allowedAutofill.includes(autofill)
+            ? [{
+              key: autofill as EasyApplyFieldKey,
+              label: autofill.replace(/_/g, ' '),
+              requirement: 'auto_filled' as const,
+            }]
+            : [],
+        }
+      }),
+  }))
+
+  return {
+    vendor_type: vendorType,
+    generated_at: new Date().toISOString(),
+    sections,
+  }
+}
+
 function withVendorType(value: PermitChecklist, vendorType: VendorType): PermitChecklist {
   const checklist = { ...structuredClone(value), vendor_type: vendorType }
   if (vendorType === 'pushcart_nocook') {
@@ -732,11 +801,13 @@ export const apiClient = {
       await wait(options.delayMs ?? DEFAULT_DELAY)
       return withVendorType(permitFixture as PermitChecklist, vendorType)
     }
-    const checklist = validatePermitChecklist(await requestJson(PERMIT_URL, {
+    const body = await requestJson(PERMIT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ vendor_type: vendorType }),
-    }))
+    })
+    const checklist =
+      validatePermitChecklist(body) ?? adaptAgentPermitChecklist(body, vendorType)
     if (!checklist) {
       throw new ApiClientError('INVALID_RESPONSE', 'Permit guidance was malformed.')
     }

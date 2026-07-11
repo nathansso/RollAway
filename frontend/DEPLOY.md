@@ -1,7 +1,7 @@
 # Deploying the Rollaway map app
 
 Rollaway is a Vite static site deployed by DigitalOcean App Platform. The checked-in
-`.do/app.yaml` tracks `feat/frontend-mapapp`, builds from `frontend`, and publishes
+`.do/app.yaml` tracks `main`, builds from `frontend`, and publishes
 `frontend/dist`.
 
 ## Create or update the app
@@ -18,7 +18,7 @@ doctl apps update <APP_ID> --spec .do/app.yaml
 ```
 
 The same spec can be imported in DigitalOcean Cloud → Apps → Create App → Edit Spec.
-Autodeploy is enabled for pushes to `feat/frontend-mapapp`.
+Autodeploy is enabled for pushes to `main`.
 
 ## Build-time environment
 
@@ -91,5 +91,4 @@ On the deployed URL:
 
 In the Mapbox dashboard, restrict the public token to the exact production origin and
 any intentional preview/local origins. Grant only the public scopes required to load
-the configured style; never expose a secret `sk.*` token. After merge, update the
-source branch in `.do/app.yaml` and App Platform from `feat/frontend-mapapp` to `main`.
+the configured style; never expose a secret `sk.*` token. The checked-in spec already deploys from `main`; confirm App Platform uses the same source branch after importing it.

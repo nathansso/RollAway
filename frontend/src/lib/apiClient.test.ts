@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LegacyChatResponse, RecommendSpotsRequest } from '../types/contract'
 import {
+  adaptAgentPermitChecklist,
   adaptLegacyRecommendations,
   adaptNativeRecommendations,
   apiClient,
@@ -402,5 +403,66 @@ describe('other live response boundaries', () => {
         sections: [{ agency: 'Public Works', items: 'not-an-array' }],
       }),
     ).toBeNull()
+  })
+
+  it('adapts the direct Permit Copilot envelope into frontend sections', () => {
+    const checklist = adaptAgentPermitChecklist(
+      {
+        agent: 'permit_copilot',
+        checklist: {
+          vendor_type: 'truck',
+          steps: [
+            {
+              order: 1,
+              agency: 'Public Works',
+              title: 'Apply for location permit',
+              detail: 'Prepare the location packet.',
+              deadline_days: 30,
+              deadline_label: '30-day notice',
+              cite: 'dpw-182101',
+              autofill_field: 'location',
+            },
+          ],
+        },
+      },
+      'truck',
+    )
+    expect(checklist?.sections.find((section) => section.agency === 'Public Works')?.items[0])
+      .toMatchObject({ title: 'Apply for location permit', easy_apply: true })
+    expect(checklist?.sections).toHaveLength(4)
+  })
+
+})
+
+
+describe('merged recommend_spots boundary', () => {
+  it('adapts object breakdowns and excludes eliminated candidates', () => {
+    const adapted = adaptNativeRecommendations({
+      spots: [
+        {
+          id: 'spot-live', rank: 1, point: { lat: 37.78, lng: -122.4 },
+          block_label: 'Live block', score: 0.8, verdict: 'good',
+          why_one_line: 'Strong live candidate.',
+          score_breakdown: {
+            foot_traffic: 0.75,
+            competition: { penalty: 0.2, overlapping: [{ name: 'Nearby tacos' }] },
+            legality: { pass: true, rule: 'all setbacks clear', checks: [] },
+            closures: { blocked: false },
+            travel_minutes: 9,
+          },
+        },
+        {
+          id: 'spot-eliminated', rank: null, eliminated: true,
+          point: { lat: 37.781, lng: -122.401 }, block_label: 'Rejected block',
+          why_one_line: 'Fails clearance.', score_breakdown: {},
+        },
+      ],
+    }, request)
+    expect(adapted?.recommendations).toHaveLength(1)
+    expect(adapted?.recommendations[0]).toMatchObject({
+      id: 'spot-live', travel_minutes: 9,
+      competition: { overlap_count: 1, menu_matches: ['Nearby tacos'] },
+      closure: { active: false },
+    })
   })
 })

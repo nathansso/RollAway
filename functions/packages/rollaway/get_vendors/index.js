@@ -132,6 +132,7 @@ function buildVendor(row, schedules, timeMin) {
     name: row.applicant || 'Unknown vendor',
     type: row.facilitytype || 'Unknown',
     cuisine: cuisineFor(row.permit),
+    fooditems_raw: row.fooditems || '',
     status: row.status || 'UNKNOWN',
     point: { lat, lng },
     scheduled_here,

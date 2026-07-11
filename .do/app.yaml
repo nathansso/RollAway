@@ -3,7 +3,7 @@
 # Usage:  doctl apps create --spec .do/app.yaml
 #         (or import via the DO dashboard: Apps -> Create App -> Edit Spec)
 #
-# After integration, flip `branch: feat/frontend-mapapp` -> `branch: main`.
+# Production deploys from the integrated default branch.
 # Set the SECRET value for VITE_MAPBOX_TOKEN in the dashboard — never commit it.
 
 name: rollaway
@@ -13,7 +13,7 @@ static_sites:
   - name: rollaway-frontend
     github:
       repo: nathansso/RollAway
-      branch: feat/frontend-mapapp
+      branch: main
       deploy_on_push: true
     source_dir: frontend
     build_command: npm ci && npm run build

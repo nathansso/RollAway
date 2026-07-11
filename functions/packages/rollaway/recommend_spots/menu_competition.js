@@ -139,6 +139,32 @@ function bridgeOverlap(menu, vendors, restaurants) {
  * menuCompetition — the module recommend_spots calls per candidate.
  * Uses MENU_RAG_URL when set, else the deterministic bridge.
  */
+function normalizedMenu(userMenu) {
+  const items = (Array.isArray(userMenu) ? userMenu : []).map((item) => ({
+    name: String(item && (item.name || item.item || item) || '').trim(),
+    price: Number.isFinite(Number(item && item.price)) ? Number(item.price) : null,
+  })).filter((item) => item.name);
+  return { items };
+}
+
+function competitorRows(vendors) {
+  return (Array.isArray(vendors) ? vendors : []).map((vendor) => {
+    const raw = String(vendor && (vendor.fooditems_raw || vendor.raw || '') || '');
+    const items = Array.isArray(vendor && vendor.items)
+      ? vendor.items
+      : raw.split(/[:;,/\n]+/).map((item) => item.trim()).filter(Boolean);
+    return {
+      name: vendor && vendor.name ? vendor.name : 'Unknown vendor',
+      items,
+      price_points: Array.isArray(vendor && vendor.price_points) ? vendor.price_points : [],
+    };
+  }).filter((competitor) => competitor.items.length > 0);
+}
+
+/**
+ * menuCompetition - the module recommend_spots calls per candidate.
+ * Uses the direct Gradient Menu-RAG contract when configured, else the bridge.
+ */
 async function menuCompetition(userMenu, vendors, restaurants) {
   const url = process.env.MENU_RAG_URL;
   if (url) {
@@ -146,15 +172,26 @@ async function menuCompetition(userMenu, vendors, restaurants) {
       const res = await fetchJSON(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ menu: userMenu || [], nearby: { vendors, restaurants } }),
+        body: JSON.stringify({
+          menu_kb_id: process.env.MENU_KB_ID || null,
+          menu: normalizedMenu(userMenu),
+          competitors: competitorRows(vendors),
+        }),
         timeoutMs: 6000,
         retries: 1,
         ...demoFetchOpts(),
       });
-      // Trust the pinned shape; coerce defensively.
+      const rows = Array.isArray(res && res.competitors) ? res.competitors : [];
+      const summary = res && res.summary ? res.summary : {};
+      const overlap = Number(summary.max_overlap);
       return {
-        overlap_score: clamp(Number(res.overlap_score) || 0, 0, 1),
-        overlapping: Array.isArray(res.overlapping) ? res.overlapping : [],
+        overlap_score: clamp(Number.isFinite(overlap) ? overlap : 0, 0, 1),
+        overlapping: rows.filter((row) => Number(row.overlap_score) > 0).map((row) => ({
+          name: row.name || 'Unknown competitor',
+          overlap_score: clamp(Number(row.overlap_score) || 0, 0, 1),
+          overlapping_items: Array.isArray(row.overlapping_items) ? row.overlapping_items : [],
+          price_summary: row.price_summary || null,
+        })),
       };
     } catch (err) {
       console.error('MENU_RAG_URL degraded to deterministic bridge:', err && err.message ? err.message : err);
@@ -166,4 +203,4 @@ async function menuCompetition(userMenu, vendors, restaurants) {
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const round2 = (n) => Math.round(n * 100) / 100;
 
-module.exports = { menuCompetition, bridgeOverlap, cuisineOf, priceTier, profileMenu };
+module.exports = { menuCompetition, bridgeOverlap, cuisineOf, priceTier, profileMenu, normalizedMenu, competitorRows };

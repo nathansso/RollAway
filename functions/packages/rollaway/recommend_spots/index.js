@@ -130,24 +130,43 @@ async function attachWhyLines(spots, ctx) {
   if (url) {
     try {
       // ONE POST with ALL pre-gathered signals for all spots. No router, never
-      // per-candidate. Expect [{ id, why_one_line }].
+      // per-candidate. The direct agent endpoint returns the shared agent envelope.
       const res = await fetchJSON(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           when: ctx.when,
           user_profile: ctx.user_profile,
-          spots: spots.map((s) => ({
-            id: s.id, point: s.point, block_label: s.block_label,
-            score: s.score, eliminated: s.eliminated, violations: s.violations,
-            score_breakdown: s.score_breakdown,
+          candidates: spots.map((s) => ({
+            id: s.id,
+            point: s.point,
+            block_label: s.block_label,
+            score: s.score,
+            verdict: s.verdict,
+            eliminated: s.eliminated,
+            violations: s.violations,
+            signals: {
+              foot_traffic_score: s.score_breakdown.foot_traffic,
+              restaurant_saturation: s.score_breakdown.competition.penalty >= 0.67
+                ? 'high' : s.score_breakdown.competition.penalty >= 0.34 ? 'medium' : 'low',
+              clearance: {
+                allowed: s.score_breakdown.legality.pass,
+                checks: s.score_breakdown.legality.checks || [],
+              },
+              nearby_vendors: s.score_breakdown.competition.overlapping || [],
+            },
           })),
         }),
         timeoutMs: 8000,
         retries: 1,
         ...demoFetchOpts(),
       });
-      const map = new Map((Array.isArray(res) ? res : []).map((r) => [r.id, r.why_one_line]));
+      const envelope = res && res.envelope ? res.envelope : res;
+      const actions = envelope && Array.isArray(envelope.map_actions) ? envelope.map_actions : [];
+      const map = new Map(actions.map((action) => [
+        action.id,
+        Array.isArray(action.reasons) ? action.reasons[0] : action.why_one_line,
+      ]));
       for (const s of spots) s.why_one_line = map.get(s.id) || templateWhy(s, ctx);
       return;
     } catch (err) {
@@ -202,11 +221,11 @@ function buildContext(args) {
 
   const when = args.when || {};
   const day = when.day || SCENARIO.when.day;
-  const time = when.time || SCENARIO.when.time;
+  const time = when.time || when.time_from || SCENARIO.when.time;
   const hour = when.hour !== undefined ? Number(when.hour)
     : (time ? Number(String(time).split(':')[0]) : SCENARIO.when.hour);
-  const date_from = when.date_from || SCENARIO.when.date_from;
-  const date_to = when.date_to || SCENARIO.when.date_to;
+  const date_from = when.date_from || when.date || SCENARIO.when.date_from;
+  const date_to = when.date_to || when.date || SCENARIO.when.date_to;
 
   const location = args.location || {};
   const lat = location.lat !== undefined ? Number(location.lat) : SCENARIO.anchor.lat;
@@ -216,14 +235,19 @@ function buildContext(args) {
   }
   const radius_m = location.radius_m !== undefined ? Number(location.radius_m) : SCENARIO.radius_m;
 
+  const nestedTravel = up.max_travel && up.max_travel.unit === 'minutes'
+    ? Number(up.max_travel.value) : undefined;
   const max_travel_minutes = up.max_travel_minutes !== undefined
-    ? Number(up.max_travel_minutes) : SCENARIO.max_travel_minutes;
+    ? Number(up.max_travel_minutes)
+    : Number.isFinite(nestedTravel) ? nestedTravel : SCENARIO.max_travel_minutes;
   const travel_mode = up.travel_mode || 'driving';
 
   return {
     vendor_type,
     user_profile: { ...up, vendor_type },
-    menu: Array.isArray(up.menu) ? up.menu : [],
+    menu: Array.isArray(up.menu)
+      ? up.menu
+      : (up.menu && Array.isArray(up.menu.items) ? up.menu.items : []),
     when: { day, time, hour, date_from, date_to },
     day, time, hour, date_from, date_to,
     location: { lat, lng, radius_m },
@@ -305,3 +329,5 @@ exports.main = guard(async (args) => {
 
   return ok({ spots: out });
 });
+
+exports.attachWhyLines = attachWhyLines;

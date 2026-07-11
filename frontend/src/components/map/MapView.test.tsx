@@ -79,7 +79,7 @@ describe('map result interaction', () => {
   it('moves card focus with horizontal arrow keys', async () => {
     const user = userEvent.setup()
     render(<RecommendationTray />)
-    const cards = screen.getAllByRole('button', { name: /Open details for rank/ })
+    const cards = screen.getAllByRole('button', { name: /Open details for suggested spot/ })
 
     cards[0].focus()
     await user.keyboard('{ArrowRight}')
@@ -92,7 +92,7 @@ describe('map result interaction', () => {
     const user = userEvent.setup()
     render(<FallbackMap />)
 
-    const marker = screen.getByRole('button', { name: /Recommendation 1:/ })
+    const marker = screen.getAllByRole('button', { name: /Suggested spot:/ })[0]
     marker.focus()
     await user.keyboard('{Enter}')
     expect(useAppStore.getState().selectedSpotId).toBe(spots[0].id)

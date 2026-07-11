@@ -1,0 +1,38 @@
+{
+  "closures": [
+    {
+      "id": "closure-5th-street-fair",
+      "reason": "5th Street community fair",
+      "source": "sfmta_event",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-122.4072, 37.7809],
+            [-122.4045, 37.7816],
+            [-122.4049, 37.7827],
+            [-122.4076, 37.782],
+            [-122.4072, 37.7809]
+          ]
+        ]
+      },
+      "active_from": "2026-07-10T10:00:00-07:00",
+      "active_to": "2026-07-10T18:00:00-07:00"
+    },
+    {
+      "id": "closure-howard-utility",
+      "reason": "Utility work lane closure",
+      "source": "dpw_permit",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-122.4026, 37.7849],
+          [-122.4002, 37.7855]
+        ]
+      },
+      "active_from": "2026-07-10T08:00:00-07:00",
+      "active_to": "2026-07-10T16:00:00-07:00"
+    }
+  ],
+  "count": 2
+}

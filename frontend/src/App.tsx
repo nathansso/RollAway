@@ -1,41 +1,56 @@
+import { useEffect } from 'react'
 import MapView from './components/map/MapView'
-import ChatSheet from './components/chat/ChatSheet'
+import SessionControls from './components/map/SessionControls'
+import RecommendationTray from './components/map/RecommendationTray'
 import SpotPanel from './components/spot/SpotPanel'
 import PermitChecklist from './components/permits/PermitChecklist'
-import OfflineGate from './components/shell/OfflineGate'
 import AppHeader from './components/shell/AppHeader'
+import BottomNav from './components/shell/BottomNav'
+import OfflineGate from './components/shell/OfflineGate'
+import ProfileEditor from './components/onboarding/ProfileEditor'
 import { useAppStore } from './store'
 
-/**
- * Always-mounted screen-reader announcer: reads out the latest copilot reply
- * even when the chat sheet is collapsed and MessageList is unmounted.
- */
-function CopilotAnnouncer() {
-  const messages = useAppStore((s) => s.messages)
-  const last = messages[messages.length - 1]
-  return (
-    <div aria-live="polite" role="status" className="sr-only">
-      {last?.role === 'assistant' ? last.content : ''}
-    </div>
-  )
-}
+export default function App() {
+  const activeTab = useAppStore((state) => state.activeTab)
+  const profile = useAppStore((state) => state.profile)
+  const locationStatus = useAppStore((state) => state.locationStatus)
+  const loadBaseData = useAppStore((state) => state.loadBaseData)
+  const requestLocation = useAppStore((state) => state.requestLocation)
 
-function App() {
+  useEffect(() => {
+    void loadBaseData()
+  }, [loadBaseData])
+
+  useEffect(() => {
+    if (profile && locationStatus === 'idle') requestLocation()
+  }, [profile, locationStatus, requestLocation])
+
   return (
     <OfflineGate>
+      <a href={activeTab === 'map' ? '#map-content' : '#permits-content'} className="skip-link">
+        Skip to main content
+      </a>
       <div className="relative h-dvh w-full overflow-hidden bg-background">
-        <CopilotAnnouncer />
-        {/* The map is the app — everything else floats above it */}
-        <MapView />
-        <AppHeader />
+        <div
+          id="map-content"
+          className={`absolute inset-0 ${activeTab === 'map' ? 'visible' : 'invisible'}`}
+          aria-hidden={activeTab !== 'map'}
+        >
+          <MapView />
+          <AppHeader />
+          <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4.25rem)] z-20 px-[max(0.75rem,env(safe-area-inset-left))]">
+            <SessionControls />
+          </div>
+          <div className="absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20">
+            <RecommendationTray />
+          </div>
+        </div>
 
-        {/* Bottom sheets: each self-gates on store.sheetView, one visible at a time */}
-        <ChatSheet />
-        <SpotPanel />
-        <PermitChecklist />
+        {activeTab === 'permits' && <PermitChecklist />}
+        <BottomNav />
+        {activeTab === 'map' && <SpotPanel />}
+        <ProfileEditor />
       </div>
     </OfflineGate>
   )
 }
-
-export default App

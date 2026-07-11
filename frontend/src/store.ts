@@ -1,224 +1,206 @@
-/**
- * App-wide state. Components read slices of this; sendMessage is the single
- * pathway that talks to the copilot and fans results out to map + panels.
- */
-
 import { create } from 'zustand'
+import { apiClient, ApiClientError } from './lib/apiClient'
+import {
+  PROFILE_STORAGE_KEY,
+  parseStoredProfile,
+  validateProfile,
+} from './lib/profile'
+import { createPresetWhen } from './lib/when'
+import { loadStringArray, saveJson } from './lib/storage'
 import type {
-  AddSpotAction,
-  ChatResponse,
-  Checklist,
-  Citation,
-  LatLng,
-  VendorType,
+  ClosuresResponse,
+  PermitChecklist,
+  RecommendSpotsRequest,
+  RecommendationSpot,
+  SessionWhen,
+  VendorCollection,
+  VendorProfile,
 } from './types/contract'
-import { sendChat, ChatClientError } from './lib/chatClient'
-import { getSessionId } from './lib/session'
 
-export interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  citations?: Citation[]
-  agent?: ChatResponse['agent']
-  error?: boolean
+export type AppTab = 'map' | 'permits'
+export type AsyncStatus = 'idle' | 'loading' | 'success' | 'error'
+export type LocationStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unavailable'
+
+const SOMA_FALLBACK = { lat: 37.7793, lng: -122.4013 }
+const PERMIT_PROGRESS_KEY = 'rollaway.permit-progress.v1'
+
+function permitProgressKey(profile: VendorProfile | null): string {
+  return `${PERMIT_PROGRESS_KEY}.${profile?.vendor_type ?? 'none'}`
 }
 
-export type SheetView = 'peek' | 'chat' | 'spot' | 'permits'
-
-const CHECKLIST_KEY = 'rollaway.checklist'
-const DONE_STEPS_KEY = 'rollaway.checklist.done'
-
-function safeGetItem(key: string): string | null {
+function storedProfile(): VendorProfile | null {
   try {
-    return localStorage.getItem(key)
+    return parseStoredProfile(localStorage.getItem(PROFILE_STORAGE_KEY))
   } catch {
     return null
   }
 }
 
-function loadStoredChecklist(): Checklist | null {
-  try {
-    const raw = localStorage.getItem(CHECKLIST_KEY)
-    if (!raw) return null
-    const checklist = JSON.parse(raw) as Checklist
-    const done = new Set<number>(
-      JSON.parse(localStorage.getItem(DONE_STEPS_KEY) ?? '[]') as number[],
-    )
-    for (const step of checklist.steps) {
-      step.status = done.has(step.order) ? 'done' : 'todo'
-    }
-    return checklist
-  } catch {
-    return null
-  }
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiClientError ? error.message : fallback
 }
 
 interface AppState {
-  // chat
-  messages: ChatMessage[]
-  sending: boolean
-  sendMessage: (text: string) => Promise<void>
+  activeTab: AppTab
+  setActiveTab: (tab: AppTab) => void
 
-  // vendor identity
-  vendorType: VendorType | null
-  setVendorType: (t: VendorType | null) => void
+  profile: VendorProfile | null
+  profileEditorOpen: boolean
+  openProfileEditor: () => void
+  closeProfileEditor: () => void
+  saveProfile: (profile: VendorProfile) => boolean
 
-  // map
-  mapCenter: LatLng
-  setMapCenter: (c: LatLng) => void
-  pinnedPoint: LatLng | null
-  setPinnedPoint: (p: LatLng | null) => void
-  pinMode: boolean
-  setPinMode: (on: boolean) => void
-  spots: AddSpotAction[]
-  /** Incremented each time new spots land, so the map knows to fly to them. */
-  spotsEpoch: number
+  when: SessionWhen
+  setWhen: (when: SessionWhen) => void
+  locationStatus: LocationStatus
+  location: { lat: number; lng: number }
+  requestLocation: () => void
 
-  // panels
+  vendors: VendorCollection | null
+  closures: ClosuresResponse | null
+  baseDataError: string | null
+  loadBaseData: () => Promise<void>
+
+  recommendationStatus: AsyncStatus
+  recommendationError: string | null
+  recommendations: RecommendationSpot[]
+  requestRecommendations: () => Promise<void>
   selectedSpotId: string | null
   selectSpot: (id: string | null) => void
-  checklist: Checklist | null
-  toggleStep: (order: number) => void
 
-  // bottom sheet
-  sheetView: SheetView
-  setSheetView: (v: SheetView) => void
+  permitStatus: AsyncStatus
+  permitError: string | null
+  permitChecklist: PermitChecklist | null
+  completedPermitItems: string[]
+  loadPermitChecklist: () => Promise<void>
+  togglePermitItem: (id: string) => void
 }
 
-export const useAppStore = create<AppState>((set, get) => ({
-  messages: [
-    {
-      id: 'welcome',
-      role: 'assistant',
-      content:
-        "Hey! I'm your Rollaway copilot. Ask me **where to set up** — or **what permits you need** to get legal. Try a quick prompt below.",
+export const useAppStore = create<AppState>((set, get) => {
+  const initialProfile = storedProfile()
+  return {
+    activeTab: 'map',
+    setActiveTab: (activeTab) => set({ activeTab }),
+
+    profile: initialProfile,
+    profileEditorOpen: initialProfile === null,
+    openProfileEditor: () => set({ profileEditorOpen: true }),
+    closeProfileEditor: () => {
+      if (get().profile) set({ profileEditorOpen: false })
     },
-  ],
-  sending: false,
-
-  vendorType:
-    (safeGetItem('rollaway.vendor_type') as VendorType | null) ?? null,
-  setVendorType: (t) => {
-    set({ vendorType: t })
-    try {
-      if (t) localStorage.setItem('rollaway.vendor_type', t)
-      else localStorage.removeItem('rollaway.vendor_type')
-    } catch {
-      // best-effort persistence
-    }
-  },
-
-  mapCenter: { lat: 37.7793, lng: -122.4013 }, // SoMa, San Francisco
-  setMapCenter: (c) => set({ mapCenter: c }),
-  pinnedPoint: null,
-  setPinnedPoint: (p) => set({ pinnedPoint: p }),
-  pinMode: false,
-  setPinMode: (on) => set({ pinMode: on, ...(on ? {} : { pinnedPoint: null }) }),
-  spots: [],
-  spotsEpoch: 0,
-
-  selectedSpotId: null,
-  selectSpot: (id) =>
-    set({ selectedSpotId: id, ...(id ? { sheetView: 'spot' as const } : {}) }),
-
-  checklist: loadStoredChecklist(),
-  toggleStep: (order) => {
-    const checklist = get().checklist
-    if (!checklist) return
-    const steps = checklist.steps.map((s) =>
-      s.order === order
-        ? { ...s, status: s.status === 'done' ? ('todo' as const) : ('done' as const) }
-        : s,
-    )
-    const next = { ...checklist, steps }
-    set({ checklist: next })
-    try {
-      localStorage.setItem(
-        DONE_STEPS_KEY,
-        JSON.stringify(steps.filter((s) => s.status === 'done').map((s) => s.order)),
-      )
-    } catch {
-      // best-effort persistence
-    }
-  },
-
-  sheetView: 'peek',
-  setSheetView: (v) => set({ sheetView: v }),
-
-  sendMessage: async (text: string) => {
-    const trimmed = text.trim()
-    if (!trimmed || get().sending) return
-
-    const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: trimmed,
-    }
-    set((s) => ({ messages: [...s.messages, userMsg], sending: true }))
-
-    try {
-      const res = await sendChat({
-        session_id: getSessionId(),
-        message: trimmed,
-        context: {
-          vendor_type: get().vendorType,
-          map_center: get().mapCenter,
-          pinned_point: get().pinnedPoint,
-        },
+    saveProfile: (profile) => {
+      if (!validateProfile(profile)) return false
+      set({
+        profile,
+        profileEditorOpen: false,
+        permitChecklist: null,
+        permitStatus: 'idle',
+        completedPermitItems: loadStringArray(permitProgressKey(profile)),
       })
+      saveJson(PROFILE_STORAGE_KEY, profile)
+      return true
+    },
 
-      const assistantMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: res.reply_markdown,
-        citations: res.citations,
-        agent: res.agent,
+    when: createPresetWhen('today_lunch'),
+    setWhen: (when) => set({ when }),
+    locationStatus: 'idle',
+    location: SOMA_FALLBACK,
+    requestLocation: () => {
+      if (!navigator.geolocation) {
+        set({ locationStatus: 'unavailable', location: SOMA_FALLBACK })
+        return
       }
+      set({ locationStatus: 'requesting' })
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) =>
+          set({
+            locationStatus: 'granted',
+            location: { lat: coords.latitude, lng: coords.longitude },
+          }),
+        (error) =>
+          set({
+            locationStatus: error.code === error.PERMISSION_DENIED ? 'denied' : 'unavailable',
+            location: SOMA_FALLBACK,
+          }),
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 120000 },
+      )
+    },
 
-      const patch: Partial<AppState> = {
-        messages: [...get().messages, assistantMsg],
-        sending: false,
+    vendors: null,
+    closures: null,
+    baseDataError: null,
+    loadBaseData: async () => {
+      try {
+        const [vendors, closures] = await Promise.all([
+          apiClient.getVendors(),
+          apiClient.getClosures(),
+        ])
+        set({ vendors, closures, baseDataError: null })
+      } catch (error) {
+        set({
+          baseDataError: errorMessage(error, 'Base map data is temporarily unavailable.'),
+        })
       }
+    },
 
-      if (res.map_actions) {
-        const spots = res.map_actions.filter(
-          (a): a is AddSpotAction => a.type === 'add_spot',
-        )
-        patch.spots = spots
-        if (spots.length > 0) patch.spotsEpoch = get().spotsEpoch + 1
-        patch.selectedSpotId = null
-        if (get().sheetView === 'spot') patch.sheetView = 'chat'
+    recommendationStatus: 'idle',
+    recommendationError: null,
+    recommendations: [],
+    requestRecommendations: async () => {
+      const { profile, location, when, recommendationStatus } = get()
+      if (!profile || recommendationStatus === 'loading') return
+      set({ recommendationStatus: 'loading', recommendationError: null, selectedSpotId: null })
+      const request: RecommendSpotsRequest = {
+        vendor_type: profile.vendor_type,
+        menu: profile.menu,
+        location,
+        when,
+        max_travel: profile.max_travel,
       }
-
-      if (res.checklist) {
-        patch.checklist = res.checklist
-        try {
-          localStorage.setItem(CHECKLIST_KEY, JSON.stringify(res.checklist))
-          localStorage.setItem(DONE_STEPS_KEY, '[]')
-        } catch {
-          // best-effort persistence
-        }
+      try {
+        const response = await apiClient.recommendSpots(request)
+        set({
+          recommendations: response.recommendations,
+          recommendationStatus: 'success',
+        })
+      } catch (error) {
+        set({
+          recommendationStatus: 'error',
+          recommendationError: errorMessage(
+            error,
+            'Recommendations could not be loaded. Try again.',
+          ),
+        })
       }
+    },
+    selectedSpotId: null,
+    selectSpot: (selectedSpotId) => set({ selectedSpotId }),
 
-      set(patch)
-    } catch (err) {
-      const message =
-        err instanceof ChatClientError
-          ? err.message
-          : 'Something went wrong. Please try again.'
-      set((s) => ({
-        messages: [
-          ...s.messages,
-          {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: message,
-            error: true,
-          },
-        ],
-        sending: false,
-      }))
-    }
-  },
-}))
+    permitStatus: 'idle',
+    permitError: null,
+    permitChecklist: null,
+    completedPermitItems: loadStringArray(permitProgressKey(initialProfile)),
+    loadPermitChecklist: async () => {
+      const { profile, permitStatus } = get()
+      if (!profile || permitStatus === 'loading') return
+      set({ permitStatus: 'loading', permitError: null })
+      try {
+        const permitChecklist = await apiClient.getPermitChecklist(profile.vendor_type)
+        set({ permitChecklist, permitStatus: 'success' })
+      } catch (error) {
+        set({
+          permitStatus: 'error',
+          permitError: errorMessage(error, 'Permit guidance could not be loaded. Try again.'),
+        })
+      }
+    },
+    togglePermitItem: (id) => {
+      const completed = new Set(get().completedPermitItems)
+      if (completed.has(id)) completed.delete(id)
+      else completed.add(id)
+      const completedPermitItems = [...completed]
+      set({ completedPermitItems })
+      saveJson(permitProgressKey(get().profile), completedPermitItems)
+    },
+  }
+})

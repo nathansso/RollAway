@@ -1,374 +1,294 @@
-/**
- * MapView — the app's centerpiece. Full-screen Mapbox map that renders:
- *  - the seed layer of permitted vendors (clustered, color-coded by status)
- *  - scored spots from the copilot (verdict-colored pin markers with scores)
- *  - a pin-drop mode so vendors can ask "am I allowed here?"
- *
- * It reads/writes ONLY the zustand store: mapCenter syncs out on moveend,
- * spot taps call selectSpot, pin drops call setPinnedPoint.
- */
-
 import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
-import type { GeoJSONSource } from 'mapbox-gl'
-import type { Point } from 'geojson'
 import { useAppStore } from '../../store'
-import { loadVendors } from '../../lib/vendorSource'
-import type { VendorProperties } from '../../types/contract'
+import { isWithinSanFrancisco } from '../../lib/sfBounds'
 import {
-  buildPinElement,
   buildSpotMarkerElement,
+  buildUserMarkerElement,
   buildVendorPopup,
+  vendorMarkerLabel,
 } from './markers'
+import {
+  attachMapFailureFallback,
+  getFitCoordinates,
+  initializeMapbox,
+  shouldShowRecenter,
+} from './mapBounds'
+import { syncClosureOverlay, syncVendorOverlay } from './mapOverlays'
 
-const MAPBOX_TOKEN = (import.meta.env.VITE_MAPBOX_TOKEN as string | undefined) ?? ''
-const MAP_STYLE = 'mapbox://styles/mapbox/streets-v12'
+const MAPBOX_TOKEN = String(import.meta.env.VITE_MAPBOX_TOKEN ?? '')
+const MAP_ENABLED = Boolean(MAPBOX_TOKEN)
 
-const VENDOR_SOURCE = 'vendors'
-const LAYER_CLUSTERS = 'vendor-clusters'
-const LAYER_CLUSTER_COUNT = 'vendor-cluster-count'
-const LAYER_POINTS = 'vendor-points'
-const LAYER_POINTS_HIT = 'vendor-points-hit'
-
-// Vendor permit-status colors (green = active, amber = pending, slate = inactive)
-const STATUS_ACTIVE = '#16a34a'
-const STATUS_PENDING = '#d97706'
-const STATUS_INACTIVE = '#94a3b8'
-
-type MapFailure = 'missing-token' | 'load-failed'
-
-/** Fetches the seed vendors and adds the clustered source + layers. */
-async function addVendorLayers(map: mapboxgl.Map): Promise<void> {
-  const vendors = await loadVendors()
-  try {
-    if (map.getSource(VENDOR_SOURCE)) return
-    map.addSource(VENDOR_SOURCE, {
-      type: 'geojson',
-      data: vendors,
-      cluster: true,
-      clusterMaxZoom: 14,
-      clusterRadius: 50,
-    })
-
-    map.addLayer({
-      id: LAYER_CLUSTERS,
-      type: 'circle',
-      source: VENDOR_SOURCE,
-      filter: ['has', 'point_count'],
-      paint: {
-        'circle-color': '#ea580c', // brand primary
-        'circle-radius': ['step', ['get', 'point_count'], 16, 10, 20, 25, 26],
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#ffffff',
-      },
-    })
-
-    map.addLayer({
-      id: LAYER_CLUSTER_COUNT,
-      type: 'symbol',
-      source: VENDOR_SOURCE,
-      filter: ['has', 'point_count'],
-      layout: {
-        'text-field': ['get', 'point_count_abbreviated'],
-        'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
-        'text-size': 13,
-      },
-      paint: { 'text-color': '#ffffff' },
-    })
-
-    // Invisible hit-area under each vendor dot: the visible dot is only
-    // ~18px, so taps land on this larger transparent circle instead.
-    map.addLayer({
-      id: LAYER_POINTS_HIT,
-      type: 'circle',
-      source: VENDOR_SOURCE,
-      filter: ['!', ['has', 'point_count']],
-      paint: {
-        'circle-radius': 22,
-        'circle-opacity': 0,
-      },
-    })
-
-    map.addLayer({
-      id: LAYER_POINTS,
-      type: 'circle',
-      source: VENDOR_SOURCE,
-      filter: ['!', ['has', 'point_count']],
-      paint: {
-        'circle-color': [
-          'match',
-          ['get', 'status'],
-          'APPROVED',
-          STATUS_ACTIVE,
-          'ISSUED',
-          STATUS_ACTIVE,
-          'REQUESTED',
-          STATUS_PENDING,
-          /* EXPIRED / SUSPEND / anything else */ STATUS_INACTIVE,
-        ],
-        'circle-radius': 7,
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#ffffff',
-      },
-    })
-  } catch {
-    // Map was removed while vendors were loading — nothing to clean up.
-  }
-}
-
-export default function MapView() {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<mapboxgl.Map | null>(null)
-  const spotMarkersRef = useRef<mapboxgl.Marker[]>([])
-  const pinMarkerRef = useRef<mapboxgl.Marker | null>(null)
-  const lastEpochRef = useRef(0)
-  const loadedRef = useRef(false)
-
-  const [failure, setFailure] = useState<MapFailure | null>(
-    MAPBOX_TOKEN ? null : 'missing-token',
+export function FallbackMap() {
+  const vendors = useAppStore((state) => state.vendors)
+  const closures = useAppStore((state) => state.closures)
+  const recommendations = useAppStore((state) => state.recommendations)
+  const selectSpot = useAppStore((state) => state.selectSpot)
+  const [selectedVendor, setSelectedVendor] = useState<string | null>(null)
+  const selectedVendorFeature = vendors?.features.find(
+    (vendor) => vendor.properties.permit_id === selectedVendor,
   )
 
-  const spots = useAppStore((s) => s.spots)
-  const spotsEpoch = useAppStore((s) => s.spotsEpoch)
-  const pinMode = useAppStore((s) => s.pinMode)
-  const pinnedPoint = useAppStore((s) => s.pinnedPoint)
+  return (
+    <div className="fallback-map" role="region" aria-label="Schematic map of SoMa">
+      <div className="fallback-map__grid" aria-hidden="true" />
+      <div className="fallback-map__street fallback-map__street--one" aria-hidden="true" />
+      <div className="fallback-map__street fallback-map__street--two" aria-hidden="true" />
+      {(closures?.count ?? 0) > 0 && (
+        <div className="fallback-map__closure" aria-hidden="true" />
+      )}
+      <div className="fallback-map__label fallback-map__label--one">Howard St</div>
+      <div className="fallback-map__label fallback-map__label--two">Mission St</div>
+      <div className="fallback-map__user" aria-label="Approximate location" />
+      {(vendors?.features ?? []).slice(0, 9).map((vendor, index) => (
+        <button
+          key={vendor.properties.permit_id}
+          type="button"
+          className="fallback-map__vendor"
+          title={vendor.properties.name}
+          aria-label={vendorMarkerLabel(vendor.properties)}
+          aria-pressed={selectedVendor === vendor.properties.permit_id}
+          onClick={() => setSelectedVendor(vendor.properties.permit_id)}
+          style={{
+            left: `${18 + ((index * 17) % 68)}%`,
+            top: `${25 + ((index * 23) % 48)}%`,
+          }}
+        />
+      ))}
+      {selectedVendorFeature && (
+        <div className="fallback-map__vendor-detail" role="status">
+          {vendorMarkerLabel(selectedVendorFeature.properties)}
+        </div>
+      )}
+      {recommendations.map((spot, index) => (
+        <button
+          key={spot.id}
+          type="button"
+          className={`fallback-rank fallback-rank--${spot.verdict}`}
+          style={{ left: `${37 + index * 17}%`, top: `${32 + index * 14}%` }}
+          aria-label={`Recommendation ${spot.rank}: ${spot.block_label}. Open details.`}
+          onClick={() => selectSpot(spot.id)}
+        >
+          {spot.rank}
+        </button>
+      ))}
+      <div className="fallback-map__notice">
+        <strong>Map preview</strong>
+        <span>
+          {MAPBOX_TOKEN
+            ? 'Map tiles are unavailable. Rollaway data remains usable.'
+            : 'Add a public Mapbox token for live streets and pan controls.'}
+        </span>
+        <span className="mt-1 text-[11px]">
+          {vendors?.features.length ?? 0} vendors · {closures?.count ?? 0} active closures
+        </span>
+      </div>
+    </div>
+  )
+}
 
-  // --- map lifecycle: create exactly once, tear down fully on unmount ---
+export function RecenterControl({ onRecenter }: { onRecenter: () => void }) {
+  return (
+    <button
+      type="button"
+      className="map-recenter"
+      aria-label="Recenter map on your origin"
+      onClick={onRecenter}
+    >
+      <span aria-hidden="true">◎</span>
+    </button>
+  )
+}
+
+interface MapViewProps {
+  onViewReadyChange?: (ready: boolean) => void
+}
+
+export default function MapView({ onViewReadyChange }: MapViewProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const mapRef = useRef<mapboxgl.Map | null>(null)
+  const spotMarkers = useRef<mapboxgl.Marker[]>([])
+  const vendorPopup = useRef<mapboxgl.Popup | null>(null)
+  const userMarker = useRef<mapboxgl.Marker | null>(null)
+  const [mapReady, setMapReady] = useState(false)
+  const [failed, setFailed] = useState(!MAP_ENABLED)
+
+  const vendors = useAppStore((state) => state.vendors)
+  const closures = useAppStore((state) => state.closures)
+  const recommendations = useAppStore((state) => state.recommendations)
+  const location = useAppStore((state) => state.location)
+  const locationStatus = useAppStore((state) => state.locationStatus)
+  const selectedSpotId = useAppStore((state) => state.selectedSpotId)
+  const baseDataError = useAppStore((state) => state.baseDataError)
+
   useEffect(() => {
-    if (!MAPBOX_TOKEN || !containerRef.current) return
-
-    mapboxgl.accessToken = MAPBOX_TOKEN
+    if (!MAP_ENABLED || !containerRef.current) return
     let map: mapboxgl.Map
     try {
-      const center = useAppStore.getState().mapCenter
-      map = new mapboxgl.Map({
-        container: containerRef.current,
-        style: MAP_STYLE,
-        center: [center.lng, center.lat],
-        zoom: 13,
-      })
+      map = initializeMapbox(mapboxgl, containerRef.current, MAPBOX_TOKEN)
     } catch {
-      setFailure('load-failed')
+      setFailed(true)
       return
     }
     mapRef.current = map
-
-    // The container can be zero-height at construction (font/CSS timing) and
-    // changes size with mobile browser chrome — keep the canvas in sync.
-    const ro = new ResizeObserver(() => map.resize())
-    ro.observe(containerRef.current)
-
-    map.on('load', () => {
-      loadedRef.current = true
-      map.resize()
-      void addVendorLayers(map)
+    const observer = new ResizeObserver(() => map.resize())
+    observer.observe(containerRef.current)
+    const clearFailureHandlers = attachMapFailureFallback(map, {
+      onReady: () => {
+        setFailed(false)
+        setMapReady(true)
+        map.resize()
+      },
+      onFailure: () => setFailed(true),
     })
-
-    // Fatal only before first load (bad/expired token, blocked style fetch).
-    // Transient tile errors on a working map shouldn't nuke it.
-    map.on('error', (e) => {
-      const msg = e.error?.message ?? ''
-      if (!loadedRef.current && /token|unauthorized|forbidden|401|403/i.test(msg)) {
-        setFailure('load-failed')
-      }
-    })
-
-    // Keep the store's map_center in sync so chat requests carry it.
-    map.on('moveend', () => {
-      const c = map.getCenter()
-      useAppStore.getState().setMapCenter({ lat: c.lat, lng: c.lng })
-    })
-
-    // Pin-drop: a plain map tap sets the pinned point while pin mode is on.
-    map.on('click', (e) => {
-      const s = useAppStore.getState()
-      if (!s.pinMode) return
-      s.setPinnedPoint({ lat: e.lngLat.lat, lng: e.lngLat.lng })
-    })
-
-    // Cluster tap -> zoom into the cluster (unless the user is dropping a pin).
-    map.on('click', LAYER_CLUSTERS, (e) => {
-      if (useAppStore.getState().pinMode) return
-      const feature = e.features?.[0]
-      if (!feature || feature.geometry.type !== 'Point') return
-      const clusterId = feature.properties?.cluster_id as number | undefined
-      if (clusterId === undefined) return
-      const source = map.getSource(VENDOR_SOURCE) as GeoJSONSource | undefined
-      source?.getClusterExpansionZoom(clusterId, (err, zoom) => {
-        if (err || zoom === null || zoom === undefined) return
-        map.easeTo({
-          center: (feature.geometry as Point).coordinates as [number, number],
-          zoom,
-          duration: 300,
-        })
-      })
-    })
-
-    // Vendor tap -> popup with name, cuisine, type, status chip.
-    map.on('click', LAYER_POINTS_HIT, (e) => {
-      if (useAppStore.getState().pinMode) return
-      const feature = e.features?.[0]
-      if (!feature || feature.geometry.type !== 'Point') return
-      const props = feature.properties as unknown as VendorProperties
-      const [lng, lat] = feature.geometry.coordinates
-      new mapboxgl.Popup({ offset: 14, maxWidth: '260px' })
-        .setLngLat([lng, lat])
-        .setDOMContent(buildVendorPopup(props))
-        .addTo(map)
-    })
-
-    for (const layer of [LAYER_CLUSTERS, LAYER_POINTS_HIT]) {
-      map.on('mouseenter', layer, () => {
-        if (!useAppStore.getState().pinMode) {
-          map.getCanvas().style.cursor = 'pointer'
-        }
-      })
-      map.on('mouseleave', layer, () => {
-        map.getCanvas().style.cursor = useAppStore.getState().pinMode
-          ? 'crosshair'
-          : ''
-      })
-    }
-
     return () => {
-      ro.disconnect()
-      for (const m of spotMarkersRef.current) m.remove()
-      spotMarkersRef.current = []
-      pinMarkerRef.current?.remove()
-      pinMarkerRef.current = null
-      loadedRef.current = false
+      clearFailureHandlers()
+      observer.disconnect()
+      spotMarkers.current.forEach((marker) => marker.remove())
+      vendorPopup.current?.remove()
+      userMarker.current?.remove()
+      spotMarkers.current = []
+      vendorPopup.current = null
+      userMarker.current = null
       mapRef.current = null
       map.remove()
     }
   }, [])
 
-  // --- scored spots: verdict pins + fit-to-bounds on each new batch ---
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
+    if (!map || !mapReady) return
+    vendorPopup.current?.remove()
+    vendorPopup.current = null
+    syncVendorOverlay(map, vendors)
+  }, [vendors, mapReady])
 
-    for (const m of spotMarkersRef.current) m.remove()
-    spotMarkersRef.current = spots.map((spot) => {
-      const el = buildSpotMarkerElement(spot, () =>
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !mapReady) return
+    const onVendorClick = (event: mapboxgl.MapLayerMouseEvent) => {
+      const feature = event.features?.[0]
+      if (!feature?.geometry || feature.geometry.type !== 'Point') return
+      const [lng, lat] = feature.geometry.coordinates as [number, number]
+      map.easeTo({
+        center: [lng, lat],
+        duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 350,
+      })
+      vendorPopup.current?.remove()
+      vendorPopup.current = new mapboxgl.Popup({ offset: 14, maxWidth: '260px' })
+        .setLngLat([lng, lat])
+        .setDOMContent(buildVendorPopup(feature.properties as never))
+        .addTo(map)
+    }
+    const onVendorEnter = () => {
+      map.getCanvas().style.cursor = 'pointer'
+    }
+    const onVendorLeave = () => {
+      map.getCanvas().style.cursor = ''
+    }
+    map.on('click', 'vendor-dots', onVendorClick)
+    map.on('mouseenter', 'vendor-dots', onVendorEnter)
+    map.on('mouseleave', 'vendor-dots', onVendorLeave)
+    return () => {
+      map.off('click', 'vendor-dots', onVendorClick)
+      map.off('mouseenter', 'vendor-dots', onVendorEnter)
+      map.off('mouseleave', 'vendor-dots', onVendorLeave)
+    }
+  }, [mapReady])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !mapReady) return
+    syncClosureOverlay(map, closures)
+  }, [closures, mapReady])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !mapReady) return
+    spotMarkers.current.forEach((marker) => marker.remove())
+    spotMarkers.current = recommendations.map((spot) => {
+      const element = buildSpotMarkerElement(spot, () =>
         useAppStore.getState().selectSpot(spot.id),
       )
-      const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+      return new mapboxgl.Marker({ element, anchor: 'bottom' })
         .setLngLat([spot.point.lng, spot.point.lat])
         .addTo(map)
-      // mapbox stamps role="img" on marker elements; ours are real buttons
-      el.setAttribute('role', 'button')
-      return marker
     })
-
-    if (spots.length > 0 && spotsEpoch !== lastEpochRef.current) {
-      lastEpochRef.current = spotsEpoch
+    if (recommendations.length > 0) {
       const bounds = new mapboxgl.LngLatBounds()
-      for (const s of spots) bounds.extend([s.point.lng, s.point.lat])
-      map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 900 })
+      getFitCoordinates(recommendations, location).forEach((coordinate) =>
+        bounds.extend(coordinate),
+      )
+      map.fitBounds(bounds, {
+        padding: { top: 190, right: 55, bottom: 230, left: 55 },
+        maxZoom: 15.5,
+        duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 700,
+      })
     }
-  }, [spots, spotsEpoch])
+  }, [location, recommendations, mapReady])
 
-  // --- pin-drop marker: exists only while pin mode is on and a point is set ---
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
-
-    if (!pinMode || !pinnedPoint) {
-      pinMarkerRef.current?.remove()
-      pinMarkerRef.current = null
-      return
+    if (!map || !mapReady) return
+    if (!userMarker.current) {
+      userMarker.current = new mapboxgl.Marker({
+        element: buildUserMarkerElement(),
+        anchor: 'center',
+      })
+        .setLngLat([location.lng, location.lat])
+        .addTo(map)
     }
-
-    if (pinMarkerRef.current) {
-      pinMarkerRef.current.setLngLat([pinnedPoint.lng, pinnedPoint.lat])
-      return
+    userMarker.current.setLngLat([location.lng, location.lat])
+    if (locationStatus === 'granted') {
+      map.easeTo({
+        center: [location.lng, location.lat],
+        duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 450,
+      })
     }
+  }, [location, locationStatus, mapReady])
 
-    const marker = new mapboxgl.Marker({
-      element: buildPinElement(),
-      anchor: 'bottom',
-      draggable: true,
-    })
-      .setLngLat([pinnedPoint.lng, pinnedPoint.lat])
-      .addTo(map)
-    marker.on('dragend', () => {
-      const { lat, lng } = marker.getLngLat()
-      useAppStore.getState().setPinnedPoint({ lat, lng })
-    })
-    pinMarkerRef.current = marker
-  }, [pinMode, pinnedPoint])
-
-  // --- crosshair cursor while pin mode is on ---
   useEffect(() => {
     const map = mapRef.current
-    if (!map) return
-    map.getCanvas().style.cursor = pinMode ? 'crosshair' : ''
-  }, [pinMode])
+    if (!map || !mapReady || !selectedSpotId) return
+    const selected = recommendations.find((spot) => spot.id === selectedSpotId)
+    if (!selected || !isWithinSanFrancisco(selected.point)) return
+    map.easeTo({
+      center: [selected.point.lng, selected.point.lat],
+      zoom: Math.max(map.getZoom(), 15),
+      duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 450,
+    })
+  }, [mapReady, recommendations, selectedSpotId])
+
+  const recenter = () => {
+    mapRef.current?.easeTo({
+      center: [location.lng, location.lat],
+      zoom: Math.max(mapRef.current.getZoom(), 14),
+      duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 450,
+    })
+  }
+
+  useEffect(() => {
+    const baseLayersReady =
+      (vendors !== null && closures !== null) || Boolean(baseDataError)
+    onViewReadyChange?.((failed || mapReady) && baseLayersReady)
+  }, [baseDataError, closures, failed, mapReady, onViewReadyChange, vendors])
 
   return (
-    <div className="absolute inset-0">
-      {/* h-full/w-full are load-bearing: mapbox's unlayered `.mapboxgl-map
-          {position:relative}` overrides Tailwind's layered `absolute`, so
-          inset-0 alone collapses this container to zero height. */}
+    <div className="absolute inset-0 bg-background">
       <div
         ref={containerRef}
-        className="absolute inset-0 h-full w-full"
+        className={`absolute inset-0 h-full w-full ${failed || !mapReady ? 'invisible' : ''}`}
         role="application"
-        aria-label="Map of San Francisco street-food vendors and scored spots"
+        aria-label="Interactive map of recommendations, permitted vendors, closures, and your location"
       />
-
-      {pinMode && !failure && (
-        <div className="pointer-events-none absolute inset-x-0 top-4 z-10 flex justify-center">
-          <div className="flex min-h-11 items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-white shadow-lg">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="7" />
-              <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
-            </svg>
-            Tap the map to drop a pin
-          </div>
-        </div>
-      )}
-
-      {failure && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-background p-6">
-          <div className="max-w-sm rounded-2xl border border-border bg-white p-6 text-center shadow-lg">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-primary">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4Z" />
-                <path d="M9 4v14M15 6v14" />
-              </svg>
-            </div>
-            <h2 className="mt-4 font-display text-xl text-foreground">
-              Map unavailable
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {failure === 'missing-token'
-                ? 'No Mapbox token found. Add VITE_MAPBOX_TOKEN to frontend/.env and restart the dev server.'
-                : "The map couldn't load. The Mapbox token may be invalid, or the network is blocking Mapbox."}
-            </p>
-            <p className="mt-3 text-xs text-muted-foreground">
-              Chat and the permit checklist still work without the map.
-            </p>
-          </div>
+      {(failed || !mapReady) && <FallbackMap />}
+      {shouldShowRecenter(mapReady, failed) && <RecenterControl onRecenter={recenter} />}
+      {baseDataError && (
+        <div
+          role="alert"
+          className="absolute inset-x-3 top-[17rem] z-10 mx-auto max-w-sm rounded-xl border border-destructive/30 bg-white/95 px-4 py-3 text-sm font-medium text-destructive shadow-md"
+        >
+          {baseDataError}
         </div>
       )}
     </div>

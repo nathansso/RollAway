@@ -1,41 +1,168 @@
+import { useEffect, useState } from 'react'
 import MapView from './components/map/MapView'
-import ChatSheet from './components/chat/ChatSheet'
+import SessionControls from './components/map/SessionControls'
+import RecommendationTray from './components/map/RecommendationTray'
 import SpotPanel from './components/spot/SpotPanel'
 import PermitChecklist from './components/permits/PermitChecklist'
-import OfflineGate from './components/shell/OfflineGate'
 import AppHeader from './components/shell/AppHeader'
+import BottomNav from './components/shell/BottomNav'
+import OfflineGate from './components/shell/OfflineGate'
+import ProfileEditor from './components/onboarding/ProfileEditor'
+import SessionSetup from './components/onboarding/SessionSetup'
+import FullScreenLoader from './components/common/FullScreenLoader'
 import { useAppStore } from './store'
 
-/**
- * Always-mounted screen-reader announcer: reads out the latest copilot reply
- * even when the chat sheet is collapsed and MessageList is unmounted.
- */
-function CopilotAnnouncer() {
-  const messages = useAppStore((s) => s.messages)
-  const last = messages[messages.length - 1]
-  return (
-    <div aria-live="polite" role="status" className="sr-only">
-      {last?.role === 'assistant' ? last.content : ''}
+export default function App() {
+  const appPhase = useAppStore((state) => state.appPhase)
+  const activeTab = useAppStore((state) => state.activeTab)
+  const location = useAppStore((state) => state.location)
+  const locationStatus = useAppStore((state) => state.locationStatus)
+  const when = useAppStore((state) => state.when)
+  const profileEditorOpen = useAppStore((state) => state.profileEditorOpen)
+  const selectedSpotId = useAppStore((state) => state.selectedSpotId)
+  const recommendationStatus = useAppStore((state) => state.recommendationStatus)
+  const loadBaseData = useAppStore((state) => state.loadBaseData)
+  const [mapViewReady, setMapViewReady] = useState(false)
+  const [fontsReady, setFontsReady] = useState(false)
+  const [mapRevealed, setMapRevealed] = useState(false)
+
+  useEffect(() => {
+    if (
+      (appPhase !== 'ready' && appPhase !== 'loading_recommendations') ||
+      locationStatus === 'requesting'
+    ) {
+      return
+    }
+    void loadBaseData()
+  }, [
+    appPhase,
+    loadBaseData,
+    locationStatus,
+    location.lat,
+    location.lng,
+    when.date,
+    when.time_from,
+    when.time_to,
+  ])
+
+  useEffect(() => {
+    if (!('fonts' in document)) {
+      setFontsReady(true)
+      return
+    }
+    let cancelled = false
+    void document.fonts.ready.then(() => {
+      if (!cancelled) setFontsReady(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (appPhase === 'session' || appPhase === 'profile') {
+      setMapRevealed(false)
+      setMapViewReady(false)
+    }
+    if (appPhase === 'loading_recommendations') setMapRevealed(false)
+  }, [appPhase])
+
+  useEffect(() => {
+    if (
+      appPhase === 'ready' &&
+      recommendationStatus === 'success' &&
+      mapViewReady &&
+      fontsReady
+    ) {
+      setMapRevealed(true)
+    }
+  }, [appPhase, fontsReady, mapViewReady, recommendationStatus])
+
+  const recommendationRevealPending =
+    appPhase === 'loading_recommendations' ||
+    (appPhase === 'ready' && recommendationStatus === 'success' && !mapRevealed)
+
+  const mapShell = (
+    <div className="relative h-dvh w-full overflow-hidden bg-background">
+      <div
+        className="contents"
+        inert={profileEditorOpen || selectedSpotId || recommendationRevealPending ? true : undefined}
+      >
+        <div
+          id="map-content"
+          tabIndex={-1}
+          className={`absolute inset-0 ${activeTab === 'map' ? 'visible' : 'invisible'}`}
+          aria-hidden={activeTab !== 'map'}
+        >
+          <MapView onViewReadyChange={setMapViewReady} />
+          <AppHeader />
+          <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4.25rem)] z-20 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))]">
+            <SessionControls />
+          </div>
+          {!recommendationRevealPending && (
+            <div className="absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20">
+              <RecommendationTray />
+            </div>
+          )}
+        </div>
+
+        {activeTab === 'permits' && <PermitChecklist />}
+        <BottomNav />
+      </div>
+      {activeTab === 'map' && <SpotPanel />}
+      <ProfileEditor />
+      {recommendationRevealPending && <FullScreenLoader operation="recommendations" />}
     </div>
   )
-}
 
-function App() {
+  if (appPhase === 'profile') {
+    return (
+      <OfflineGate>
+        <ProfileEditor />
+      </OfflineGate>
+    )
+  }
+
+  if (appPhase === 'session') {
+    return (
+      <OfflineGate>
+        <div
+          className="contents"
+          inert={profileEditorOpen ? true : undefined}
+          aria-hidden={profileEditorOpen}
+        >
+          <SessionSetup />
+        </div>
+        <ProfileEditor />
+      </OfflineGate>
+    )
+  }
+
+  if (appPhase === 'loading_recommendations') {
+    return (
+      <OfflineGate>
+        {mapShell}
+      </OfflineGate>
+    )
+  }
+
+  if (appPhase === 'loading_permits') {
+    return (
+      <OfflineGate>
+        <FullScreenLoader operation="permits" />
+      </OfflineGate>
+    )
+  }
+
   return (
     <OfflineGate>
-      <div className="relative h-dvh w-full overflow-hidden bg-background">
-        <CopilotAnnouncer />
-        {/* The map is the app — everything else floats above it */}
-        <MapView />
-        <AppHeader />
-
-        {/* Bottom sheets: each self-gates on store.sheetView, one visible at a time */}
-        <ChatSheet />
-        <SpotPanel />
-        <PermitChecklist />
-      </div>
+      <a
+        href={activeTab === 'map' ? '#map-content' : '#permits-content'}
+        className="skip-link"
+      >
+        Skip to main content
+      </a>
+      {mapShell}
     </OfflineGate>
   )
 }
-
-export default App

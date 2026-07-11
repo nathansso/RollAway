@@ -3,7 +3,7 @@
 # Usage:  doctl apps create --spec .do/app.yaml
 #         (or import via the DO dashboard: Apps -> Create App -> Edit Spec)
 #
-# After integration, flip `branch: feat/frontend` -> `branch: main`.
+# After integration, flip `branch: feat/frontend-mapapp` -> `branch: main`.
 # Set the SECRET value for VITE_MAPBOX_TOKEN in the dashboard — never commit it.
 
 name: rollaway
@@ -13,7 +13,7 @@ static_sites:
   - name: rollaway-frontend
     github:
       repo: nathansso/RollAway
-      branch: feat/frontend
+      branch: feat/frontend-mapapp
       deploy_on_push: true
     source_dir: frontend
     build_command: npm ci && npm run build
@@ -26,16 +26,24 @@ static_sites:
       - key: VITE_MAPBOX_TOKEN
         type: SECRET
         scope: BUILD_TIME
-      # Person 2's routed /chat endpoint. Leave empty while on fixtures.
-      - key: VITE_CHAT_ENDPOINT
+      # Native structured recommendation endpoint.
+      - key: VITE_RECOMMEND_SPOTS_URL
         scope: BUILD_TIME
         value: ""
-      # Person 3's get_vendors?format=geojson URL. Empty -> bundled fixture.
+      # Base-layer and permit endpoints. Empty while fixture mode is enabled.
       - key: VITE_VENDORS_URL
         scope: BUILD_TIME
         value: ""
-      # "true" = canned fixture answers (demo-safe). Flip to "false" once
-      # VITE_CHAT_ENDPOINT is live.
+      - key: VITE_CLOSURES_URL
+        scope: BUILD_TIME
+        value: ""
+      - key: VITE_PERMIT_CHECKLIST_URL
+        scope: BUILD_TIME
+        value: ""
+      # "true" = deterministic, zero-network API fixtures.
       - key: VITE_USE_FIXTURES
         scope: BUILD_TIME
         value: "true"
+      - key: VITE_FIXTURE_DELAY_MS
+        scope: BUILD_TIME
+        value: "1100"

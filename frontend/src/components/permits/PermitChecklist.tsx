@@ -1,346 +1,204 @@
-/**
- * Permit checklist sheet — renders the §D `checklist` shape as an ordered,
- * agency-grouped to-do list. Shown when store.sheetView === 'permits'.
- */
-
-import { useEffect, useRef, useState } from 'react'
-import { useAppStore } from '../../store'
-import type { ChecklistStep } from '../../types/contract'
+import { useState } from 'react'
 import {
-  VENDOR_TYPE_LABELS,
-  agencyDotClass,
-  groupStepsByAgency,
-} from './permitHelpers'
+  CheckIcon,
+  ChevronIcon,
+  ClockIcon,
+  FileIcon,
+  PermitIcon,
+  UserIcon,
+} from '../common/Icons'
+import EasyApplyModal from './EasyApplyModal'
+import { useAppStore } from '../../store'
+import type { PermitChecklistItem } from '../../types/contract'
 
-/* ---------- inline icons (stroke = currentColor) ---------- */
-
-function CloseIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      aria-hidden="true"
-    >
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  )
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M5 13l4 4L19 7" />
-    </svg>
-  )
-}
-
-function ClockIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
-    </svg>
-  )
-}
-
-function DocIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
-      <path d="M14 3v5h5" />
-    </svg>
-  )
-}
-
-function TruckIcon() {
-  return (
-    <svg
-      width="56"
-      height="56"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M1 7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v9H1z" />
-      <path d="M15 10h4l3 3v3h-7" />
-      <circle cx="6" cy="18" r="2" />
-      <circle cx="18" cy="18" r="2" />
-      <path d="M4 10h6" />
-    </svg>
-  )
-}
-
-/* ---------- step row ---------- */
-
-interface StepRowProps {
-  step: ChecklistStep
-  expanded: boolean
-  onToggleCite: () => void
-}
-
-function StepRow({ step, expanded, onToggleCite }: StepRowProps) {
-  const toggleStep = useAppStore((s) => s.toggleStep)
-  const done = step.status === 'done'
-
-  return (
-    <li className="flex gap-3 rounded-2xl bg-white p-3 shadow-sm border border-border">
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={done}
-        aria-label={`Mark step ${step.order}, ${step.title}, as ${done ? 'not done' : 'done'}`}
-        onClick={() => toggleStep(step.order)}
-        className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-          done
-            ? 'border-good bg-good text-white'
-            : 'border-border bg-muted text-transparent hover:border-primary'
-        }`}
-      >
-        <CheckIcon />
-      </button>
-
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <span className="font-mono text-xs text-muted-foreground">
-            {step.order}.
-          </span>
-          <span
-            className={`text-sm font-semibold leading-snug ${
-              done ? 'text-muted-foreground line-through' : 'text-foreground'
-            }`}
-          >
-            {step.title}
-          </span>
-        </div>
-
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-          {step.detail}
-        </p>
-
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          {step.deadline_label && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-caution/15 px-2.5 py-1 text-xs font-medium text-amber-800">
-              <ClockIcon />
-              {step.deadline_label}
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={onToggleCite}
-            aria-expanded={expanded}
-            className="inline-flex min-h-[28px] items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <DocIcon />
-            {step.cite}
-          </button>
-        </div>
-
-        {expanded && (
-          <p className="mt-2 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
-            Source: <span className="font-mono">{step.cite}</span>
-          </p>
-        )}
-      </div>
-    </li>
-  )
-}
-
-/* ---------- empty state ---------- */
-
-function EmptyState() {
-  const setSheetView = useAppStore((s) => s.setSheetView)
-  return (
-    <div className="flex flex-col items-center gap-4 rounded-2xl bg-white p-8 text-center shadow-sm border border-border">
-      <span className="text-primary">
-        <TruckIcon />
-      </span>
-      <h3 className="font-display text-xl text-foreground">No checklist yet</h3>
-      <p className="text-sm leading-relaxed text-muted-foreground">
-        Ask the copilot &ldquo;what permits do I need?&rdquo; and tell it what
-        you sell from.
-      </p>
-      <button
-        type="button"
-        onClick={() => setSheetView('chat')}
-        className="min-h-[44px] rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition-opacity duration-150 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-      >
-        Ask the copilot
-      </button>
-    </div>
-  )
-}
-
-/* ---------- main sheet ---------- */
+const DEADLINES = [
+  { value: '30 days', label: 'Public notice' },
+  { value: '90 days', label: 'Tentative approval' },
+  { value: '15 days', label: 'Appeal window' },
+]
 
 export default function PermitChecklist() {
-  const sheetView = useAppStore((s) => s.sheetView)
-  const setSheetView = useAppStore((s) => s.setSheetView)
-  const checklist = useAppStore((s) => s.checklist)
-  const [expandedCites, setExpandedCites] = useState<ReadonlySet<number>>(
-    () => new Set(),
-  )
-  const sheetRef = useRef<HTMLElement>(null)
-  const open = sheetView === 'permits'
+  const profile = useAppStore((state) => state.profile)
+  const status = useAppStore((state) => state.permitStatus)
+  const error = useAppStore((state) => state.permitError)
+  const checklist = useAppStore((state) => state.permitChecklist)
+  const completed = useAppStore((state) => state.completedPermitItems)
+  const startPermitChecklist = useAppStore((state) => state.startPermitChecklist)
+  const toggle = useAppStore((state) => state.togglePermitItem)
+  const openProfile = useAppStore((state) => state.openProfileEditor)
+  const [easyApplyItem, setEasyApplyItem] = useState<PermitChecklistItem | null>(null)
 
-  // Focus management: move focus into the sheet on open, close on Escape,
-  // restore focus to the previously focused element on close.
-  useEffect(() => {
-    if (!open) return
-    const previouslyFocused = document.activeElement
-    sheetRef.current?.focus()
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSheetView('chat')
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('keydown', onKeyDown)
-      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus()
-    }
-  }, [open, setSheetView])
+  const items = checklist?.sections.flatMap((section) => section.items) ?? []
+  const completeCount = items.filter((item) => completed.includes(item.id)).length
+  const progress = items.length ? Math.round((completeCount / items.length) * 100) : 0
 
-  if (!open) return null
+  if (status === 'idle' || status === 'error') {
+    return (
+      <main id="permits-content" className="permits-screen" tabIndex={-1}>
+        <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pb-32 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6">
+          <header className="flex justify-end">
+            <button type="button" className="touch-button bg-white shadow-sm" onClick={openProfile} aria-label="Edit vendor profile">
+              <UserIcon className="h-5 w-5" />
+            </button>
+          </header>
 
-  const toggleCite = (order: number) => {
-    setExpandedCites((prev) => {
-      const next = new Set(prev)
-      if (next.has(order)) next.delete(order)
-      else next.add(order)
-      return next
-    })
+          <section className="my-auto flex flex-col items-center py-10 text-center" aria-labelledby="permit-landing-title">
+            <span className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary text-white" aria-hidden="true">
+              <PermitIcon className="h-10 w-10" />
+            </span>
+            <p className="mt-7 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              San Francisco permits
+            </p>
+            <h1 id="permit-landing-title" className="mt-2 max-w-md font-display text-3xl text-foreground">
+              Build your San Francisco permit path
+            </h1>
+            <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
+              Get a personalized checklist ordered across the San Francisco agencies that shape your launch, with key deadlines and application guidance.
+            </p>
+
+            {status === 'error' && (
+              <div role="alert" className="mt-6 w-full max-w-lg rounded-2xl border border-destructive/30 bg-white p-4">
+                <p className="font-semibold text-destructive">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="primary-button mt-7"
+              onClick={() => void startPermitChecklist()}
+            >
+              {status === 'error' ? 'Try building again' : 'Build my permit checklist'}
+            </button>
+          </section>
+
+          <aside className="rounded-2xl border border-caution/30 bg-caution/10 p-4 text-sm leading-relaxed text-foreground">
+            <strong>Guidance, not legal advice.</strong> Requirements and fees can change. Verify your path, deadlines, and official submissions with the SF Permit Center.
+          </aside>
+        </div>
+      </main>
+    )
   }
 
-  const groups = checklist ? groupStepsByAgency(checklist) : []
-  const total = checklist?.steps.length ?? 0
-  const doneCount =
-    checklist?.steps.filter((s) => s.status === 'done').length ?? 0
-  const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0
-
   return (
-    <section
-      ref={sheetRef}
-      tabIndex={-1}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Permit checklist"
-      className="fixed inset-x-0 bottom-0 z-30 flex max-h-[85dvh] flex-col rounded-t-3xl bg-background shadow-[0_-8px_30px_rgba(15,23,42,0.15)] outline-none"
-    >
-      {/* header */}
-      <header className="flex items-start justify-between gap-3 px-5 pb-3 pt-5">
-        <div className="min-w-0">
-          <h2 className="font-display text-2xl text-foreground">
-            Your permit path
-          </h2>
-          {checklist && (
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              {VENDOR_TYPE_LABELS[checklist.vendor_type]}
+    <main id="permits-content" className="permits-screen" tabIndex={-1}>
+      <div className="mx-auto w-full max-w-3xl px-4 pb-32 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6">
+        <header className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              Personalized guidance
             </p>
-          )}
-        </div>
-        <button
-          type="button"
-          aria-label="Close checklist"
-          onClick={() => setSheetView('chat')}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-foreground transition-colors duration-150 hover:bg-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <CloseIcon />
-        </button>
-      </header>
-
-      {/* progress */}
-      {checklist && (
-        <div className="px-5 pb-3">
-          <p className="text-xs font-medium text-muted-foreground">
-            {doneCount} of {total} done
-          </p>
-          <div
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={total}
-            aria-valuenow={doneCount}
-            aria-label="Checklist progress"
-            className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-border"
-          >
-            <div
-              className="h-full rounded-full bg-primary transition-transform duration-300 origin-left"
-              style={{ transform: `scaleX(${pct / 100})` }}
-            />
+            <h1 className="mt-1 font-display text-3xl text-foreground">Your permit path</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Ordered across the four SF agencies that shape your launch.
+            </p>
           </div>
-        </div>
-      )}
+          <div className="flex items-center gap-2">
+            <button type="button" className="touch-button bg-white shadow-sm" onClick={openProfile} aria-label="Edit vendor profile">
+              <UserIcon className="h-5 w-5" />
+            </button>
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white" aria-hidden="true">
+              <PermitIcon className="h-6 w-6" />
+            </span>
+          </div>
+        </header>
 
-      {/* scrollable body */}
-      <div className="flex-1 overflow-y-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
-        {!checklist ? (
-          <EmptyState />
-        ) : (
+        <section aria-label="Important permit deadlines" className="mt-5 grid grid-cols-3 gap-2">
+          {DEADLINES.map((deadline) => (
+            <div key={deadline.value} className="deadline-card">
+              <ClockIcon className="h-4 w-4 text-caution" />
+              <strong>{deadline.value}</strong>
+              <span>{deadline.label}</span>
+            </div>
+          ))}
+        </section>
+
+        {status === 'success' && checklist && (
           <>
-            {groups.map((group, gi) => (
-              <div key={group.agency}>
-                <h3 className="sticky top-0 z-10 -mx-1 flex items-center gap-2 bg-background/95 px-1 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur-sm">
-                  <span
-                    aria-hidden="true"
-                    className={`h-2.5 w-2.5 rounded-full ${agencyDotClass(gi)}`}
-                  />
-                  {group.agency}
-                </h3>
-                <ul className="mb-4 flex flex-col gap-2">
-                  {group.steps.map((step) => (
-                    <StepRow
-                      key={step.order}
-                      step={step}
-                      expanded={expandedCites.has(step.order)}
-                      onToggleCite={() => toggleCite(step.order)}
-                    />
-                  ))}
-                </ul>
+            <section className="mt-6 rounded-2xl border border-border bg-white p-4">
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="font-semibold text-foreground">
+                  {completeCount} of {items.length} complete
+                </span>
+                <span className="font-mono text-muted-foreground">{progress}%</span>
               </div>
-            ))}
-            <p className="mt-2 border-t border-border pt-4 text-center text-xs leading-relaxed text-muted-foreground">
-              This is a guide to the process, not legal advice. Confirm details
-              with the SF Permit Center.
-            </p>
+              <div role="progressbar" aria-label="Permit checklist progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="mt-2 h-2 overflow-hidden rounded-md bg-border">
+                <div className="h-full origin-left rounded-md bg-primary transition-transform" style={{ transform: `scaleX(${progress / 100})` }} />
+              </div>
+            </section>
+
+            <div className="mt-6 space-y-7">
+              {checklist.sections.map((section, sectionIndex) => (
+                <section key={section.agency} aria-labelledby={`agency-${sectionIndex}`}>
+                  <div className="mb-3 flex items-center gap-3">
+                    <span className="agency-number">{sectionIndex + 1}</span>
+                    <h2 id={`agency-${sectionIndex}`} className="font-display text-xl text-foreground">
+                      {section.agency}
+                    </h2>
+                  </div>
+                  <ul className="space-y-3">
+                    {section.items.map((item) => {
+                      const done = completed.includes(item.id)
+                      return (
+                        <li key={item.id} className={`permit-item ${done ? 'permit-item--done' : ''}`}>
+                          <button
+                            type="button"
+                            role="checkbox"
+                            aria-checked={done}
+                            aria-label={`${done ? 'Mark incomplete' : 'Mark complete'}: ${item.title}`}
+                            className={`permit-checkbox ${done ? 'permit-checkbox--done' : ''}`}
+                            onClick={() => toggle(item.id)}
+                          >
+                            <CheckIcon className="h-5 w-5" />
+                          </button>
+                          <div className="min-w-0 flex-1">
+                            <h3 className={`text-sm font-bold leading-snug ${done ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                              {item.title}
+                            </h3>
+                            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                              {item.detail}
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              {item.deadline_label && (
+                                <span className="deadline-chip">
+                                  <ClockIcon className="h-3.5 w-3.5" />
+                                  {item.deadline_label}
+                                </span>
+                              )}
+                              <span className="source-chip">
+                                <FileIcon className="h-3.5 w-3.5" />
+                                {item.cite}
+                              </span>
+                            </div>
+                            {item.easy_apply && (
+                              <button type="button" className="easyapply-button" onClick={() => setEasyApplyItem(item)}>
+                                Review &amp; submit
+                                <span className="sr-only"> simulated draft for {item.title}</span>
+                                <ChevronIcon className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </section>
+              ))}
+            </div>
           </>
         )}
+
+        <aside className="mt-7 rounded-2xl border border-caution/30 bg-caution/10 p-4 text-sm leading-relaxed text-foreground">
+          <strong>Guidance, not legal advice.</strong> Requirements and fees can change. Verify your path, deadlines, and official submissions with the SF Permit Center.
+        </aside>
       </div>
-    </section>
+
+      {easyApplyItem && profile && (
+        <EasyApplyModal
+          item={easyApplyItem}
+          profile={profile}
+          onClose={() => setEasyApplyItem(null)}
+        />
+      )}
+    </main>
   )
 }

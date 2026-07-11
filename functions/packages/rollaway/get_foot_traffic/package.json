@@ -1,0 +1,7 @@
+{
+  "name": "get_foot_traffic",
+  "version": "1.0.0",
+  "description": "Rollaway: Bay Wheels activity as a pedestrian proxy (CONTRACTS.md B.3)",
+  "main": "index.js",
+  "license": "MIT"
+}

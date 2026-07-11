@@ -1,0 +1,7 @@
+{
+  "name": "get_closures",
+  "version": "1.0.0",
+  "description": "Rollaway: street closures near a point in a date range (CONTRACTS.md B.2)",
+  "main": "index.js",
+  "license": "MIT"
+}

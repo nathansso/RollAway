@@ -1,0 +1,15 @@
+{
+  "type": "FeatureCollection",
+  "_meta": {
+    "source": "SYNTHETIC fixture — TODO(real-key): used only when GOOGLE_PLACES_KEY is unset or Places is unreachable. Hand-placed points approximating real SoMa/downtown SF restaurant locations so the 75ft check is exercised in the demo area.",
+    "snapshot_date": "2026-07-10"
+  },
+  "features": [
+    { "type": "Feature", "geometry": { "type": "Point", "coordinates": [-122.3999, 37.7803] }, "properties": { "name": "SoMa Deli (fixture)" } },
+    { "type": "Feature", "geometry": { "type": "Point", "coordinates": [-122.4009, 37.7794] }, "properties": { "name": "Howard St Cafe (fixture)" } },
+    { "type": "Feature", "geometry": { "type": "Point", "coordinates": [-122.3987, 37.7812] }, "properties": { "name": "Mission St Taqueria (fixture)" } },
+    { "type": "Feature", "geometry": { "type": "Point", "coordinates": [-122.4022, 37.7788] }, "properties": { "name": "Folsom Coffee (fixture)" } },
+    { "type": "Feature", "geometry": { "type": "Point", "coordinates": [-122.3965, 37.7768] }, "properties": { "name": "Townsend Sandwiches (fixture)" } },
+    { "type": "Feature", "geometry": { "type": "Point", "coordinates": [-122.3931, 37.7787] }, "properties": { "name": "King St Pizza (fixture)" } }
+  ]
+}

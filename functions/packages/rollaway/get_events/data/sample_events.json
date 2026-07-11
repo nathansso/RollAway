@@ -1,0 +1,11 @@
+{
+  "_synthetic": true,
+  "_note": "TODO(real-key) — fixture served only when TICKETMASTER_KEY is unset or Discovery is unreachable. Plausible recurring SF events at real venues/coordinates; start dates are projected into the requested date range at serve time.",
+  "events": [
+    { "name": "SF Giants vs Dodgers", "venue": "Oracle Park", "point": { "lat": 37.7786, "lng": -122.3893 }, "local_time": "18:45:00" },
+    { "name": "Warriors vs Lakers", "venue": "Chase Center", "point": { "lat": 37.768, "lng": -122.3877 }, "local_time": "19:30:00" },
+    { "name": "Indie Night Live", "venue": "Bill Graham Civic Auditorium", "point": { "lat": 37.7785, "lng": -122.4177 }, "local_time": "20:00:00" },
+    { "name": "Comedy Showcase", "venue": "The Masonic", "point": { "lat": 37.7913, "lng": -122.4127 }, "local_time": "19:00:00" },
+    { "name": "Jazz Evening", "venue": "The Fillmore", "point": { "lat": 37.784, "lng": -122.4332 }, "local_time": "20:00:00" }
+  ]
+}

@@ -30,18 +30,24 @@ export function parseFormsTable(markdown) {
   return forms;
 }
 
-// Parse kb/FORM_FIELDS.md -> Map<cite, [{ profile_key, label }]> (ordered, one entry per row).
-// Rows: | `source id` | `profile_key` | Field label |. This is authored data (source of truth for
-// WHICH applicant fields the app can pre-fill on each form); values are never authored here.
+export const FIELD_TYPES = Object.freeze(["text", "email", "tel", "date", "number", "select", "textarea"]);
+
+// Parse kb/FORM_FIELDS.md -> Map<cite, [{ profile_key, label, type, required }]> (ordered, one entry
+// per row). Rows: | `source id` | `profile_key` | Field label | type | required |. Authored data
+// (source of truth for WHICH applicant fields a form needs, their input type, and whether the form
+// requires them); values are never authored here. `type`/`required` are optional columns — a row
+// with neither defaults to a required text field, so older 3-column tables still parse unchanged.
 export function parseFormFieldsTable(markdown) {
   const fields = new Map();
   for (const line of String(markdown || "").split(/\r?\n/)) {
     const cells = line.split("|").slice(1, -1).map((cell) => cell.trim().replace(/^`|`$/g, ""));
     if (cells.length < 3 || !/^[a-z0-9-]+$/.test(cells[0]) || /^-+$/.test(cells[0]) || cells[0] === "source") continue;
-    const [cite, profile_key, label] = cells;
+    const [cite, profile_key, label, rawType, rawRequired] = cells;
     if (!/^[a-z0-9_]+$/.test(profile_key) || !label) continue;
+    const type = FIELD_TYPES.includes(rawType) ? rawType : "text";
+    const required = rawRequired ? !/^(no|false|optional)$/i.test(rawRequired) : true;
     if (!fields.has(cite)) fields.set(cite, []);
-    fields.get(cite).push({ profile_key, label });
+    fields.get(cite).push({ profile_key, label, type, required });
   }
   return fields;
 }
@@ -70,11 +76,23 @@ export function buildFilledForm(cite, forms, formFields, profile) {
   const meta = forms.get(cite);
   const specs = formFields ? formFields.get(cite) : null;
   if (!meta || !specs || !specs.length) return null;
-  const fields = specs.map(({ profile_key, label }) => {
+  const fields = specs.map(({ profile_key, label, type = "text", required = true }) => {
     const value = formatFieldValue(profile, profile_key);
-    return { label, profile_key, value, status: value == null ? "unknown" : "filled" };
+    return { label, profile_key, type, required, value, status: value == null ? "unknown" : "filled" };
   });
   return { agency: meta.agency, form: meta.form, form_url, fields };
+}
+
+// Doc-ingestion output for POST /form_fill: the grounded fillable schema for ONE official form,
+// pre-filled from the supplied profile. Same field shape as buildFilledForm plus the `source` id
+// and an outstanding-required tally the caller can use for a "what's left" summary. Returns null
+// unless the cite resolves to a real allowlisted form with authored fields (never a fabricated one).
+export function buildFormSchema(cite, forms, formFields, profile) {
+  const filled = buildFilledForm(cite, forms, formFields, profile);
+  if (!filled) return null;
+  const required_open = filled.fields.filter((f) => f.required && f.status === "unknown").length;
+  const optional_open = filled.fields.filter((f) => !f.required && f.status === "unknown").length;
+  return { source: cite, ...filled, required_open, optional_open };
 }
 
 export function resolveFormUrl(cite, forms) {

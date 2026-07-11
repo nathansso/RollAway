@@ -228,11 +228,24 @@ export type EasyApplyFieldKey =
   | 'proposed_start_date'
   | 'signature'
 
+export type FilledFormFieldType =
+  | 'text'
+  | 'email'
+  | 'tel'
+  | 'date'
+  | 'number'
+  | 'select'
+  | 'textarea'
+
 export interface FilledFormField {
   label: string
   profile_key: string
   value: string | null
   status: 'filled' | 'unknown'
+  // Additive (form-fill pipeline): the input type to render and whether the form requires it.
+  // Optional for back-compat; absent means a required text field.
+  type?: FilledFormFieldType
+  required?: boolean
 }
 
 // A viewable/persistable record of an official agency form pre-filled from the

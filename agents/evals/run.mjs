@@ -18,8 +18,8 @@ import { mockNormalize, CACHEABLE_PREFIX, PREFIX_SHA } from "../enrichment/norma
 import { competitionOverlapCore } from "../menu_rag/overlap.mjs";
 import { DEMO_COMPETITORS, demoMenuKbId } from "../menu_rag/query.mjs";
 import { parseMenuText, verifyPricesInSource } from "../menu_rag/parse.mjs";
-import { runSpotScoutSingleTurn } from "../runtime/agents.mjs";
-import { attachFormUrls, FORM_DOMAIN_ALLOWLIST, isAllowedFormUrl, parseFormsTable, parseFormFieldsTable } from "../runtime/forms.mjs";
+import { runSpotScoutSingleTurn, runFormFill } from "../runtime/agents.mjs";
+import { attachFormUrls, FORM_DOMAIN_ALLOWLIST, isAllowedFormUrl, parseFormsTable, parseFormFieldsTable, buildFormSchema, FIELD_TYPES } from "../runtime/forms.mjs";
 import { readFileSync as _rfs } from "node:fs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
@@ -105,6 +105,14 @@ async function runOffline() {
     };
     spotEvent = (await runSpotScoutSingleTurn(withEvent)).env;
   } catch (e) { spotEvent = { __error: e.message }; }
+
+  // POST /form_fill doc-ingestion handler — real form, and an unresolvable one (SOURCE-NEEDED).
+  let formFillReal = null, formFillBad = null;
+  const FF_PROFILE = { business_name: "El Sabor Taqueria", owner_name: "Ana Ruiz", pinned_point: { lat: 37.7852, lng: -122.3969 } };
+  try { formFillReal = await runFormFill({ source: "sfpw-mff", vendor_type: "truck", context: FF_PROFILE }); }
+  catch (e) { formFillReal = { __error: e.message }; }
+  try { formFillBad = await runFormFill({ source: "ttx-cert", context: FF_PROFILE }); }
+  catch (e) { formFillBad = { __error: e.message }; }
 
   // 1. instruction files versioned
   check("instructions are versioned", () => {
@@ -221,6 +229,47 @@ async function runOffline() {
     const verrs = validateEnvelope(env);
     if (verrs.length) return bad(`envelope invalid: ${verrs.slice(0, 2).join("; ")}`);
     return ok("supplied filled, email unknown(null), no fabrication, pinned formatted, envelope valid");
+  });
+
+  // (#21) FORM_FIELDS carries a valid input `type` and boolean `required` for every authored field.
+  check("form-fill: FORM_FIELDS declares valid type + required per field", () => {
+    const errs = [];
+    for (const [cite, specs] of formFields) {
+      for (const s of specs) {
+        if (!FIELD_TYPES.includes(s.type)) errs.push(`${cite}/${s.profile_key} bad type ${s.type}`);
+        if (typeof s.required !== "boolean") errs.push(`${cite}/${s.profile_key} required not boolean`);
+      }
+    }
+    return errs.length ? bad(errs.join("; ")) : ok(`${[...formFields.keys()].length} forms carry typed, required-tagged fields`);
+  });
+
+  // (#21) buildFormSchema: grounded ingested schema, autofill honesty, required/optional tallies.
+  check("form-fill: buildFormSchema pre-fills only supplied values, tags required/optional", () => {
+    const schema = buildFormSchema("sfpw-mff", forms, formFields, { business_name: "El Sabor Taqueria", pinned_point: { lat: 37.7852, lng: -122.3969 } });
+    if (!schema) return bad("no schema for real form");
+    if (schema.source !== "sfpw-mff" || !isAllowedFormUrl(schema.form_url)) return bad("schema source/url wrong");
+    const f = (k) => schema.fields.find((x) => x.profile_key === k);
+    if (f("business_name")?.value !== "El Sabor Taqueria" || f("business_name")?.status !== "filled") return bad("supplied business_name not filled");
+    if (f("email")?.value !== null || f("email")?.status !== "unknown") return bad("unsupplied email not unknown");
+    if (f("email")?.required !== false) return bad("email should be optional (required:false)");
+    if (f("business_name")?.required !== true || f("vendor_type")?.type !== "select") return bad("required/type metadata missing");
+    const fabricated = schema.fields.filter((x) => x.status === "filled" && !["business_name", "pinned_point"].includes(x.profile_key));
+    if (fabricated.length) return bad(`fabricated: ${fabricated.map((x) => x.profile_key).join(",")}`);
+    if (schema.required_open !== schema.fields.filter((x) => x.required && x.status === "unknown").length) return bad("required_open miscount");
+    // no real form => no schema, never a fabricated one
+    if (buildFormSchema("ttx-cert", forms, formFields, {}) !== null) return bad("SOURCE-NEEDED must yield null schema");
+    return ok(`schema grounded: ${schema.fields.length} fields, required_open=${schema.required_open}, SOURCE-NEEDED=null`);
+  });
+
+  // (#21) POST /form_fill handler: real form -> schema+summary; unresolvable -> BAD_INPUT (no fab).
+  check("form-fill: runFormFill returns grounded schema, BAD_INPUT for SOURCE-NEEDED", () => {
+    if (!formFillReal || formFillReal.__error) return bad(`real threw: ${formFillReal?.__error}`);
+    if (formFillReal.error) return bad(`real form returned error: ${JSON.stringify(formFillReal.error)}`);
+    if (formFillReal.source !== "sfpw-mff" || !Array.isArray(formFillReal.fields)) return bad("missing schema fields");
+    if (typeof formFillReal.summary !== "string" || !formFillReal.summary.length) return bad("missing applicant summary");
+    if (formFillReal.fields.find((x) => x.profile_key === "business_name")?.value !== "El Sabor Taqueria") return bad("autofill lost in route");
+    if (!formFillBad || !formFillBad.error || formFillBad.error.code !== "BAD_INPUT") return bad(`SOURCE-NEEDED not BAD_INPUT: ${JSON.stringify(formFillBad)}`);
+    return ok(`real -> schema+summary; ttx-cert -> ${formFillBad.error.code} (no fabricated form)`);
   });
 
   // 4. routing correct for every seed with an expected agent

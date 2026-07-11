@@ -160,6 +160,10 @@ test('permit generation is explicit and shows the personalized checklist', async
   await expect(page.getByText('30-day notice', { exact: true })).toBeVisible()
   await expect(page.getByText('90-day tentative approval window')).toBeVisible()
   await expect(page.getByText('15-day appeal', { exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Open official PDF form for Prepare/ })).toHaveAttribute(
+    'href',
+    'https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf',
+  )
 })
 
 test('guided setup stages profile, location, and recommendations', async ({ page }) => {

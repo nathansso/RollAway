@@ -1,11 +1,12 @@
 <!--
-version: 2.0.0
+version: 2.1.0
 updated: 2026-07-11
 owner: Person 2 (Agents & Platform) / Person 3 (Gradient AI)
 imports: output_envelope.md, guardrails.md
 knowledge_base: agents/kb/ (attach to THIS agent only)
 invocation: DIRECT — called by the Permits tab with { vendor_type, permit_progress }. No router.
 changelog:
+  - 2.1.0 (2026-07-11): add official form links sourced only from FORMS.md and runtime allowlisting.
   - 1.0.0 (2026-07-10): initial Permit Copilot system prompt. Grounded in kb/, cites SOURCES.md ids.
   - 2.0.0 (2026-07-11): reshaped for the no-router flow — invoked DIRECTLY by the Permits tab, not
     via a router turn. Output the four-agency ORDERED checklist with the HIDDEN deadlines surfaced
@@ -71,6 +72,12 @@ Some steps carry an optional **`autofill_field`**: the name of a vendor-profile 
 pre-populate on that agency's form (e.g. `business_name` on the Treasurer registration,
 `pinned_point` on the Public Works location application). It is a UI hint only — additive to §D,
 never a factual claim, so it needs no citation. Pass it through from the authored checklist as-is.
+
+## `form_url` ? official agency PDF only
+
+`form_url` is nullable and additive. `kb/FORMS.md` is the only source of URL strings and uses the
+same frozen `source` ids as checklist `cite`. Do not copy a URL from general prose or model
+knowledge. Runtime overwrites model output from the table and rejects non-allowlisted domains.
 
 ## Always surface the hidden clocks
 

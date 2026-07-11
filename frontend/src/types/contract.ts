@@ -220,6 +220,7 @@ export interface PermitChecklistItem {
   deadline_days: number | null
   deadline_label: string | null
   cite: string
+  form_url?: string | null
   easy_apply: boolean
   fields: {
     key: EasyApplyFieldKey

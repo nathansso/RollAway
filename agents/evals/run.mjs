@@ -18,6 +18,7 @@ import { mockNormalize, CACHEABLE_PREFIX, PREFIX_SHA } from "../enrichment/norma
 import { competitionOverlapCore } from "../menu_rag/overlap.mjs";
 import { DEMO_COMPETITORS, demoMenuKbId } from "../menu_rag/query.mjs";
 import { runSpotScoutSingleTurn } from "../runtime/agents.mjs";
+import { attachFormUrls, FORM_DOMAIN_ALLOWLIST, isAllowedFormUrl, parseFormsTable } from "../runtime/forms.mjs";
 import { readFileSync as _rfs } from "node:fs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
@@ -53,6 +54,8 @@ const supersetOf = (have, need) => need.every((x) => have.includes(x));
 const sourcesMd = read("kb/SOURCES.md");
 const sourceIds = parseSourceIds(sourcesMd);
 const contractsMd = readRepo("docs/CONTRACTS.md");
+const formsMd = read("kb/FORMS.md");
+const forms = parseFormsTable(formsMd);
 
 const checklistDocs = {};
 for (const vt of ["truck", "trailer", "pushcart_cooking", "pushcart_nocook"]) {
@@ -121,6 +124,40 @@ async function runOffline() {
       validateChecklist(cl, vt).forEach((e) => errs.push(e));
     }
     return errs.length ? bad(errs.join("; ")) : ok("4 vendor-type checklists valid");
+  });
+
+  check("permit forms: every non-null URL is on the SF agency allowlist", () => {
+    const badUrls = [];
+    let linked = 0;
+    for (const [vt, checklist] of Object.entries(checklistDocs)) {
+      const assembled = attachFormUrls(checklist, forms);
+      for (const step of assembled.steps) {
+        if (step.form_url) {
+          linked++;
+          if (!isAllowedFormUrl(step.form_url)) badUrls.push(`${vt}:${step.cite}:${step.form_url}`);
+        }
+      }
+    }
+    if (badUrls.length) return bad(`rejected: ${badUrls.join(", ")}`);
+    const poisoned = new Map(forms);
+    poisoned.set("sfpw-mff", { source: "sfpw-mff", agency: "fake", form: "fake", form_url: "https://evil.example/form.pdf" });
+    const poisonedStep = attachFormUrls(checklistDocs.truck, poisoned).steps.find((step) => step.cite === "sfpw-mff");
+    if (poisonedStep?.form_url !== null) return bad("off-domain KB URL leaked into checklist");
+    return linked > 0 ? ok(`${linked} linked steps use ${FORM_DOMAIN_ALLOWLIST.length}-host allowlist; off-domain rejected`) : bad("no forms attached");
+  });
+
+  check("permit forms: missing or SOURCE-NEEDED citations resolve to null", () => {
+    const assembled = attachFormUrls(checklistDocs.truck, forms);
+    const placement = assembled.steps.find((step) => step.cite === "dpw-182101");
+    const treasurer = assembled.steps.find((step) => step.cite === "ttx-cert");
+    if (!placement || placement.form_url !== null) return bad("cite with no FORMS row did not resolve null");
+    if (!treasurer || treasurer.form_url !== null) return bad("SOURCE-NEEDED form did not resolve null");
+    return ok("no-row and SOURCE-NEEDED steps resolve form_url:null");
+  });
+
+  check("permit forms: FORMS source ids are frozen SOURCES ids", () => {
+    const unknown = [...forms.keys()].filter((source) => !sourceIds.has(source));
+    return unknown.length ? bad(`unknown form source ids: ${unknown.join(", ")}`) : ok(`${forms.size} form rows use frozen source ids`);
   });
 
   // 4. routing correct for every seed with an expected agent

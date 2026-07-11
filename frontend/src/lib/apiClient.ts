@@ -48,6 +48,22 @@ function wait(ms: number): Promise<void> {
   return ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve()
 }
 
+const PERMIT_FORM_HOSTS = new Set([
+  'sf.gov', 'www.sf.gov', 'sfpublicworks.org', 'www.sfpublicworks.org',
+  'sf-fire.org', 'www.sf-fire.org', 'sfdph.org', 'www.sfdph.org',
+  'sftreasurer.org', 'www.sftreasurer.org',
+])
+
+function allowedPermitFormUrl(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && PERMIT_FORM_HOSTS.has(url.hostname.toLowerCase())
+  } catch {
+    return false
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -272,6 +288,7 @@ export function validatePermitChecklist(value: unknown): PermitChecklist | null 
           typeof item.title === 'string' &&
           typeof item.detail === 'string' &&
           typeof item.cite === 'string' &&
+          (item.form_url === undefined || item.form_url === null || allowedPermitFormUrl(item.form_url)) &&
           typeof item.easy_apply === 'boolean' &&
           Array.isArray(item.fields) &&
           item.fields.every(
@@ -733,6 +750,7 @@ export function adaptAgentPermitChecklist(
           deadline_days: typeof step.deadline_days === 'number' ? step.deadline_days : null,
           deadline_label: typeof step.deadline_label === 'string' ? step.deadline_label : null,
           cite: String(step.cite ?? ''),
+          form_url: allowedPermitFormUrl(step.form_url) ? step.form_url : null,
           easy_apply: Boolean(autofill),
           fields: autofill && allowedAutofill.includes(autofill)
             ? [{

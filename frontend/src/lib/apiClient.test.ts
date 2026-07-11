@@ -452,7 +452,8 @@ describe('other live response boundaries', () => {
               detail: 'Prepare the location packet.',
               deadline_days: 30,
               deadline_label: '30-day notice',
-              cite: 'dpw-182101',
+              cite: 'sfpw-mff',
+              form_url: 'https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf',
               autofill_field: 'location',
             },
           ],
@@ -461,7 +462,8 @@ describe('other live response boundaries', () => {
       'truck',
     )
     expect(checklist?.sections.find((section) => section.agency === 'Public Works')?.items[0])
-      .toMatchObject({ title: 'Apply for location permit', easy_apply: true })
+      .toMatchObject({ title: 'Apply for location permit', easy_apply: true,
+        form_url: 'https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf' })
     expect(checklist?.sections).toHaveLength(4)
   })
 

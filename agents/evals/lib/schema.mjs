@@ -24,6 +24,7 @@ export function validateChecklist(cl, path = "checklist") {
     if (!(s.deadline_days === null || Number.isInteger(s.deadline_days))) e.push(`${p}.deadline_days must be int|null`);
     if (!(s.deadline_label === null || isStr(s.deadline_label))) e.push(`${p}.deadline_label must be string|null`);
     if (!isStr(s.cite)) e.push(`${p}.cite must be string`);
+    if (!(s.form_url === undefined || s.form_url === null || isStr(s.form_url))) e.push(`${p}.form_url must be string|null when present`);
     if (!STATUSES.includes(s.status)) e.push(`${p}.status invalid: ${s.status}`);
   });
   return e;

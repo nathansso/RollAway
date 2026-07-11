@@ -1,4 +1,4 @@
-﻿# Implementation: Official Permit PDF Completion
+# Implementation: Official Permit PDF Completion
 
 ## Scope
 
@@ -73,3 +73,10 @@ RollAway will obtain and verify the newest applicable permit PDFs during impleme
 ## Definition of done
 
 Current official forms are captured once with provenance and checksums, the exact PDFs can be safely reviewed and completed, no legal information is invented, and no recurring form retrieval or automatic submission occurs.
+
+## Implemented official-form flow
+
+- `agents/kb/FORMS.md` maps frozen citation ids to verified agency-hosted PDFs or `SOURCE-NEEDED`.
+- Deterministic checklist assembly attaches `form_url` and rejects non-HTTPS or non-allowlisted agency hosts.
+- The frontend preserves the nullable additive field and opens official forms in a separate tab.
+- Public Works, SFDPH, and SFFD links were verified to return HTTP 200 with PDF content on 2026-07-11; Treasurer and DMV remain `SOURCE-NEEDED`.

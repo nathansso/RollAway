@@ -219,9 +219,13 @@ halal, pizza, seafood, desserts, drinks, other`
   "steps": [ {
     "order": 1, "agency": "Public Works", "title": "Apply for MFF permit",
     "detail": "...", "deadline_days": 30, "deadline_label": "30-day public notice",
-    "cite": "dpw-182101", "status": "todo"
+    "cite": "dpw-182101", "form_url": null, "status": "todo"
   } ] }
 ```
+
+`form_url` is nullable and additive, like `autofill_field`. It is copied only from
+`agents/kb/FORMS.md` by the step's frozen `cite`; `SOURCE-NEEDED`, missing rows, invalid URLs, and
+non-allowlisted agency domains resolve to `null`. Agents never construct or guess this value.
 
 Vendor types (canonical strings, shared everywhere):
 `truck, trailer, pushcart_cooking, pushcart_nocook`.

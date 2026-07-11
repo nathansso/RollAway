@@ -324,7 +324,9 @@ function demoDataDir() {
 /**
  * Deterministic snapshot key from the significant args. A single canonical
  * builder so freeze + read can never drift (freeze_snapshots.mjs imports THIS
- * function). Shape: `<lat4>_<lng4>_<radius>_<day>_<time|hour>`.
+ * function). Shape: `<lat4>_<lng4>_<radius>_<day>_<time|hour>[_<vendor_type>]`.
+ * vendor_type is appended only when present (check_clearance), so keys for the
+ * point-only functions are unchanged.
  */
 function snapshotKey(args = {}) {
   const a = args || {};
@@ -338,7 +340,9 @@ function snapshotKey(args = {}) {
   let timePart = '';
   if (a.time !== undefined && a.time !== null && a.time !== '') timePart = String(a.time);
   else if (a.hour !== undefined && a.hour !== null && a.hour !== '') timePart = String(a.hour);
-  return `${latS}_${lngS}_${radius}_${day}_${timePart}`;
+  const base = `${latS}_${lngS}_${radius}_${day}_${timePart}`;
+  const vt = a.vendor_type ? String(a.vendor_type).toLowerCase() : '';
+  return vt ? `${base}_${vt}` : base;
 }
 
 /**

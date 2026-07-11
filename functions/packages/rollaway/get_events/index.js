@@ -24,6 +24,7 @@ const {
   guard, ok,
   validatePoint, validateDate,
   fetchJSON, TTLCache, haversineMeters,
+  withData, demoFetchOpts,
 } = require('./shared');
 
 const TM_URL = 'https://app.ticketmaster.com/discovery/v2/events.json';
@@ -81,7 +82,7 @@ async function fetchTicketmaster(lat, lng, radius_m, dateFrom, dateTo) {
     `&startDateTime=${addDays(dateFrom, -1)}T00:00:00Z&endDateTime=${addDays(dateTo, 1)}T23:59:59Z` +
     `&size=100&sort=date,asc`;
   try {
-    const res = await fetchJSON(url, { timeoutMs: 8000, retries: 2 });
+    const res = await fetchJSON(url, { timeoutMs: 8000, retries: 2, ...demoFetchOpts() });
     const raw = (res._embedded && res._embedded.events) || [];
     return raw
       .map((e) => {
@@ -137,13 +138,17 @@ exports.main = guard(async (args) => {
   const dateFrom = validateDate(args.date_from, 'date_from') || sfDate(0);
   const dateTo = validateDate(args.date_to, 'date_to') || sfDate(7);
 
-  const cacheKey = `${lat.toFixed(2)},${lng.toFixed(2)},${radius_m},${dateFrom},${dateTo}`;
-  const events = await cache.getOrSet(cacheKey, TM_TTL_MS, async () => {
-    const all = await fetchTicketmaster(lat, lng, radius_m, dateFrom, dateTo);
-    return all
-      .filter((e) => haversineMeters(lat, lng, e.point.lat, e.point.lng) <= radius_m)
-      .slice(0, MAX_EVENTS);
+  // Honors DEMO_DATA_MODE; a live miss degrades to snapshot in ~2.5s.
+  const body = await withData('get_events', { lat, lng, radius_m }, async () => {
+    const cacheKey = `${lat.toFixed(2)},${lng.toFixed(2)},${radius_m},${dateFrom},${dateTo}`;
+    const events = await cache.getOrSet(cacheKey, TM_TTL_MS, async () => {
+      const all = await fetchTicketmaster(lat, lng, radius_m, dateFrom, dateTo);
+      return all
+        .filter((e) => haversineMeters(lat, lng, e.point.lat, e.point.lng) <= radius_m)
+        .slice(0, MAX_EVENTS);
+    });
+    return { events, count: events.length };
   });
 
-  return ok({ events, count: events.length });
+  return ok(body);
 });

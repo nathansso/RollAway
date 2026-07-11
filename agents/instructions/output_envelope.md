@@ -72,13 +72,16 @@ and every `cite` in a checklist step must resolve in `kb/SOURCES.md`.
   "steps": [
     { "order": 1, "agency": "Public Works", "title": "Apply for MFF permit",
       "detail": "...", "deadline_days": 30, "deadline_label": "30-day public notice",
-      "cite": "dpw-182101", "status": "todo" }
+      "cite": "dpw-182101", "autofill_field": "pinned_point", "status": "todo" }
   ]
 }
 ```
 
 `deadline_days` is an integer or `null`; `deadline_label` mirrors it or is `null`;
-`status` is one of `todo | in_progress | done`.
+`status` is one of `todo | in_progress | done`. **`autofill_field`** is OPTIONAL and additive: the
+name of a vendor-profile field the app can pre-fill on that agency's form (e.g. `business_name`,
+`pinned_point`, `vehicle_plate`). It is a UI hint, carries no factual claim, and needs no citation;
+omit it when nothing pre-fills.
 
 ---
 
@@ -130,9 +133,9 @@ and every `cite` in a checklist step must resolve in `kb/SOURCES.md`.
   "checklist": {
     "vendor_type": "pushcart_nocook",
     "steps": [
-      { "order": 1, "agency": "Treasurer", "title": "Register the business", "detail": "Obtain/renew the SF Business Registration Certificate; keep it current.", "deadline_days": 90, "deadline_label": "90-day document window", "cite": "ttx-cert", "status": "todo" },
-      { "order": 2, "agency": "Public Health", "title": "Health permit (no-cook tier) + commissary", "detail": "Lower-tier health permit for prepackaged/cold items; commissary/base agreement.", "deadline_days": 90, "deadline_label": "90-day document window", "cite": "sfdph-mff", "status": "todo" },
-      { "order": 3, "agency": "Public Works", "title": "Apply for the MFF permit (sidewalk location)", "detail": "Apply for your sidewalk location; triggers a 30-day public notice.", "deadline_days": 30, "deadline_label": "30-day public notice", "cite": "sfpw-mff", "status": "todo" },
+      { "order": 1, "agency": "Treasurer", "title": "Register the business", "detail": "Obtain/renew the SF Business Registration Certificate; keep it current.", "deadline_days": 90, "deadline_label": "90-day document window", "cite": "ttx-cert", "autofill_field": "business_name", "status": "todo" },
+      { "order": 2, "agency": "Public Health", "title": "Health permit (no-cook tier) + commissary", "detail": "Lower-tier health permit for prepackaged/cold items; commissary/base agreement.", "deadline_days": 90, "deadline_label": "90-day document window", "cite": "sfdph-mff", "autofill_field": "business_name", "status": "todo" },
+      { "order": 3, "agency": "Public Works", "title": "Apply for the MFF permit (sidewalk location)", "detail": "Apply for your sidewalk location; triggers a 30-day public notice.", "deadline_days": 30, "deadline_label": "30-day public notice", "cite": "sfpw-mff", "autofill_field": "pinned_point", "status": "todo" },
       { "order": 4, "agency": "Public Works", "title": "Appeal window", "detail": "Grant/deny decisions can be appealed within 15 days.", "deadline_days": 15, "deadline_label": "15-day appeal window", "cite": "sfpw-mff", "status": "todo" },
       { "order": 5, "agency": "Public Works", "title": "Maintain wide sidewalk pedestrian clearance", "detail": "Leave the required unobstructed sidewalk path; stay 75 ft from restaurant entrances, 7 ft from hydrants, 500 ft from schools during school hours.", "deadline_days": null, "deadline_label": null, "cite": "dpw-182101", "status": "todo" }
     ]

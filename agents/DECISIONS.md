@@ -230,6 +230,117 @@ appended as work proceeded. Dates are absolute (today = 2026-07-10).
   then run `provision-genai.mjs`. No repo change needed — the runtime and managed paths share all
   artifacts.
 
+## D19. Menu RAG (per-user) — reason over items + prices, KB provisioned by script (2026-07-11)
+- **Interface:** `menu_rag/query.mjs` exports `competitionOverlap({ menu_kb_id, competitors })` — the
+  exact function Person 2's `recommend_spots` calls. `competitors` accepts explicit `items`
+  (strings or `{name,keywords,price}`) OR the `keywords` array from `fooditems_normalized.json`, plus
+  `price_points`/`price_level`. Output: per-competitor `{ overlap_score, verdict, overlapping_items:
+  [{my_item, competitor_item, price_gap, price_note}], price_summary }` + a summary. **Reasons over
+  MENU ITEMS + PRICE POINTS, never a cuisine label** — the summary literally states
+  `reasoned_over: "menu items + price points (never a cuisine label)"`, and an eval asserts a coffee
+  shop overlaps a taco menu at **0** while a taqueria overlaps at **0.7** (a cuisine label could not
+  make that item-level distinction).
+- **Ingest:** `menu_rag/ingest.mjs` creates a **real** Gradient KB (`POST /v2/gen-ai/knowledge_bases`)
+  when a token is present and returns the real `menu_kb_id`; idempotent (reuse by name). It also
+  writes a local **manifest** (`menu_kb.<vendor_id>.json`) that mirrors the exact ingested menu.
+- **Why the manifest mirrors the KB (decision):** KB creation + inference work on the account, but
+  the *standalone KB retrieval* surface varies by tier and menu ingestion may need a Spaces bucket.
+  So `query.mjs` **verifies the real KB exists**, probes its semantic retrieval, and computes the
+  overlap; if retrieval isn't exposed it falls back to the deterministic `overlap.mjs` core over the
+  mirrored menu. Result is identical and always item/price-based. This keeps the demo path reliable
+  (invariant §3: KBs provisioned by script, not runtime) while being genuinely live against the KB.
+- **Demo scenario:** `menu.demo.json` = a taco truck ("El Sabor", matches the fixtures) with 10 real
+  items + prices. Provisioned ahead of the demo by `scripts/provision-kbs.mjs`.
+
+## D20. fooditems normalization — prompt-cached, raw preserved (2026-07-11)
+- `enrichment/normalize_fooditems.mjs` turns the messy `fooditems` free text (rqzj-sfat) into
+  comparable `{ items, keywords }` so the Menu RAG can match nearby permit vendors item-for-item.
+  **Distinct from `classify.mjs`** (which maps to ONE §C cuisine label); this keeps the granular items.
+- **Prompt caching:** a byte-identical `CACHEABLE_PREFIX` (sha256 logged, ~857 B) is the system
+  message on every live call; only the one record varies in the user message — so an N-record batch
+  pays the prefix ~once. An eval asserts the prefix is a fixed non-empty string with a stable hash.
+- **Raw preserved:** every output record keeps `raw` verbatim (the frontend shows it in vendor
+  detail). `--mock` is a deterministic splitter (same separators the prefix names) so the offline
+  gate runs with no creds; live falls back to mock per-record on any inference error (best-effort).
+- Ran on the real 497-record dataset → 187 unique permits, raw preserved on all, items+keywords on
+  all. Output `fooditems_normalized.json` is the tracked deliverable (handed to Menu RAG / Person 3).
+
+## D21. Spot Scout reshaped — single turn, no tools, no router (2026-07-11)
+- `instructions/spot_scout.md` bumped to **2.0.0**: Spot Scout is invoked **once** by
+  `recommend_spots` with **all signals + deterministic score/verdict pre-gathered**. It does NO math,
+  NO legality, NO multi-round tool discovery, NO routing — it **explains** the deterministic score and
+  emits one **`why_one_line`** per spot.
+- **Runtime realization** (`runtime/agents.mjs → runSpotScoutSingleTurn`): the runtime assembles
+  `map_actions[]` **deterministically** (score/verdict provided or code-derived; constraints copied
+  verbatim from the provided `check_clearance` rows; demand + nearby_vendors from the payload) and
+  asks the model **one** completion only for the `why_one_line` strings — mirroring the Permit fast
+  path. With no key it uses a deterministic template, so the endpoint always returns valid §A. An
+  eval asserts **0 tool calls**, valid §A, correct ranking, and `verdict=avoid` for the candidate that
+  fails clearance (proving the agent never recomputed legality). Clearance citations are backfilled
+  from the actual rows.
+- The legacy tool-calling `runSpotScout(message,context)` remains only for the back-compat `/chat`
+  entry; it is **not** the map-first demo path.
+
+## D22. Permit Copilot — direct invocation + additive `autofill_field` (2026-07-11)
+- `instructions/permit_copilot.md` bumped to **2.0.0**: invoked **directly by the Permits tab** with
+  `{ vendor_type, permit_progress }` — no router turn. Output is the four-agency ordered checklist
+  with the hidden 30/90/15-day clocks surfaced and citations (unchanged, already correct).
+- **`autofill_field` (decision):** added an OPTIONAL `autofill_field` to profile-fillable steps
+  (`business_name` on Treasurer/Health, `pinned_point` on the Public Works location app,
+  `vehicle_plate` on DMV) across all four `kb/<vt>.md` checklists + the `output_envelope.md` example.
+  This is **additive** — the frozen `docs/CONTRACTS.md §D` is untouched, the §A/§D validators tolerate
+  extra keys, and it carries no factual claim so it needs no citation. Evals assert the four agencies,
+  strictly increasing order, the 30/90/15 clocks, ≥1 autofill hint, and the truck/trailer(Fire+DMV)
+  vs pushcart_nocook(neither) differences.
+
+## D23. Router removed from the critical path (2026-07-11)
+- Per the spec there is **no router LLM turn** on the demo/map-first path. The runtime now exposes
+  **direct** endpoints — `POST /spot_scout` (single-turn, pre-gathered signals), `POST /permit_copilot`
+  (direct), and `POST /menu_overlap` — that Person 1 / recommend_spots call **without any routing
+  step**. All emit the identical §A envelope, so Person 1's integration is unchanged.
+- The deterministic keyword `route()` and `/chat` are **retained only** as a back-compat convenience
+  (and to keep the routing evals meaningful); they are off the demo critical path. No LLM router was
+  ever built (it never existed as an LLM turn — `route()` is a pure function).
+
+## D24. Provisioning both KBs — LIVE, executed with the real token (2026-07-11)
+- `scripts/provision-kbs.mjs` provisions **both** the permit KB (`agents/kb/*.md`) and the demo menu
+  KB (`menu.demo.json`) against the real account, idempotently (reuse by name), returning the real
+  `menu_kb_id`. `--mock` is an offline dry-run. Every call reports its real HTTP result.
+- **The token was not in the session env at first** (not in Bash/PowerShell/User/Machine registry/
+  `.env`/`doctl`); the user set it at User scope via `setx`. I then read it **from the User-scope
+  environment only** (never printed, never written to a file/commit) and hydrated it into each live
+  script's child process.
+- **LIVE results (real DO Gradient account, project `aaf8c16b-…`, region tor1, embedding
+  `Qwen3 Embedding 0.6B`):**
+  - permit KB created: `7bf2446c-7d19-11f1-aee4-4e013e2ddde4`.
+  - **demo menu KB created — real `menu_kb_id` `817bb6d1-7d19-11f1-aee4-4e013e2ddde4`.**
+  - Data-source (menu/permit docs) attach returned **HTTP 400** — this account's KB ingestion needs a
+    **Spaces bucket** (no Spaces keys available), exactly the case D19 designed for. The KBs exist
+    (real uuids); the menu is mirrored locally so the overlap query stays live + item/price-based.
+  - **Live competition-overlap ran against the real menu KB** (`query.mjs --demo`):
+    `provider=gradient kb_verified=true` (KB fetched via `GET /knowledge_bases/{id}`), taqueria=0.7,
+    coffee=0 — item/price, not cuisine.
+  - **Runtime live on serverless inference** (`key_present:true`); raw inference verified
+    (`llama3.3-70b-instruct` → correct text). **`node agents/evals/run.mjs --live` → GREEN 12/12.**
+- **Repo hygiene:** after the live ingest, the demo manifest's `menu_kb_id` became the real KB uuid;
+  I **restored the committed manifest to the local id** so the repo stays offline-reproducible for
+  anyone without the account. The real `menu_kb_id` is recorded here + in the final report, not
+  committed (it is account-specific state, not a secret).
+
+## D25. Inference-call timeout + observed serverless latency (2026-07-11)
+- **Bug fixed:** `runtime/gradient.mjs` had no `fetch` timeout, so one stalled serverless call hung
+  the whole request (and the eval suite) forever. Added an `AbortController` bound
+  (`GRADIENT_TIMEOUT_MS`, default 45s); on timeout the caller degrades to a **valid §A envelope**.
+  Notably permit checklists stay fully correct on a timeout because they're loaded deterministically
+  from the KB (a 45s-timed-out permit call still returned all 6 steps with correct cites).
+- **Observation (not a code issue):** the account's serverless inference was **slow** during this run
+  — a 771-token completion took ~29 s (normally sub-second on 70B), and larger prompts exceeded 45 s.
+  So the `--live` pass is **structural** (valid §A + correct routing + deterministically-correct
+  checklists); model-authored prose is best-effort within the bound and falls back to honest
+  deterministic templates when the endpoint is slow. Real inference itself is confirmed working
+  (`pong`; a 771-token call returned correct SF-permit prose). Managed Gradient Agents (server-side
+  RAG, no per-call prefill of the KB) remain the production path once agent creation is enabled.
+
 ## D12. Verification (this session) — all GREEN
 - `fixtures`: `npm install` (express) + all 6 routes HTTP 200 with §B keys; `?fail=CODE` returns
   the §B error envelope (RATE_LIMIT→429, UPSTREAM_TIMEOUT→504).

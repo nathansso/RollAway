@@ -40,6 +40,10 @@ static_sites:
       - key: VITE_PERMIT_CHECKLIST_URL
         scope: BUILD_TIME
         value: ""
+      # Gradient-backed menu extraction endpoint (agents runtime /menu_extract).
+      - key: VITE_MENU_EXTRACT_URL
+        scope: BUILD_TIME
+        value: ""
       # "true" = deterministic, zero-network API fixtures.
       - key: VITE_USE_FIXTURES
         scope: BUILD_TIME

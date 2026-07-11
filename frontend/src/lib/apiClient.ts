@@ -21,6 +21,8 @@ import vendorFixture from '../fixtures/vendors.geojson.json'
 import closureFixture from '../fixtures/get_closures.json'
 import permitFixture from '../fixtures/permit_checklist.json'
 import { isWithinSanFrancisco } from './sfBounds'
+import { parseMenu } from './profile'
+import type { MenuItem } from '../types/contract'
 
 const USE_FIXTURES =
   String(import.meta.env.VITE_USE_FIXTURES ?? 'true').toLowerCase() !== 'false'
@@ -28,6 +30,8 @@ const RECOMMEND_URL = String(import.meta.env.VITE_RECOMMEND_SPOTS_URL ?? '')
 const VENDORS_URL = String(import.meta.env.VITE_VENDORS_URL ?? '')
 const CLOSURES_URL = String(import.meta.env.VITE_CLOSURES_URL ?? '')
 const PERMIT_URL = String(import.meta.env.VITE_PERMIT_CHECKLIST_URL ?? '')
+// Gradient-backed menu extraction (agents runtime POST /menu_extract).
+const MENU_EXTRACT_URL = String(import.meta.env.VITE_MENU_EXTRACT_URL ?? '')
 const DEFAULT_DELAY = Math.max(
   0,
   Number(import.meta.env.VITE_FIXTURE_DELAY_MS ?? 1100) || 0,
@@ -844,6 +848,47 @@ export const apiClient = {
       return adaptLegacyRecommendations(body as unknown as LegacyChatResponse, request)
     }
     throw new ApiClientError('INVALID_RESPONSE', 'Recommendations were not in a supported format.')
+  },
+
+  // Extract a menu from raw text, a website link, or an image via the Gradient
+  // serverless-inference endpoint. Without the live service, only pasted/text
+  // sources parse in the browser (images/PDFs/links need the extractor).
+  async extractMenu(payload: {
+    input_type: 'text' | 'image' | 'url'
+    text?: string
+    image_data_url?: string
+    url?: string
+    vendor_type?: string
+  }): Promise<{ items: MenuItem[]; plain_text: string }> {
+    if (!MENU_EXTRACT_URL) {
+      if (payload.input_type === 'text' && payload.text?.trim()) {
+        const text = payload.text.trim()
+        return { items: parseMenu(text), plain_text: text }
+      }
+      throw new ApiClientError(
+        'CONFIG',
+        'Menu extraction service is not connected. Images, PDFs, and links need the live Gradient extractor.',
+      )
+    }
+    const body = await requestJson(MENU_EXTRACT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!isRecord(body) || body.ok === false) {
+      const message =
+        (isRecord(body) && typeof body.error === 'string' && body.error) ||
+        'Menu extraction failed.'
+      throw new ApiClientError('INVALID_RESPONSE', message)
+    }
+    const items: MenuItem[] = (Array.isArray(body.items) ? body.items : [])
+      .map((raw) => {
+        const record = isRecord(raw) ? raw : {}
+        return { name: String(record.name ?? '').trim(), price: Number(record.price) }
+      })
+      .filter((it) => it.name.length > 0 && Number.isFinite(it.price))
+    const plain_text = typeof body.plain_text === 'string' ? body.plain_text : ''
+    return { items, plain_text }
   },
 
   async getVendors(location: LatLng, when: SessionWhen): Promise<VendorCollection> {

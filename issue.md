@@ -28,8 +28,9 @@ Removed the bottom nav; permit checklist now reached via profile → "Permit che
 ### #12 — Valid Email Bug — 🔧 in progress
 Current app-level regex `/^[^\s@]+@[^\s@]+\.[^\s@]+$/` already accepts `.edu`/`.museum`/`+tag`/subdomains (reproduced: they pass). Hardening: validate only email *shape*, drop the browser's native `type="email"` strong-rejection layer, lock in permissive behavior with tests.
 
-### #11 — Sign Up Improvements — 🔧 partial (blockers noted)
-- ✅ doable now: rename "EasyApply details" → "User info"; enforce phone validity; email handled via #12.
-- ⚠️ contract-touching (removing home-base + operating-windows requires relaxing `validateProfile` and defaulting them in the model + updating e2e).
-- 🚫 **blocked:** "Remove Permit Status field" is blocked on **#15** (status is meant to be derived from checklist uploads built in #15). Per nathansso, sequence #15 first — not removing it yet.
-- 🚫 **needs backend:** "Menu = file upload (image/PDF/URL) → extract → JSON" needs a menu-extraction service that does not exist in this repo (only `menu_overlap` exists, for competition). Text can be parsed locally; image/PDF/URL cannot. Menu rework held until the extraction backend exists.
+### #11 — Sign Up Improvements — 🔧 mostly done (one part blocked)
+- ✅ Renamed "EasyApply details" → "User info".
+- ✅ Removed the home-base/neighborhood field and the operating-windows editor; relaxed `validateProfile` (empty home_base.label allowed; operating windows keep a model default). Remapped the EasyApply permit "location" to address + city.
+- ✅ Enforced complete US phone (`isValidUsPhone`); email via #12.
+- ✅ **Menu rework via Gradient AI serverless inference:** menu is now upload-first (image / PDF / text file / website link), extracted to JSON, with a success/failure notice and an expandable extracted-menu view; sample-menu and paste fields removed. New agents-runtime route `POST /menu_extract` (`agents/menu_rag/extract.mjs`) reuses the Gradient pipeline (`parseMenuText` for text/url with price verification; the multimodal model for images) with the deterministic mock as fallback. Frontend calls it via `VITE_MENU_EXTRACT_URL`; without the live service, pasted/text sources parse locally and images/PDFs/links show a "connect the extractor" notice. Live Gradient vision path is implemented but needs a `GRADIENT_API_KEY` + running runtime to verify.
+- 🚫 **still blocked:** "Remove Permit Status field" — blocked on **#15** (status must be derived from checklist uploads). Left in place until #15 lands.

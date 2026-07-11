@@ -61,7 +61,12 @@ async function completeProfile(page: import('@playwright/test').Page) {
     page.getByRole('heading', { name: 'Tell us about your business' }),
   ).toBeVisible()
   await page.getByLabel('Cuisine').selectOption('mexican')
-  await page.getByRole('button', { name: 'Use sample menu' }).click()
+  await page.getByLabel(/Upload menu/).setInputFiles({
+    name: 'menu.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('Al pastor taco $5\nVeggie burrito $11\nHorchata $4'),
+  })
+  await expect(page.getByText(/Extracted \d+ items?/)).toBeVisible()
   await page.getByLabel('Owner / contact name').fill('Avery Rivera')
   await page.getByLabel('Business name').fill('Mission Tacos')
   await page.getByLabel('Email').fill('avery@example.com')

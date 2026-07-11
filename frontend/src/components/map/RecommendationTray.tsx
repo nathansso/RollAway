@@ -79,7 +79,7 @@ export default function RecommendationTray() {
 
   return (
     <div className="recommendation-tray" aria-label="Ranked recommendations">
-      {spots.map((spot) => (
+      {spots.slice(0, 3).map((spot) => (
         <button
           type="button"
           key={spot.id}

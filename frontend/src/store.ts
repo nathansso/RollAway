@@ -6,6 +6,7 @@ import {
   validateProfile,
 } from './lib/profile'
 import { isWithinSanFrancisco } from './lib/sfBounds'
+import { normalizeRecommendations } from './lib/recommendations'
 import { createNowWhen, isValidCustomWindow } from './lib/when'
 import { loadJson, loadStringArray, saveJson } from './lib/storage'
 import { EMPTY_FORM_STATE, type PermitFormState } from './components/permits/permitForms'
@@ -137,7 +138,9 @@ export const useAppStore = create<AppState>((set, get) => {
 
     const requestId = ++latestRecommendationRequest
     set({
-      appPhase: 'loading_recommendations',
+      // Only the first search (from onboarding) takes the full-screen loader.
+      // Re-runs from the map stay inline so the map never disappears.
+      appPhase: get().appPhase === 'ready' ? 'ready' : 'loading_recommendations',
       recommendationStatus: 'loading',
       recommendationError: null,
       selectedSpotId: null,
@@ -152,7 +155,9 @@ export const useAppStore = create<AppState>((set, get) => {
       if (requestId !== latestRecommendationRequest) return
       set({
         appPhase: 'ready',
-        recommendations: response.recommendations,
+        // Normalize verdicts by relative quality, then keep the top 3 for both
+        // the map pins and the bottom tray.
+        recommendations: normalizeRecommendations(response.recommendations).slice(0, 3),
         recommendationStatus: 'success',
       })
     } catch (error) {

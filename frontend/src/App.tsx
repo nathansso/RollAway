@@ -68,11 +68,12 @@ export default function App() {
   }, [appPhase])
 
   // #14: once past the profile step, land on the recommendation map without a
-  // separate setup page. Default the origin to the vendor's current location
-  // (requesting geolocation once), then auto-run the search. An idle status on
-  // the map (after a time/location change) re-runs it the same way.
+  // separate setup page. Request geolocation once and auto-run the FIRST search
+  // (the initial loading_recommendations phase). On the map, changing the time
+  // or location does NOT auto-run — the user taps "Find spots", which re-runs
+  // inline without the full-screen loader.
   useEffect(() => {
-    if (appPhase !== 'loading_recommendations' && appPhase !== 'ready') return
+    if (appPhase !== 'loading_recommendations') return
     if (recommendationStatus !== 'idle') return
     if (locationStatus === 'idle') {
       requestLocation()

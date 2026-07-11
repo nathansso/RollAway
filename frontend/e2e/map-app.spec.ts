@@ -224,16 +224,13 @@ test('#14 controls: time wheel + address autocomplete on the map', async ({ page
   await page.goto('/app')
   await awaitRecommendations(page)
 
-  await page.getByRole('button', { name: 'Custom' }).click()
+  // The time wheel is a first-class control now (no preset buttons / Custom toggle).
   const startWheel = page.getByRole('listbox', { name: 'Start' })
   await expect(startWheel).toBeVisible()
   await expect(page.getByRole('listbox', { name: 'End' })).toBeVisible()
   await startWheel.getByRole('option', { name: '9:00 AM' }).click()
-  await page.getByRole('button', { name: 'Use this window' }).click()
-  await expect(page.getByRole('button', { name: 'Custom' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  )
+  // Changing the time does not auto-load; "Find spots" re-runs the search.
+  await page.getByRole('button', { name: 'Find spots' }).click()
   await awaitRecommendations(page)
 
   const search = page.getByPlaceholder('Search a starting address')
@@ -242,6 +239,7 @@ test('#14 controls: time wheel + address autocomplete on the map', async ({ page
   await expect(
     page.getByText('1 Ferry Building, San Francisco, CA 94111, USA'),
   ).toBeVisible()
+  await page.getByRole('button', { name: 'Find spots' }).click()
   await awaitRecommendations(page)
 })
 

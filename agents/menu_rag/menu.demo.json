@@ -1,0 +1,20 @@
+{
+  "vendor_id": "demo-el-sabor",
+  "vendor_name": "El Sabor Taqueria (truck)",
+  "vendor_type": "truck",
+  "cuisine_hint": "tacos",
+  "_note": "The DEMO vendor's REAL menu — items + prices. cuisine_hint is metadata only; the competition-overlap query NEVER reasons over it, only over items + price points. This file is ingested into a Gradient KB by ingest.mjs (returns menu_kb_id).",
+  "currency": "USD",
+  "items": [
+    { "name": "Carne Asada Taco", "keywords": ["taco", "carne asada", "beef"], "price": 3.50 },
+    { "name": "Al Pastor Taco", "keywords": ["taco", "al pastor", "pork"], "price": 3.50 },
+    { "name": "Carnitas Taco", "keywords": ["taco", "carnitas", "pork"], "price": 3.50 },
+    { "name": "Carne Asada Burrito", "keywords": ["burrito", "carne asada", "beef"], "price": 9.50 },
+    { "name": "Veggie Burrito", "keywords": ["burrito", "veggie", "vegetarian"], "price": 8.50 },
+    { "name": "Chicken Quesadilla", "keywords": ["quesadilla", "chicken"], "price": 8.00 },
+    { "name": "Elote (Street Corn)", "keywords": ["elote", "corn", "street corn"], "price": 4.00 },
+    { "name": "Chips & Guacamole", "keywords": ["chips", "guacamole"], "price": 5.00 },
+    { "name": "Horchata", "keywords": ["horchata", "juice", "drink"], "price": 3.00 },
+    { "name": "Jarritos", "keywords": ["jarritos", "soda", "drink"], "price": 2.50 }
+  ]
+}

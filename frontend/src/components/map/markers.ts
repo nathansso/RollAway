@@ -53,7 +53,7 @@ export function buildSpotMarkerElement(
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
   btn.setAttribute(
     'aria-label',
-    `Scored spot: ${Math.round(spot.score)} out of 100, ${VERDICT_LABEL[spot.verdict]}. Open details.`,
+    `Scored spot: ${Math.round(spot.score * 100)} out of 100, ${VERDICT_LABEL[spot.verdict]}. Open details.`,
   )
 
   const head = document.createElement('span')
@@ -63,7 +63,8 @@ export function buildSpotMarkerElement(
 
   const score = document.createElement('span')
   score.className = 'font-mono text-sm font-bold leading-none text-white'
-  score.textContent = String(Math.round(spot.score))
+  // contract score is 0–1; show it as 0–100
+  score.textContent = String(Math.round(spot.score * 100))
   head.appendChild(score)
 
   const tail = document.createElement('span')

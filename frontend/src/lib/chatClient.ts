@@ -17,7 +17,7 @@ const USE_FIXTURES =
 const ENDPOINT: string = import.meta.env.VITE_CHAT_ENDPOINT ?? ''
 
 const PERMIT_KEYWORDS =
-  /\b(permit|license|licence|fire|legal|checklist|health|dmv|registration|treasurer|paperwork|inspection)\b/i
+  /\b(permits?|licen[cs]es?|fire|legal|checklists?|health|dmv|registrations?|treasurer|paperwork|inspections?)\b/i
 
 const FIXTURE_DELAY_MS = 800
 

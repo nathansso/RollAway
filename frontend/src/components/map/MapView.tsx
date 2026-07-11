@@ -139,8 +139,14 @@ export default function MapView() {
     }
     mapRef.current = map
 
+    // The container can be zero-height at construction (font/CSS timing) and
+    // changes size with mobile browser chrome — keep the canvas in sync.
+    const ro = new ResizeObserver(() => map.resize())
+    ro.observe(containerRef.current)
+
     map.on('load', () => {
       loadedRef.current = true
+      map.resize()
       void addVendorLayers(map)
     })
 
@@ -211,6 +217,7 @@ export default function MapView() {
     }
 
     return () => {
+      ro.disconnect()
       for (const m of spotMarkersRef.current) m.remove()
       spotMarkersRef.current = []
       pinMarkerRef.current?.remove()
@@ -231,9 +238,12 @@ export default function MapView() {
       const el = buildSpotMarkerElement(spot, () =>
         useAppStore.getState().selectSpot(spot.id),
       )
-      return new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+      const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat([spot.point.lng, spot.point.lat])
         .addTo(map)
+      // mapbox stamps role="img" on marker elements; ours are real buttons
+      el.setAttribute('role', 'button')
+      return marker
     })
 
     if (spots.length > 0 && spotsEpoch !== lastEpochRef.current) {
@@ -283,9 +293,12 @@ export default function MapView() {
 
   return (
     <div className="absolute inset-0">
+      {/* h-full/w-full are load-bearing: mapbox's unlayered `.mapboxgl-map
+          {position:relative}` overrides Tailwind's layered `absolute`, so
+          inset-0 alone collapses this container to zero height. */}
       <div
         ref={containerRef}
-        className="absolute inset-0"
+        className="absolute inset-0 h-full w-full"
         role="application"
         aria-label="Map of San Francisco street-food vendors and scored spots"
       />

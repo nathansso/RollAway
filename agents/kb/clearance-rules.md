@@ -20,7 +20,7 @@ Function checks so a reader/agent can see them in one place.
 | From restaurant entrance | **75 ft** | truck, trailer, pushcart_cooking, pushcart_nocook | `dpw-182101` |
 | From fire hydrant | **7 ft** | all | `dpw-182101` |
 | From school (school hours) | **500 ft** | all | `dpw-182101` |
-| Sidewalk pedestrian clear width | `SOURCE-NEEDED` ft | **pushcarts especially** (sidewalk ops) | `dpw-182101` |
+| Minimum sidewalk width (6 ft path + 4 ft cart) | **10 ft** | `pushcart_cooking`, `pushcart_nocook` only (sidewalk ops) | `sf-sidewalk-width` |
 | Between two MFFs / claimed spots | `SOURCE-NEEDED` ft | all | `dpw-182101` |
 
 > The clearance checker is a **guide**, not legal clearance. It explains the published

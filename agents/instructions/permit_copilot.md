@@ -38,7 +38,8 @@ You obey `output_envelope.md` verbatim: you populate **`checklist`** and leave *
 3. **Fire (SFFD)** — cooking / LPG permit; **only** if the unit cooks with flame/propane/
    generator (`sffd-permit`). Omitted for `pushcart_nocook`.
 4. **Public Works** — the MFF permit for the location/schedule, with the hidden clocks
-   (`sfpw-mff`), and the placement clearances (`dpw-182101`).
+   (`sfpw-mff`), the placement distance clearances (`dpw-182101`), and — for pushcarts — the
+   minimum sidewalk width (`sf-sidewalk-width`).
 
 Plus **DMV** (`ca-dmv`) for `truck`/`trailer` only (a pushcart is not a vehicle).
 
@@ -49,7 +50,7 @@ Plus **DMV** (`ca-dmv`) for `truck`/`trailer` only (a pushcart is not a vehicle)
 | DMV registration (`ca-dmv`) | ✅ vehicle | ✅ trailer + tow | ❌ | ❌ |
 | Fire permit (`sffd-permit`) | ✅ | ✅ | ✅ (propane/flame) | ❌ (no flame) |
 | Health plan review depth (`sfdph-mff`) | full cook-line | full cook-line | cooking setup | no-cook tier |
-| Wide sidewalk clearance (`dpw-182101`) | curb-lane rules | curb-lane rules | ✅ sidewalk path | ✅ sidewalk path |
+| Wide sidewalk clearance (`sf-sidewalk-width`, 10 ft min) | curb-lane rules (`dpw-182101`) | curb-lane rules (`dpw-182101`) | ✅ sidewalk path | ✅ sidewalk path |
 | Business reg (`ttx-cert`), Public Works MFF (`sfpw-mff`) | ✅ | ✅ | ✅ | ✅ |
 
 The authored per-vendor-type checklists live in `kb/truck.md`, `kb/trailer.md`,

@@ -127,7 +127,11 @@ HTTP endpoint taking JSON, returning JSON. **Freeze the field names.**
 } ], "count": 1 }
 ```
 
-### Clearance geometry check (called by Spot Scout, implemented by P3)
+### `check_clearance` — clearance geometry check (called by Spot Scout, implemented by P3)
+
+Function name is **`check_clearance`** (pinned here so both sides agree; the tool, fixtures, and
+agent prompt all use this exact name).
+
 ```jsonc
 // input
 { "lat": 37.78, "lng": -122.40, "vendor_type": "truck" }
@@ -137,6 +141,14 @@ HTTP endpoint taking JSON, returning JSON. **Freeze the field names.**
     { "rule": "7ft from hydrant", "required_ft": 7, "actual_ft": 20, "pass": true, "cite": "dpw-182101" },
     { "rule": "500ft from middle school (school hours)", "required_ft": 500, "actual_ft": 900, "pass": true, "cite": "dpw-182101" }
 ] }
+```
+
+**Row count by vendor type (clarification, non-breaking):** `truck` and `trailer` return the **3**
+distance rows above (all `cite: "dpw-182101"`). `pushcart_cooking` and `pushcart_nocook` return a
+**4th** row for minimum sidewalk width — they operate on the sidewalk — citing `sf-sidewalk-width`
+(see §E):
+```jsonc
+{ "rule": "10ft min sidewalk width (6ft path + 4ft cart)", "required_ft": 10, "actual_ft": 12, "pass": true, "cite": "sf-sidewalk-width" }
 ```
 
 ### Common error envelope (all Functions)
@@ -182,11 +194,16 @@ Vendor types (canonical strings, shared everywhere):
 
 Every `citations[].source` (§A) and every clearance `cite` (§B) MUST be one of:
 
-`dpw-182101, sfpw-mff, sfpw-fees, sfdph-mff, sffd-permit, ttx-cert, ca-dmv, clearance-ref,
-checklist-truck, checklist-trailer, checklist-pushcart-cooking, checklist-pushcart-nocook`
+`dpw-182101, sf-sidewalk-width, sfpw-mff, sfpw-fees, sfdph-mff, sffd-permit, ttx-cert, ca-dmv,
+clearance-ref, checklist-truck, checklist-trailer, checklist-pushcart-cooking,
+checklist-pushcart-nocook`
 
 - `dpw-182101` — DPW Order No. 182,101 (core placement law + clearance distances). **This is
-  the `cite` Person 3 returns from the clearance geometry check for every distance row.**
+  the `cite` Person 3 returns from `check_clearance` for the three distance rows.**
 - The distance values are frozen in §B and owned by `dpw-182101`: **75 ft** restaurant
   entrance, **7 ft** hydrant, **500 ft** school (school hours).
+- `sf-sidewalk-width` — SF Public Works Code + ADA path-of-travel: **10 ft** minimum sidewalk
+  width (6 ft clear path + 4 ft cart). **This is the `cite` Person 3 returns for the 4th
+  `check_clearance` row, on `pushcart_cooking`/`pushcart_nocook` only** (distinct legal basis
+  from `dpw-182101`; the dataset `4g86-grxu` is the compute input, not the citation).
 - Full descriptions of every id: `agents/kb/SOURCES.md`.

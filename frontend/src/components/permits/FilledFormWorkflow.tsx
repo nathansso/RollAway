@@ -1,58 +1,40 @@
+import type { ChangeEvent } from 'react'
 import { useAppStore } from '../../store'
-import type { FilledForm } from '../../types/contract'
+import type { FilledForm, FilledFormFieldType } from '../../types/contract'
 import {
   EMPTY_FORM_STATE,
   RENEWAL_DAYS,
   allFieldsComplete,
+  buildFilledFormHtml,
   daysUntilRenewal,
-  filledFormExportRows,
+  filledFormFilename,
   formStatus,
   isFieldOutstanding,
+  isFieldRequired,
 } from './permitForms'
+import type { PermitFormState } from './permitForms'
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+// HTML input `type` for a field type. select/textarea are handled separately; text is the default.
+const INPUT_TYPE: Partial<Record<FilledFormFieldType, string>> = {
+  email: 'email',
+  tel: 'tel',
+  date: 'date',
+  number: 'number',
 }
 
-// Open a printable/exportable representation of the partially-filled form in a
-// new window. Outstanding fields are kept and marked — never invented. Returns
-// false when the window can't be opened (popup blocked / non-browser env).
-function openExportDocument(form: FilledForm, rows: ReturnType<typeof filledFormExportRows>): boolean {
-  if (typeof window === 'undefined' || typeof window.open !== 'function') return false
-  const win = window.open('', '_blank', 'noopener,noreferrer')
-  if (!win) return false
-  const rowHtml = rows
-    .map(
-      (row) =>
-        `<tr><th scope="row">${escapeHtml(row.label)}</th><td class="${
-          row.provided ? 'filled' : 'todo'
-        }">${row.provided ? escapeHtml(row.value) : '— to complete —'}</td></tr>`,
-    )
-    .join('')
-  win.document.write(
-    `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(
-      form.form,
-    )} — Rollaway record</title><style>` +
-      'body{font:15px/1.5 system-ui,sans-serif;color:#111;margin:2rem;max-width:44rem}' +
-      'h1{font-size:1.4rem;margin:0 0 .25rem}.agency{color:#555;margin:0 0 1.25rem}' +
-      'table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:.55rem .5rem;border-bottom:1px solid #ddd;vertical-align:top}' +
-      'th{width:44%;color:#333;font-weight:600}td.todo{color:#a15c00;font-style:italic}' +
-      '.note{margin-top:1.5rem;padding:.85rem 1rem;background:#fff7ed;border:1px solid #fed7aa;border-radius:.6rem;font-size:.85rem;color:#7c2d12}' +
-      'a{color:#1d4ed8}</style></head><body>' +
-      `<h1>${escapeHtml(form.form)}</h1><p class="agency">${escapeHtml(form.agency)}</p>` +
-      `<p><a href="${escapeHtml(form.form_url)}">Official form (${escapeHtml(form.form_url)})</a></p>` +
-      `<table><tbody>${rowHtml}</tbody></table>` +
-      '<p class="note"><strong>Guidance, not legal advice.</strong> This is a personal record pre-filled from your profile. ' +
-      'Copy these values onto the official agency form and verify every answer before submitting. Rollaway does not file it for you.</p>' +
-      '</body></html>',
-  )
-  win.document.close()
-  win.focus()
-  if (typeof win.print === 'function') win.print()
+// Generate the filled-out form and download it as a self-contained HTML file. Returns false in a
+// non-browser env. Outstanding fields are kept and marked in the artifact — never invented.
+function downloadFilledForm(form: FilledForm, state: PermitFormState): boolean {
+  if (typeof document === 'undefined' || typeof URL.createObjectURL !== 'function') return false
+  const blob = new Blob([buildFilledFormHtml(form, state)], { type: 'text/html' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filledFormFilename(form)
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
   return true
 }
 
@@ -72,14 +54,14 @@ export default function FilledFormWorkflow({
   const complete = allFieldsComplete(form, state)
   const days = daysUntilRenewal(state)
 
-  const handleExport = () => {
-    openExportDocument(form, filledFormExportRows(form, state))
+  const handleDownload = () => {
+    downloadFilledForm(form, state)
     exportForm(itemId)
   }
 
   const statusBadge = {
     in_progress: { text: 'In progress', className: 'bg-caution/15 text-caution' },
-    ready_to_export: { text: 'Ready to export', className: 'bg-primary/10 text-primary' },
+    ready_to_export: { text: 'Ready to download', className: 'bg-primary/10 text-primary' },
     awaiting_submit: { text: 'Awaiting submission', className: 'bg-primary/10 text-primary' },
     submitted: { text: 'Submitted', className: 'bg-good/15 text-good' },
   }[status]
@@ -117,27 +99,43 @@ export default function FilledFormWorkflow({
       <dl className="mt-2 space-y-1.5">
         {form.fields.map((field) => {
           const outstanding = isFieldOutstanding(field, state)
+          const required = isFieldRequired(field)
+          const labelText = required ? field.label : `${field.label} (optional)`
+          if (outstanding) {
+            const value = state.values[field.profile_key] ?? ''
+            const shared = {
+              className: 'form-input mt-1 py-1 text-sm',
+              value,
+              'aria-label': `${labelText} (add to complete this form)`,
+              'aria-required': required,
+              placeholder: required ? 'Required for this form' : 'Add if you have it',
+              onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+                setField(itemId, field.profile_key, event.target.value),
+            }
+            return (
+              <div key={field.profile_key} className="text-sm">
+                <label className="block">
+                  <span className="text-muted-foreground">
+                    {labelText}
+                    {required && <span className="text-caution"> *</span>}
+                  </span>
+                  {field.type === 'textarea' ? (
+                    <textarea {...shared} className="form-input mt-1 min-h-16 resize-y py-1 text-sm" />
+                  ) : (
+                    <input {...shared} type={(field.type && INPUT_TYPE[field.type]) || 'text'} />
+                  )}
+                </label>
+              </div>
+            )
+          }
           return (
             <div key={field.profile_key} className="text-sm">
-              {outstanding ? (
-                <label className="block">
-                  <span className="text-muted-foreground">{field.label}</span>
-                  <input
-                    className="form-input mt-1 py-1 text-sm"
-                    value={state.values[field.profile_key] ?? ''}
-                    onChange={(event) => setField(itemId, field.profile_key, event.target.value)}
-                    placeholder="Add for your record"
-                    aria-label={`${field.label} (add to complete this form)`}
-                  />
-                </label>
-              ) : (
-                <div className="flex items-baseline justify-between gap-3">
-                  <dt className="shrink-0 text-muted-foreground">{field.label}</dt>
-                  <dd className="min-w-0 truncate text-right font-medium text-foreground">
-                    {state.values[field.profile_key]?.trim() || field.value}
-                  </dd>
-                </div>
-              )}
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="shrink-0 text-muted-foreground">{labelText}</dt>
+                <dd className="min-w-0 truncate text-right font-medium text-foreground">
+                  {state.values[field.profile_key]?.trim() || field.value}
+                </dd>
+              </div>
             </div>
           )
         })}
@@ -148,14 +146,14 @@ export default function FilledFormWorkflow({
           type="button"
           className="easyapply-button"
           disabled={!complete}
-          onClick={handleExport}
+          onClick={handleDownload}
         >
-          {state.exported ? 'Re-export filled form' : 'Export filled form'}
+          {state.exported ? 'Download again' : 'Download filled form'}
           <span className="sr-only"> for {form.form}</span>
         </button>
         {!complete && (
           <span className="text-xs text-muted-foreground">
-            Fill every field to export.
+            Fill the required fields to download.
           </span>
         )}
       </div>

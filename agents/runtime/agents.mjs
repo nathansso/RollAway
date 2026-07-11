@@ -8,7 +8,7 @@ import { dirname, resolve } from "node:path";
 import { complete, runWithTools, haveKey } from "./gradient.mjs";
 import { openaiTools, executeTool } from "./tools.mjs";
 import { competitionOverlap } from "../menu_rag/query.mjs";
-import { attachFormUrls, parseFormsTable } from "./forms.mjs";
+import { attachFormUrls, parseFormsTable, parseFormFieldsTable, buildFormSchema } from "./forms.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const INSTR = resolve(__dir, "..", "instructions");
@@ -29,6 +29,7 @@ const RULE_DOCS = ["dpw-182101.md", "sf-sidewalk-width.md", "clearance-rules.md"
 const CHECKLISTS = ["truck.md", "trailer.md", "pushcart_cooking.md", "pushcart_nocook.md"];
 const readOne = (f) => readFileSync(resolve(KB, f), "utf8");
 const FORMS = parseFormsTable(readOne("FORMS.md"));
+const FORM_FIELDS = parseFormFieldsTable(readOne("FORM_FIELDS.md"));
 const readKbFiles = (files) => [...new Set(files)]
   .filter((f) => { try { readOne(f); return true; } catch { return false; } })
   .map((f) => `### FILE: kb/${f}\n${readOne(f)}`).join("\n\n");
@@ -413,4 +414,42 @@ export async function runPermitCopilot(message, context = {}) {
   if (env.checklist === undefined) env.checklist = null;
   env.checklist = attachFormUrls(env.checklist, FORMS);
   return { env, trace: [] };
+}
+
+// Doc-ingestion for paperwork (serverless-inference runtime route POST /form_fill).
+// Given a form `source` id + the vendor's supplied context, ingest the verified form and return its
+// grounded fillable schema (field name/type/required) pre-filled from what we know. The structured
+// schema is DETERMINISTIC and authored (never hallucinated); the model only writes a short,
+// applicant-facing "what you'll need" summary, and with no key we fall back to a template.
+export async function runFormFill(payload = {}) {
+  const source = payload.source || payload.cite;
+  if (!source || !/^[a-z0-9-]+$/.test(source)) {
+    return { error: { code: "BAD_INPUT", message: "missing or invalid form `source` id" } };
+  }
+  // Flatten the profile vocabulary the schema fills from (never invents): explicit profile wins,
+  // then context, then the top-level vendor_type.
+  const profile = { vendor_type: payload.vendor_type, ...(payload.context || {}), ...(payload.profile || {}) };
+  const schema = buildFormSchema(source, FORMS, FORM_FIELDS, profile);
+  if (!schema) {
+    return { error: { code: "BAD_INPUT", message: `no verified fillable form for source '${source}'` } };
+  }
+
+  const outstanding = schema.fields.filter((f) => f.required && f.status === "unknown").map((f) => f.label);
+  const fallback =
+    `${schema.form} (${schema.agency}). Pre-filled ${schema.fields.filter((f) => f.status === "filled").length} ` +
+    `of ${schema.fields.length} fields from your profile.` +
+    (outstanding.length ? ` Still needed: ${outstanding.join(", ")}.` : " Every required field is filled.") +
+    " Review on the official form before submitting - this is a guide, not legal clearance.";
+  let summary = fallback;
+  if (haveKey()) {
+    try {
+      const sys = "You are Rollaway's paperwork assistant. In 1-2 friendly sentences, tell the vendor which " +
+        "of this form's fields are still needed and remind them this is a guide, not legal clearance. " +
+        "Use ONLY the provided field data — never invent a value or a field. No JSON, no lists.";
+      const usr = `Form: ${schema.form} (${schema.agency}).\nFields: ${JSON.stringify(schema.fields)}\nStill needed (required, blank): ${JSON.stringify(outstanding)}`;
+      const out = (await complete([{ role: "system", content: sys }, { role: "user", content: usr }], { max_tokens: 160 })).trim();
+      if (out) summary = out;
+    } catch { /* keep deterministic fallback */ }
+  }
+  return { ...schema, summary };
 }

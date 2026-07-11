@@ -10,11 +10,13 @@ const VENDOR_TYPES = ["truck", "trailer", "pushcart_cooking", "pushcart_nocook"]
 const VERDICTS = ["good", "caution", "avoid"];
 const STATUSES = ["todo", "in_progress", "done"];
 const FIELD_STATUSES = ["filled", "unknown"];
+const FIELD_TYPES = ["text", "email", "tel", "date", "number", "select", "textarea"];
 
 // Additive §D: a step may carry a `filled_form` paperwork record (object or null). When present as
 // an object it must name the real form (agency/form/form_url all strings) and a fields[] array of
-// { label, profile_key, value:string|null, status: filled|unknown }. Values are string|null only —
-// unknown fields are null, never fabricated.
+// { label, profile_key, value:string|null, status: filled|unknown } plus the additive optional
+// `type` (input enum) and `required` (boolean). Values are string|null only — unknown fields are
+// null, never fabricated.
 function validateFilledForm(ff, p) {
   const e = [];
   if (!isStr(ff.agency)) e.push(`${p}.agency must be string`);
@@ -27,6 +29,8 @@ function validateFilledForm(ff, p) {
     if (!isStr(f.profile_key)) e.push(`${fp}.profile_key must be string`);
     if (!(f.value === null || isStr(f.value))) e.push(`${fp}.value must be string|null`);
     if (!FIELD_STATUSES.includes(f.status)) e.push(`${fp}.status invalid: ${f.status}`);
+    if (f.type !== undefined && !FIELD_TYPES.includes(f.type)) e.push(`${fp}.type invalid: ${f.type}`);
+    if (f.required !== undefined && typeof f.required !== "boolean") e.push(`${fp}.required must be boolean`);
   });
   return e;
 }

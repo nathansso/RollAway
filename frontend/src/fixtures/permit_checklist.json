@@ -16,24 +16,87 @@
           "form_url": "https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf",
           "easy_apply": true,
           "fields": [
-            { "key": "owner_name", "label": "Owner name", "requirement": "auto_filled" },
-            { "key": "business_name", "label": "Business name", "requirement": "auto_filled" },
-            { "key": "vendor_type", "label": "Facility type", "requirement": "auto_filled" },
-            { "key": "menu", "label": "Menu", "requirement": "auto_filled" },
-            { "key": "location", "label": "Proposed location", "requirement": "must_verify" },
-            { "key": "proposed_start_date", "label": "Proposed start date", "requirement": "missing" },
-            { "key": "signature", "label": "Applicant signature", "requirement": "must_verify" }
+            {
+              "key": "owner_name",
+              "label": "Owner name",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "business_name",
+              "label": "Business name",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "vendor_type",
+              "label": "Facility type",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "menu",
+              "label": "Menu",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "location",
+              "label": "Proposed location",
+              "requirement": "must_verify"
+            },
+            {
+              "key": "proposed_start_date",
+              "label": "Proposed start date",
+              "requirement": "missing"
+            },
+            {
+              "key": "signature",
+              "label": "Applicant signature",
+              "requirement": "must_verify"
+            }
           ],
           "filled_form": {
             "agency": "San Francisco Public Works",
             "form": "Application for Mobile Food Facility",
             "form_url": "https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf",
             "fields": [
-              { "label": "Business name", "profile_key": "business_name", "value": "El Sabor Taqueria", "status": "filled" },
-              { "label": "Applicant / owner name", "profile_key": "owner_name", "value": "Ana Ruiz", "status": "filled" },
-              { "label": "Mobile food facility type", "profile_key": "vendor_type", "value": "truck", "status": "filled" },
-              { "label": "Proposed location (lat, lng)", "profile_key": "pinned_point", "value": "37.7852, -122.3969", "status": "filled" },
-              { "label": "Contact email", "profile_key": "email", "value": null, "status": "unknown" }
+              {
+                "label": "Business name",
+                "profile_key": "business_name",
+                "value": "El Sabor Taqueria",
+                "status": "filled",
+                "type": "text",
+                "required": true
+              },
+              {
+                "label": "Applicant / owner name",
+                "profile_key": "owner_name",
+                "value": "Ana Ruiz",
+                "status": "filled",
+                "type": "text",
+                "required": true
+              },
+              {
+                "label": "Mobile food facility type",
+                "profile_key": "vendor_type",
+                "value": "truck",
+                "status": "filled",
+                "type": "select",
+                "required": true
+              },
+              {
+                "label": "Proposed location (lat, lng)",
+                "profile_key": "pinned_point",
+                "value": "37.7852, -122.3969",
+                "status": "filled",
+                "type": "text",
+                "required": true
+              },
+              {
+                "label": "Contact email",
+                "profile_key": "email",
+                "value": null,
+                "status": "unknown",
+                "type": "email",
+                "required": false
+              }
             ]
           }
         },
@@ -77,11 +140,31 @@
           "form_url": "https://www.sf.gov/sites/default/files/2024-06/MFF%20Unified%20Application.pdf",
           "easy_apply": true,
           "fields": [
-            { "key": "owner_name", "label": "Owner name", "requirement": "auto_filled" },
-            { "key": "business_name", "label": "Business name", "requirement": "auto_filled" },
-            { "key": "email", "label": "Email", "requirement": "auto_filled" },
-            { "key": "phone", "label": "Phone", "requirement": "auto_filled" },
-            { "key": "menu", "label": "Menu", "requirement": "must_verify" }
+            {
+              "key": "owner_name",
+              "label": "Owner name",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "business_name",
+              "label": "Business name",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "email",
+              "label": "Email",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "phone",
+              "label": "Phone",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "menu",
+              "label": "Menu",
+              "requirement": "must_verify"
+            }
           ]
         },
         {
@@ -112,9 +195,21 @@
           "form_url": "https://sf-fire.org/media/3681/download?inline",
           "easy_apply": true,
           "fields": [
-            { "key": "business_name", "label": "Business name", "requirement": "auto_filled" },
-            { "key": "vendor_type", "label": "Facility type", "requirement": "auto_filled" },
-            { "key": "location", "label": "Inspection location", "requirement": "must_verify" }
+            {
+              "key": "business_name",
+              "label": "Business name",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "vendor_type",
+              "label": "Facility type",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "location",
+              "label": "Inspection location",
+              "requirement": "must_verify"
+            }
           ]
         }
       ]
@@ -133,11 +228,31 @@
           "form_url": null,
           "easy_apply": true,
           "fields": [
-            { "key": "owner_name", "label": "Owner name", "requirement": "auto_filled" },
-            { "key": "business_name", "label": "Business name", "requirement": "auto_filled" },
-            { "key": "address", "label": "Mailing address", "requirement": "auto_filled" },
-            { "key": "email", "label": "Email", "requirement": "auto_filled" },
-            { "key": "signature", "label": "Applicant certification", "requirement": "must_verify" }
+            {
+              "key": "owner_name",
+              "label": "Owner name",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "business_name",
+              "label": "Business name",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "address",
+              "label": "Mailing address",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "email",
+              "label": "Email",
+              "requirement": "auto_filled"
+            },
+            {
+              "key": "signature",
+              "label": "Applicant certification",
+              "requirement": "must_verify"
+            }
           ]
         }
       ]

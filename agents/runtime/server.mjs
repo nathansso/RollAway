@@ -11,7 +11,7 @@ import { createServer } from "node:http";
 import { handleChat } from "./chat.mjs";
 import { haveKey, config } from "./gradient.mjs";
 import { toolBase } from "./tools.mjs";
-import { runSpotScoutSingleTurn, runPermitCopilot } from "./agents.mjs";
+import { runSpotScoutSingleTurn, runPermitCopilot, runFormFill } from "./agents.mjs";
 import { validateEnvelope } from "../evals/lib/schema.mjs";
 import { competitionOverlap } from "../menu_rag/query.mjs";
 
@@ -37,7 +37,7 @@ const server = createServer((req, res) => {
     return send(res, 200, {
       service: "rollaway-agents-runtime", model: config.MODEL, inference: config.URL,
       tool_base_url: toolBase, key_present: haveKey(),
-      routes: ["GET /", "POST /chat (legacy, router)", "POST /spot_scout (single-turn, no router)", "POST /permit_copilot (direct)", "POST /menu_overlap"]
+      routes: ["GET /", "POST /chat (legacy, router)", "POST /spot_scout (single-turn, no router)", "POST /permit_copilot (direct)", "POST /menu_overlap", "POST /form_fill (doc ingestion)"]
     });
   }
 
@@ -96,7 +96,21 @@ const server = createServer((req, res) => {
     return;
   }
 
-  send(res, 404, { error: "not found", routes: ["GET /", "POST /chat", "POST /spot_scout", "POST /permit_copilot", "POST /menu_overlap"] });
+  // Doc ingestion for paperwork — { source, vendor_type, context } -> grounded fillable form schema
+  // pre-filled from the supplied profile. Plain JSON (not a §A envelope), like /menu_overlap.
+  if (req.method === "POST" && url.pathname === "/form_fill") {
+    readBody(req).then(async (payload) => {
+      try {
+        const schema = await runFormFill(payload);
+        send(res, schema.error ? 400 : 200, schema);
+      } catch (e) {
+        send(res, 500, { error: { code: "UPSTREAM_TIMEOUT", message: e.message } });
+      }
+    }).catch(() => send(res, 400, { error: "invalid JSON" }));
+    return;
+  }
+
+  send(res, 404, { error: "not found", routes: ["GET /", "POST /chat", "POST /spot_scout", "POST /permit_copilot", "POST /menu_overlap", "POST /form_fill"] });
 });
 
 server.listen(PORT, () => console.log(`[runtime] rollaway agents on http://localhost:${PORT}  (model=${config.MODEL}, tools=${toolBase}, key=${haveKey()})`));

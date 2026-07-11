@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CloseIcon } from '../common/Icons'
+import { ChevronIcon, CloseIcon, PermitIcon } from '../common/Icons'
 import BrandMark from '../common/BrandMark'
 import { SAMPLE_MENUS, sampleMenuText } from '../../fixtures/sampleMenus'
 import { derivePriceTier, formatUsPhone, formatUsPhoneLocal, parseMenu } from '../../lib/profile'
@@ -73,6 +73,8 @@ export default function ProfileEditor() {
   const existing = useAppStore((state) => state.profile)
   const close = useAppStore((state) => state.closeProfileEditor)
   const saveProfile = useAppStore((state) => state.saveProfile)
+  const setActiveTab = useAppStore((state) => state.setActiveTab)
+  const appPhase = useAppStore((state) => state.appPhase)
   const [draft, setDraft] = useState<VendorProfile>(() => existing ?? emptyProfile())
   const [error, setError] = useState('')
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -190,6 +192,21 @@ export default function ProfileEditor() {
             <div role="alert" className="mb-5 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
               {error}
             </div>
+          )}
+
+          {existing && appPhase === 'ready' && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('permits')
+                close()
+              }}
+              className="secondary-button mb-5 w-full"
+            >
+              <PermitIcon className="h-5 w-5 text-primary" />
+              Permit checklist
+              <ChevronIcon className="h-4 w-4" />
+            </button>
           )}
 
           <section className="form-section">

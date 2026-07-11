@@ -26,6 +26,7 @@ export default function PermitChecklist() {
   const startPermitChecklist = useAppStore((state) => state.startPermitChecklist)
   const toggle = useAppStore((state) => state.togglePermitItem)
   const openProfile = useAppStore((state) => state.openProfileEditor)
+  const setActiveTab = useAppStore((state) => state.setActiveTab)
   const [easyApplyItem, setEasyApplyItem] = useState<PermitChecklistItem | null>(null)
 
   const items = checklist?.sections.flatMap((section) => section.items) ?? []
@@ -36,7 +37,11 @@ export default function PermitChecklist() {
     return (
       <main id="permits-content" className="permits-screen" tabIndex={-1}>
         <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pb-32 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6">
-          <header className="flex justify-end">
+          <header className="flex items-center justify-between">
+            <button type="button" className="secondary-button" onClick={() => setActiveTab('map')} aria-label="Back to map">
+              <ChevronIcon className="h-4 w-4 rotate-180" />
+              Map
+            </button>
             <button type="button" className="touch-button bg-white shadow-sm" onClick={openProfile} aria-label="Edit vendor profile">
               <UserIcon className="h-5 w-5" />
             </button>
@@ -82,6 +87,12 @@ export default function PermitChecklist() {
   return (
     <main id="permits-content" className="permits-screen" tabIndex={-1}>
       <div className="mx-auto w-full max-w-3xl px-4 pb-32 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6">
+        <div className="mb-4">
+          <button type="button" className="secondary-button" onClick={() => setActiveTab('map')} aria-label="Back to map">
+            <ChevronIcon className="h-4 w-4 rotate-180" />
+            Map
+          </button>
+        </div>
         <header className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">

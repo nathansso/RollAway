@@ -5,7 +5,6 @@ import RecommendationTray from './components/map/RecommendationTray'
 import SpotPanel from './components/spot/SpotPanel'
 import PermitChecklist from './components/permits/PermitChecklist'
 import AppHeader from './components/shell/AppHeader'
-import BottomNav from './components/shell/BottomNav'
 import OfflineGate from './components/shell/OfflineGate'
 import ProfileEditor from './components/onboarding/ProfileEditor'
 import SessionSetup from './components/onboarding/SessionSetup'
@@ -100,14 +99,13 @@ export default function App() {
             <SessionControls />
           </div>
           {!recommendationRevealPending && (
-            <div className="absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20">
+            <div className="absolute inset-x-0 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-20">
               <RecommendationTray />
             </div>
           )}
         </div>
 
         {activeTab === 'permits' && <PermitChecklist />}
-        <BottomNav />
       </div>
       {activeTab === 'map' && <SpotPanel />}
       <ProfileEditor />

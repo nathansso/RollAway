@@ -80,6 +80,12 @@ async function findPlaces(page: import('@playwright/test').Page) {
   await expect(page.getByText('2nd & Howard', { exact: true })).toBeVisible()
 }
 
+// The permit checklist is reached from the profile (not a trip-page tab).
+async function openPermits(page: import('@playwright/test').Page) {
+  await page.getByRole('button', { name: /Edit profile/ }).click()
+  await page.getByRole('button', { name: 'Permit checklist' }).click()
+}
+
 async function expectFullScreenLoader(
   page: import('@playwright/test').Page,
   status: string,
@@ -125,7 +131,7 @@ test('full-screen loader covers recommendation and permit operations', async ({
   await expect(page.locator('.truck-loader__dust')).toHaveCSS('animation-name', 'none')
   await expect(page.getByText('2nd & Howard', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Permits' }).click()
+  await openPermits(page)
   await Promise.all([
     expectFullScreenLoader(page, 'Building your San Francisco permit path…'),
     page.getByRole('button', { name: 'Build my permit checklist' }).click(),
@@ -142,7 +148,7 @@ test('permit generation is explicit and shows the personalized checklist', async
 
   await completeProfile(page)
   await findPlaces(page)
-  await page.getByRole('button', { name: 'Permits' }).click()
+  await openPermits(page)
 
   await expect(
     page.getByRole('heading', { name: 'Build your San Francisco permit path' }),
@@ -321,7 +327,7 @@ test('first launch, map recommendations, details, permits, and EasyApply', async
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog', { name: /2nd & Howard/ })).toBeHidden()
 
-  await page.getByRole('button', { name: 'Permits' }).click()
+  await openPermits(page)
   await page.getByRole('button', { name: 'Build my permit checklist' }).click()
   await expect(page.getByRole('heading', { name: 'Your permit path' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Public Works' })).toBeVisible()
@@ -335,7 +341,7 @@ test('first launch, map recommendations, details, permits, and EasyApply', async
   await firstChecklist.click()
   await page.reload()
   await findPlaces(page)
-  await page.getByRole('button', { name: 'Permits' }).click()
+  await openPermits(page)
   await page.getByRole('button', { name: 'Build my permit checklist' }).click()
   await expect(
     page.getByRole('checkbox', {
@@ -526,7 +532,7 @@ test('fixture mode keeps the schematic map usable without a Mapbox token', async
   await rank.click()
   await expect(page.getByRole('dialog', { name: /2nd & Howard/ })).toBeVisible()
   await page.keyboard.press('Escape')
-  await page.getByRole('button', { name: 'Permits' }).click()
+  await openPermits(page)
   await expect(
     page.getByRole('heading', { name: 'Build your San Francisco permit path' }),
   ).toBeVisible()

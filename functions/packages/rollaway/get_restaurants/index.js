@@ -158,11 +158,12 @@ exports.main = guard(async (args) => {
   const { lat, lng, radius_m } = validatePoint(args, { defaultRadius: 300, maxRadius: 2000 });
   const win = parseWindow(args); // validates window args (throws BAD_INPUT) before snapshot read
 
-  // Honors DEMO_DATA_MODE; a live miss degrades to snapshot in ~2.5s. The
-  // snapshot key includes the setup-window start so distinct windows don't collide.
+  // Honors DEMO_DATA_MODE; a live miss degrades to snapshot in ~2.5s. Key is
+  // point + day (matching recommend_spots' read key, which ignores the window
+  // times); a single setup window per point/day is the demo assumption.
   const body = await withData(
     'get_restaurants',
-    { lat, lng, radius_m, day: args.day, time: args.time_from },
+    { lat, lng, radius_m, day: args.day },
     () => computeRestaurants(lat, lng, radius_m, win)
   );
   return ok(body);

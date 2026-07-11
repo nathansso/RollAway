@@ -1,0 +1,21 @@
+{
+  "mode": "driving",
+  "origin": {
+    "lat": 37.78,
+    "lng": -122.4
+  },
+  "rows": [
+    {
+      "estimated": false,
+      "minutes": 0
+    },
+    {
+      "estimated": false,
+      "minutes": 21.1
+    },
+    {
+      "estimated": false,
+      "minutes": 5.2
+    }
+  ]
+}

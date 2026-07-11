@@ -344,7 +344,12 @@ function snapshotKey(args = {}) {
   else if (a.hour !== undefined && a.hour !== null && a.hour !== '') timePart = String(a.hour);
   const base = `${latS}_${lngS}_${radius}_${day}_${timePart}`;
   const vt = a.vendor_type ? String(a.vendor_type).toLowerCase() : '';
-  return vt ? `${base}_${vt}` : base;
+  const key = vt ? `${base}_${vt}` : base;
+  // Filename-safe: the key becomes part of a filename, and ':' in a time like
+  // "12:00" is illegal on Windows (silently creates an NTFS alternate data
+  // stream). Strip anything outside [A-Za-z0-9._-] so keys are portable and
+  // read/write always agree.
+  return key.replace(/[^A-Za-z0-9._-]/g, '');
 }
 
 /**

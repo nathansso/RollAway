@@ -25,6 +25,7 @@ const {
 const { travelMatrix } = require('./travel');
 const { menuCompetition } = require('./menu_competition');
 const { scoreCandidate } = require('./score');
+const { makeCandidates, signalArgs } = require('./candidates');
 
 // ---- Scenario defaults -----------------------------------------------------
 let SCENARIO = {
@@ -37,17 +38,6 @@ let SCENARIO = {
 try {
   SCENARIO = JSON.parse(fs.readFileSync(path.join(__dirname, 'demo_data', 'scenario.json'), 'utf8'));
 } catch { /* fall back to the baked-in defaults above */ }
-
-const MAX_CANDIDATES = 3;
-const EVENTS_RADIUS_M = 3000; // events search is deliberately wider than the spot radius
-const SETUP_WINDOW_HOURS = 2;  // planned setup window length used for get_restaurants
-
-// Deterministic candidate ring: anchor + two offsets (~120 m, ~250 m).
-const CANDIDATE_OFFSETS = [
-  { bearing: 0, dist: 0 },
-  { bearing: 60, dist: 120 },
-  { bearing: 210, dist: 250 },
-];
 
 // ---------------------------------------------------------------------------
 // callFunction — 3-tier transport (§4c). All tiers return the OUTPUT BODY.
@@ -98,36 +88,6 @@ async function safeCall(name, args, neutral) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Geometry helpers for candidate generation
-// ---------------------------------------------------------------------------
-function offsetPoint(lat, lng, bearingDeg, distM) {
-  if (distM === 0) return { lat: round5(lat), lng: round5(lng) };
-  const R = 6371008.8;
-  const br = (bearingDeg * Math.PI) / 180;
-  const lat1 = (lat * Math.PI) / 180;
-  const lng1 = (lng * Math.PI) / 180;
-  const dr = distM / R;
-  const lat2 = Math.asin(
-    Math.sin(lat1) * Math.cos(dr) + Math.cos(lat1) * Math.sin(dr) * Math.cos(br)
-  );
-  const lng2 = lng1 + Math.atan2(
-    Math.sin(br) * Math.sin(dr) * Math.cos(lat1),
-    Math.cos(dr) - Math.sin(lat1) * Math.sin(lat2)
-  );
-  return { lat: round5((lat2 * 180) / Math.PI), lng: round5((lng2 * 180) / Math.PI) };
-}
-
-const round5 = (n) => Math.round(n * 1e5) / 1e5;
-
-function makeCandidates(location) {
-  return CANDIDATE_OFFSETS.slice(0, MAX_CANDIDATES).map((o, i) => ({
-    id: `spot-${i + 1}`,
-    point: offsetPoint(location.lat, location.lng, o.bearing, o.dist),
-    block_label: null, // filled after signals (nearest vendor) or coords fallback
-  }));
-}
-
 /** block_label from the nearest vendor if cheaply available, else coords. */
 function blockLabel(point, vendorsBody) {
   const vendors = (vendorsBody && vendorsBody.vendors) || [];
@@ -146,19 +106,17 @@ function blockLabel(point, vendorsBody) {
 // Per-candidate signal fetch — IN PARALLEL (§4c)
 // ---------------------------------------------------------------------------
 async function fetchSignals(candidate, ctx) {
-  const { lat, lng } = candidate.point;
-  const { day, hour, time_from, time_to, date_from, date_to, radius_m, vendor_type } = ctx;
+  const a = signalArgs(candidate.point, ctx); // same args freeze_snapshots uses
 
   const [vendors, closures, restaurants, foot_traffic, events, clearance] = await Promise.all([
-    safeCall('get_vendors', { lat, lng, radius_m, day, time: ctx.time }, { vendors: [], count: 0 }),
-    safeCall('get_closures', { lat, lng, radius_m, date_from, date_to }, { closures: [], count: 0 }),
-    safeCall('get_restaurants', { lat, lng, radius_m, day, time_from, time_to },
+    safeCall('get_vendors', a.get_vendors, { vendors: [], count: 0 }),
+    safeCall('get_closures', a.get_closures, { closures: [], count: 0 }),
+    safeCall('get_restaurants', a.get_restaurants,
       { total: 0, by_cuisine: {}, by_price: {}, saturation: 'low' }),
-    safeCall('get_foot_traffic', { lat, lng, radius_m, day, hour },
+    safeCall('get_foot_traffic', a.get_foot_traffic,
       { score: 0, basis: 'bay_wheels', nearby_stations: 0, live_activity: 0, historical_avg: 0 }),
-    safeCall('get_events', { lat, lng, radius_m: EVENTS_RADIUS_M, date_from, date_to },
-      { events: [], count: 0 }),
-    safeCall('check_clearance', { lat, lng, vendor_type }, { allowed: undefined, checks: [] }),
+    safeCall('get_events', a.get_events, { events: [], count: 0 }),
+    safeCall('check_clearance', a.check_clearance, { allowed: undefined, checks: [] }),
   ]);
 
   return { vendors, closures, restaurants, foot_traffic, events, clearance };
@@ -226,12 +184,6 @@ function templateWhy(spot, ctx) {
 // ---------------------------------------------------------------------------
 // Input handling
 // ---------------------------------------------------------------------------
-function addHoursHHMM(hhmm, h) {
-  const [H, M] = String(hhmm).split(':').map(Number);
-  const t = (((H + h) % 24) + 24) % 24;
-  return `${String(t).padStart(2, '0')}:${String(M).padStart(2, '0')}`;
-}
-
 function mealLabelFor(hour) {
   if (hour >= 6 && hour < 11) return 'breakfast';
   if (hour >= 11 && hour < 15) return 'lunch';
@@ -274,8 +226,6 @@ function buildContext(args) {
     menu: Array.isArray(up.menu) ? up.menu : [],
     when: { day, time, hour, date_from, date_to },
     day, time, hour, date_from, date_to,
-    time_from: time,
-    time_to: addHoursHHMM(time, SETUP_WINDOW_HOURS),
     location: { lat, lng, radius_m },
     radius_m,
     max_travel_minutes,

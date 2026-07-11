@@ -1,0 +1,135 @@
+{
+  "count": 10,
+  "vendors": [
+    {
+      "cuisine": "tacos",
+      "name": "Tacos El Ojo De Agua",
+      "permit_id": "19MFF-00046",
+      "point": {
+        "lat": 37.780647210048365,
+        "lng": -122.39462918166163
+      },
+      "schedule_window": "09:00-16:00",
+      "scheduled_here": true,
+      "status": "EXPIRED",
+      "type": "Truck"
+    },
+    {
+      "cuisine": "burritos",
+      "name": "Cochinita",
+      "permit_id": "22MFF-00021",
+      "point": {
+        "lat": 37.779051111573146,
+        "lng": -122.39830388133372
+      },
+      "schedule_window": "10:00-11:00",
+      "scheduled_here": false,
+      "status": "EXPIRED",
+      "type": "Truck"
+    },
+    {
+      "cuisine": "burritos",
+      "name": "Cochinita",
+      "permit_id": "22MFF-00021",
+      "point": {
+        "lat": 37.778863135500174,
+        "lng": -122.39644435935813
+      },
+      "schedule_window": "12:00-22:00",
+      "scheduled_here": true,
+      "status": "EXPIRED",
+      "type": "Truck"
+    },
+    {
+      "cuisine": "burritos",
+      "name": "Quan Catering",
+      "permit_id": "19MFF-00055",
+      "point": {
+        "lat": 37.778266576694556,
+        "lng": -122.3988359224453
+      },
+      "schedule_window": "09:00-10:00",
+      "scheduled_here": false,
+      "status": "EXPIRED",
+      "type": "Truck"
+    },
+    {
+      "cuisine": "hot_dogs",
+      "name": "Eva's Catering",
+      "permit_id": "24MFF-00045",
+      "point": {
+        "lat": 37.77687638877653,
+        "lng": -122.40025957520209
+      },
+      "schedule_window": null,
+      "scheduled_here": false,
+      "status": "EXPIRED",
+      "type": "Truck"
+    },
+    {
+      "cuisine": "hot_dogs",
+      "name": "Eva's Catering",
+      "permit_id": "24MFF-00045",
+      "point": {
+        "lat": 37.77609875315735,
+        "lng": -122.40028723986815
+      },
+      "schedule_window": null,
+      "scheduled_here": false,
+      "status": "EXPIRED",
+      "type": "Truck"
+    },
+    {
+      "cuisine": "other",
+      "name": "Off the Grid Services, LLC",
+      "permit_id": "25MFF-00019",
+      "point": {
+        "lat": 37.77751326467553,
+        "lng": -122.3970441344819
+      },
+      "schedule_window": "08:00-15:00",
+      "scheduled_here": true,
+      "status": "APPROVED",
+      "type": "Truck"
+    },
+    {
+      "cuisine": "hot_dogs",
+      "name": "Off the Grid Services, LLC",
+      "permit_id": "25MFF-00018",
+      "point": {
+        "lat": 37.78236012101754,
+        "lng": -122.40209599456323
+      },
+      "schedule_window": null,
+      "scheduled_here": false,
+      "status": "APPROVED",
+      "type": "Truck"
+    },
+    {
+      "cuisine": "sandwiches",
+      "name": "Brazuca Grill",
+      "permit_id": "25MFF-00025",
+      "point": {
+        "lat": 37.78072409776966,
+        "lng": -122.40123539265836
+      },
+      "schedule_window": "09:00-10:00",
+      "scheduled_here": false,
+      "status": "APPROVED",
+      "type": "Truck"
+    },
+    {
+      "cuisine": "hot_dogs",
+      "name": "Natan's Catering",
+      "permit_id": "26MFF-00003",
+      "point": {
+        "lat": 37.778388615786554,
+        "lng": -122.40319178322909
+      },
+      "schedule_window": null,
+      "scheduled_here": false,
+      "status": "APPROVED",
+      "type": "Truck"
+    }
+  ]
+}

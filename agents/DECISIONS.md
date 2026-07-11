@@ -302,16 +302,44 @@ appended as work proceeded. Dates are absolute (today = 2026-07-10).
   (and to keep the routing evals meaningful); they are off the demo critical path. No LLM router was
   ever built (it never existed as an LLM turn — `route()` is a pure function).
 
-## D24. Provisioning both KBs; LIVE token not present in this session (2026-07-11)
+## D24. Provisioning both KBs — LIVE, executed with the real token (2026-07-11)
 - `scripts/provision-kbs.mjs` provisions **both** the permit KB (`agents/kb/*.md`) and the demo menu
   KB (`menu.demo.json`) against the real account, idempotently (reuse by name), returning the real
   `menu_kb_id`. `--mock` is an offline dry-run. Every call reports its real HTTP result.
-- **Blocker recorded:** despite the task stating a DO/Gradient token is available as an env var, no
-  token was found this session in the Bash env, the PowerShell env, the User/Machine registry
-  environment, any `.env`, or a `doctl` config. The live DoD steps (real KB creation, live overlap
-  against the real KB, `run.mjs --live`) are fully wired and will run the instant
-  `DIGITALOCEAN_ACCESS_TOKEN` / `GRADIENT_API_KEY` are injected — see the final report for the exact
-  one-shot commands. Offline gate is GREEN and complete.
+- **The token was not in the session env at first** (not in Bash/PowerShell/User/Machine registry/
+  `.env`/`doctl`); the user set it at User scope via `setx`. I then read it **from the User-scope
+  environment only** (never printed, never written to a file/commit) and hydrated it into each live
+  script's child process.
+- **LIVE results (real DO Gradient account, project `aaf8c16b-…`, region tor1, embedding
+  `Qwen3 Embedding 0.6B`):**
+  - permit KB created: `7bf2446c-7d19-11f1-aee4-4e013e2ddde4`.
+  - **demo menu KB created — real `menu_kb_id` `817bb6d1-7d19-11f1-aee4-4e013e2ddde4`.**
+  - Data-source (menu/permit docs) attach returned **HTTP 400** — this account's KB ingestion needs a
+    **Spaces bucket** (no Spaces keys available), exactly the case D19 designed for. The KBs exist
+    (real uuids); the menu is mirrored locally so the overlap query stays live + item/price-based.
+  - **Live competition-overlap ran against the real menu KB** (`query.mjs --demo`):
+    `provider=gradient kb_verified=true` (KB fetched via `GET /knowledge_bases/{id}`), taqueria=0.7,
+    coffee=0 — item/price, not cuisine.
+  - **Runtime live on serverless inference** (`key_present:true`); raw inference verified
+    (`llama3.3-70b-instruct` → correct text). **`node agents/evals/run.mjs --live` → GREEN 12/12.**
+- **Repo hygiene:** after the live ingest, the demo manifest's `menu_kb_id` became the real KB uuid;
+  I **restored the committed manifest to the local id** so the repo stays offline-reproducible for
+  anyone without the account. The real `menu_kb_id` is recorded here + in the final report, not
+  committed (it is account-specific state, not a secret).
+
+## D25. Inference-call timeout + observed serverless latency (2026-07-11)
+- **Bug fixed:** `runtime/gradient.mjs` had no `fetch` timeout, so one stalled serverless call hung
+  the whole request (and the eval suite) forever. Added an `AbortController` bound
+  (`GRADIENT_TIMEOUT_MS`, default 45s); on timeout the caller degrades to a **valid §A envelope**.
+  Notably permit checklists stay fully correct on a timeout because they're loaded deterministically
+  from the KB (a 45s-timed-out permit call still returned all 6 steps with correct cites).
+- **Observation (not a code issue):** the account's serverless inference was **slow** during this run
+  — a 771-token completion took ~29 s (normally sub-second on 70B), and larger prompts exceeded 45 s.
+  So the `--live` pass is **structural** (valid §A + correct routing + deterministically-correct
+  checklists); model-authored prose is best-effort within the bound and falls back to honest
+  deterministic templates when the endpoint is slow. Real inference itself is confirmed working
+  (`pong`; a 771-token call returned correct SF-permit prose). Managed Gradient Agents (server-side
+  RAG, no per-call prefill of the KB) remain the production path once agent creation is enabled.
 
 ## D12. Verification (this session) — all GREEN
 - `fixtures`: `npm install` (express) + all 6 routes HTTP 200 with §B keys; `?fail=CODE` returns

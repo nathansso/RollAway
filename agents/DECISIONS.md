@@ -196,6 +196,37 @@ appended as work proceeded. Dates are absolute (today = 2026-07-10).
 - **Note:** I did **not** touch `/functions` — the `get_restaurants` implementation is Person 3's,
   on `feat/functions-data`.
 
+## D18. Getting Gradient online — managed Agents blocked; built a working runtime instead (2026-07-11)
+- A DO token was provided. Probed it against the live API (never committed; stored outside the
+  repo; flagged for rotation). Findings:
+  - Token belongs to the team account (**nathansso**), has write scope (created+deleted a tag),
+    and **serverless inference works** (Llama 3.3 70B chat completions → 200).
+  - **KB creation works** (`POST /v2/gen-ai/knowledge_bases` → created+deleted a test KB).
+  - **`POST /v2/gen-ai/agents` is FORBIDDEN** (403 across GPT-4o-mini/GPT-oss; 404 for Llama-3.1-8B).
+    So *managed* Gradient **Agent** creation is gated on this account — a console/entitlement toggle
+    only the account owner can flip (Gradient → Agents). Everything else (inference, KB, tags) works.
+  - Cleaned up every probe resource (test KB + tag deleted; no agents were created).
+- **Decision:** since managed Agent creation is blocked but inference is fully available, I built a
+  real **agent runtime on Gradient serverless inference** (`agents/runtime/`) — same instructions,
+  KB, tool schemas, and guardrails, orchestrated locally and executed via Gradient's model:
+  - `POST /chat` (§A contract) → anonymize → jailbreak-refuse → route → agent → validate §A.
+  - Spot Scout does real **function calling** over the tool server (fixtures now, P3's Functions
+    later); Permit Copilot is **KB-grounded** with citations. Clearance citations are **backfilled
+    from the actual `check_clearance` tool output** so the "every clearance answer carries a
+    citation" invariant holds even when the model omits it.
+  - **Verified live:** permit checklist (valid §A, pushcart_nocook, excludes DMV, includes sidewalk
+    clearance, cites sf-sidewalk-width) ~95s; geometry (valid §A, calls check_clearance, cites
+    dpw-182101) ~18s; jailbreak refused with no inference call; health route OK.
+  - **Known limitation:** Permit latency ~60–100s (full-context RAG on 70B). Managed Agents do
+    server-side retrieval and are faster — that's the production path once Agents are enabled.
+- **Also wrote** `scripts/provision-genai.mjs`: a real REST provisioner (reverse-engineered +
+  partially verified) that creates the two managed agents from the repo instructions the moment
+  Agent creation is enabled; it reports the 403 + enable guidance until then.
+- **PING (account owner / P1):** to switch from the runtime to managed Agents, enable the Gradient
+  **Agents** feature on the team in the DO console (or ask DO support to enable agent creation),
+  then run `provision-genai.mjs`. No repo change needed — the runtime and managed paths share all
+  artifacts.
+
 ## D12. Verification (this session) — all GREEN
 - `fixtures`: `npm install` (express) + all 6 routes HTTP 200 with §B keys; `?fail=CODE` returns
   the §B error envelope (RATE_LIMIT→429, UPSTREAM_TIMEOUT→504).

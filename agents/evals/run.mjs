@@ -19,7 +19,7 @@ import { competitionOverlapCore } from "../menu_rag/overlap.mjs";
 import { DEMO_COMPETITORS, demoMenuKbId } from "../menu_rag/query.mjs";
 import { parseMenuText, verifyPricesInSource } from "../menu_rag/parse.mjs";
 import { runSpotScoutSingleTurn } from "../runtime/agents.mjs";
-import { attachFormUrls, FORM_DOMAIN_ALLOWLIST, isAllowedFormUrl, parseFormsTable } from "../runtime/forms.mjs";
+import { attachFormUrls, FORM_DOMAIN_ALLOWLIST, isAllowedFormUrl, parseFormsTable, parseFormFieldsTable } from "../runtime/forms.mjs";
 import { readFileSync as _rfs } from "node:fs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
@@ -57,6 +57,7 @@ const sourceIds = parseSourceIds(sourcesMd);
 const contractsMd = readRepo("docs/CONTRACTS.md");
 const formsMd = read("kb/FORMS.md");
 const forms = parseFormsTable(formsMd);
+const formFields = parseFormFieldsTable(read("kb/FORM_FIELDS.md"));
 
 const checklistDocs = {};
 for (const vt of ["truck", "trailer", "pushcart_cooking", "pushcart_nocook"]) {
@@ -173,6 +174,53 @@ async function runOffline() {
   check("permit forms: FORMS source ids are frozen SOURCES ids", () => {
     const unknown = [...forms.keys()].filter((source) => !sourceIds.has(source));
     return unknown.length ? bad(`unknown form source ids: ${unknown.join(", ")}`) : ok(`${forms.size} form rows use frozen source ids`);
+  });
+
+  // (a) filled_form: every FORM_FIELDS cite is a frozen SOURCES id AND has a real allowlisted form.
+  check("filled_form: FORM_FIELDS cites are frozen ids with a real allowlisted form", () => {
+    const errs = [];
+    for (const cite of formFields.keys()) {
+      if (!sourceIds.has(cite)) errs.push(`${cite} not a SOURCES id`);
+      const url = forms.get(cite)?.form_url;
+      if (!url || url === "SOURCE-NEEDED" || !isAllowedFormUrl(url)) errs.push(`${cite} has no real allowlisted form (fields must map to a fillable form)`);
+    }
+    return errs.length ? bad(errs.join("; ")) : ok(`${formFields.size} form-field groups map to real allowlisted forms`);
+  });
+
+  // (a) filled_form: real-form steps carry a record; SOURCE-NEEDED / no-form steps are null.
+  check("filled_form: real-form steps get a record, SOURCE-NEEDED/no-form steps null", () => {
+    const profile = { business_name: "El Sabor Taqueria", pinned_point: { lat: 37.7852, lng: -122.3969 }, vendor_type: "truck" };
+    const assembled = attachFormUrls(checklistDocs.truck, forms, { formFields, profile });
+    const errs = [];
+    for (const step of assembled.steps) {
+      if (typeof step.form_url === "string") {
+        if (!step.filled_form || step.filled_form.form_url !== step.form_url) errs.push(`${step.cite}: real form missing filled_form`);
+      } else if (step.filled_form != null) errs.push(`${step.cite}: no-form step has non-null filled_form`);
+    }
+    const ttx = assembled.steps.find((s) => s.cite === "ttx-cert");
+    if (ttx && ttx.filled_form !== null) errs.push("ttx-cert (SOURCE-NEEDED) filled_form must be null");
+    const dpw = assembled.steps.find((s) => s.cite === "dpw-182101");
+    if (dpw && dpw.filled_form !== null) errs.push("dpw-182101 (no FORMS row) filled_form must be null");
+    return errs.length ? bad(errs.join("; ")) : ok("real-form steps filled; SOURCE-NEEDED/no-form steps null");
+  });
+
+  // (a) filled_form: supplied values fill, missing marked unknown, none fabricated, pinned formats.
+  check("filled_form: supplied values filled, unknowns marked, nothing fabricated", () => {
+    const profile = { business_name: "El Sabor Taqueria", pinned_point: { lat: 37.7852, lng: -122.3969 } };
+    const assembled = attachFormUrls(checklistDocs.truck, forms, { formFields, profile });
+    const mff = assembled.steps.find((s) => s.cite === "sfpw-mff" && s.filled_form);
+    if (!mff) return bad("no sfpw-mff filled_form");
+    const f = (k) => mff.filled_form.fields.find((x) => x.profile_key === k);
+    if (f("business_name")?.value !== "El Sabor Taqueria" || f("business_name")?.status !== "filled") return bad("supplied business_name not filled");
+    if (f("pinned_point")?.value !== "37.7852, -122.3969" || f("pinned_point")?.status !== "filled") return bad("pinned_point not formatted 'lat, lng'");
+    if (f("email")?.value !== null || f("email")?.status !== "unknown") return bad("unsupplied email not null/unknown");
+    const fabricated = mff.filled_form.fields.filter((x) => x.status === "filled" && !["business_name", "pinned_point"].includes(x.profile_key));
+    if (fabricated.length) return bad(`fabricated values: ${fabricated.map((x) => x.profile_key).join(",")}`);
+    // the assembled checklist must still validate as a §A envelope
+    const env = { agent: "permit_copilot", reply_markdown: "x", citations: [{ label: "a", source: "sfpw-mff", quote: "q" }], map_actions: [], checklist: assembled };
+    const verrs = validateEnvelope(env);
+    if (verrs.length) return bad(`envelope invalid: ${verrs.slice(0, 2).join("; ")}`);
+    return ok("supplied filled, email unknown(null), no fabrication, pinned formatted, envelope valid");
   });
 
   // 4. routing correct for every seed with an expected agent

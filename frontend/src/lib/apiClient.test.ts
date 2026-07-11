@@ -476,6 +476,51 @@ describe('other live response boundaries', () => {
     expect(checklist?.sections).toHaveLength(4)
   })
 
+  it('carries a valid filled_form record through and drops an off-domain one', () => {
+    const goodForm = 'https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf'
+    const checklist = adaptAgentPermitChecklist(
+      {
+        agent: 'permit_copilot',
+        checklist: {
+          vendor_type: 'truck',
+          steps: [
+            {
+              order: 1, agency: 'Public Works', title: 'Apply', detail: 'x',
+              deadline_days: 30, deadline_label: '30-day notice', cite: 'sfpw-mff',
+              form_url: goodForm,
+              filled_form: {
+                agency: 'San Francisco Public Works',
+                form: 'Application for Mobile Food Facility',
+                form_url: goodForm,
+                fields: [
+                  { label: 'Business name', profile_key: 'business_name', value: 'El Sabor', status: 'filled' },
+                  { label: 'Contact email', profile_key: 'email', value: null, status: 'unknown' },
+                ],
+              },
+            },
+            {
+              order: 2, agency: 'Public Health', title: 'Health', detail: 'y',
+              deadline_days: 90, deadline_label: '90-day', cite: 'sfdph-mff',
+              form_url: goodForm,
+              // off-domain form_url inside filled_form must be rejected -> null
+              filled_form: {
+                agency: 'Evil', form: 'Fake', form_url: 'https://evil.example/x.pdf',
+                fields: [{ label: 'Name', profile_key: 'owner_name', value: 'z', status: 'filled' }],
+              },
+            },
+          ],
+        },
+      },
+      'truck',
+    )
+    const pw = checklist?.sections.find((s) => s.agency === 'Public Works')?.items[0]
+    const ph = checklist?.sections.find((s) => s.agency === 'Public Health')?.items[0]
+    expect(pw?.filled_form?.agency).toBe('San Francisco Public Works')
+    expect(pw?.filled_form?.fields).toHaveLength(2)
+    expect(pw?.filled_form?.fields[1]).toMatchObject({ profile_key: 'email', value: null, status: 'unknown' })
+    expect(ph?.filled_form).toBeNull()
+  })
+
 })
 
 

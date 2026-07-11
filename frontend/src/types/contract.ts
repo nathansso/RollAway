@@ -235,6 +235,23 @@ export type EasyApplyFieldKey =
   | 'proposed_start_date'
   | 'signature'
 
+export interface FilledFormField {
+  label: string
+  profile_key: string
+  value: string | null
+  status: 'filled' | 'unknown'
+}
+
+// A viewable/persistable record of an official agency form pre-filled from the
+// vendor's supplied profile. Additive §D `filled_form`. Values are copied only
+// from supplied data; unknown fields are `value:null, status:'unknown'`.
+export interface FilledForm {
+  agency: string
+  form: string
+  form_url: string
+  fields: FilledFormField[]
+}
+
 export interface PermitChecklistItem {
   id: string
   order: number
@@ -244,6 +261,7 @@ export interface PermitChecklistItem {
   deadline_label: string | null
   cite: string
   form_url?: string | null
+  filled_form?: FilledForm | null
   easy_apply: boolean
   fields: {
     key: EasyApplyFieldKey

@@ -236,6 +236,24 @@ halal, pizza, seafood, desserts, drinks, other`
 `agents/kb/FORMS.md` by the step's frozen `cite`; `SOURCE-NEEDED`, missing rows, invalid URLs, and
 non-allowlisted agency domains resolve to `null`. Agents never construct or guess this value.
 
+`filled_form` is nullable and additive (added 2026-07-11; `contract_version` unchanged). It is the
+viewable/persistable paperwork record a vendor keeps of a filed form, and is `null` unless the
+step's `cite` resolves to a real allowlisted `form_url`. When present:
+
+```jsonc
+{ "agency": "San Francisco Public Works",           // verbatim from kb/FORMS.md
+  "form": "Application for Mobile Food Facility",    // verbatim from kb/FORMS.md
+  "form_url": "https://sfpublicworks.org/...pdf",    // same allowlisted URL
+  "fields": [                                        // fields authored in kb/FORM_FIELDS.md by cite
+    { "label": "Business name", "profile_key": "business_name", "value": "El Sabor", "status": "filled" },
+    { "label": "Contact email", "profile_key": "email", "value": null, "status": "unknown" }
+  ] }
+```
+
+Every `value` is a string or `null`, copied **only** from the vendor's supplied profile/context;
+unmatched fields are `value:null, status:"unknown"`. `status` ∈ `filled | unknown`. Agents never
+fabricate a value, form, agency, or URL, and `filled_form` never asserts the form was submitted.
+
 Vendor types (canonical strings, shared everywhere):
 `truck, trailer, pushcart_cooking, pushcart_nocook`.
 

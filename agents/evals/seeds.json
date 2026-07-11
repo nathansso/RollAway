@@ -99,6 +99,19 @@
       "note": "New: a competition question routes to Spot Scout; the Menu-RAG overlap (items+prices, not cuisine) is folded into the single-turn ranking."
     },
     {
+      "id": "truck-filled-forms",
+      "prompt": "I run a taco truck — pre-fill my permit forms so I have a record.",
+      "context": { "vendor_type": "truck", "pinned_point": { "lat": 37.7852, "lng": -122.3969 }, "profile": { "business_name": "El Sabor Taqueria", "owner_name": "Ana Ruiz" } },
+      "expected_agent": "permit_copilot",
+      "asserts": {
+        "checklist_vendor_type": "truck",
+        "filled_form_on_real_form_steps": true,
+        "filled_form_null_on_sourceneeded": true,
+        "supplied_values_filled_unknown_marked": true
+      },
+      "note": "Sharpening (a): steps with a real form_url carry a filled_form record pre-filled from the supplied profile (business_name filled, email unknown); SOURCE-NEEDED/no-form steps have filled_form:null; nothing fabricated."
+    },
+    {
       "id": "trailer-full-checklist",
       "prompt": "I run a food trailer, what permits and licenses do I need?",
       "context": { "vendor_type": "trailer" },

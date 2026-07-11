@@ -8,6 +8,7 @@ import {
   UserIcon,
 } from '../common/Icons'
 import EasyApplyModal from './EasyApplyModal'
+import FilledFormWorkflow from './FilledFormWorkflow'
 import { useAppStore } from '../../store'
 import type { PermitChecklistItem } from '../../types/contract'
 
@@ -193,6 +194,9 @@ export default function PermitChecklist() {
                                 <span className="sr-only"> simulated draft for {item.title}</span>
                                 <ChevronIcon className="h-4 w-4" />
                               </button>
+                            )}
+                            {item.filled_form && (
+                              <FilledFormWorkflow itemId={item.id} form={item.filled_form} />
                             )}
                           </div>
                         </li>

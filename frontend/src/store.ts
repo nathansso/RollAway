@@ -7,7 +7,8 @@ import {
 } from './lib/profile'
 import { isWithinSanFrancisco } from './lib/sfBounds'
 import { createNowWhen, isValidCustomWindow } from './lib/when'
-import { loadStringArray, saveJson } from './lib/storage'
+import { loadJson, loadStringArray, saveJson } from './lib/storage'
+import { EMPTY_FORM_STATE, type PermitFormState } from './components/permits/permitForms'
 import type {
   AppPhase,
   ClosuresResponse,
@@ -33,12 +34,23 @@ export type LocationStatus =
 
 const SOMA_FALLBACK = { lat: 37.7793, lng: -122.4013 }
 const PERMIT_PROGRESS_KEY = 'rollaway.permit-progress.v1'
+const PERMIT_FORMS_KEY = 'rollaway.permit-forms.v1'
 let latestRecommendationRequest = 0
 let latestPermitRequest = 0
 let latestBaseRequest = 0
 
 function permitProgressKey(profile: VendorProfile | null): string {
   return `${PERMIT_PROGRESS_KEY}.${profile?.vendor_type ?? 'none'}`
+}
+
+function permitFormsKey(profile: VendorProfile | null): string {
+  return `${PERMIT_FORMS_KEY}.${profile?.vendor_type ?? 'none'}`
+}
+
+function loadPermitForms(key: string): Record<string, PermitFormState> {
+  const raw = loadJson<unknown>(key, {})
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  return raw as Record<string, PermitFormState>
 }
 
 function storedProfile(): VendorProfile | null {
@@ -94,6 +106,11 @@ interface AppState {
   completedPermitItems: string[]
   startPermitChecklist: () => Promise<void>
   togglePermitItem: (id: string) => void
+
+  permitForms: Record<string, PermitFormState>
+  setPermitFormField: (itemId: string, profileKey: string, value: string) => void
+  exportPermitForm: (itemId: string) => void
+  setPermitFormSubmission: (itemId: string, submitted: boolean) => void
 }
 
 export const useAppStore = create<AppState>((set, get) => {
@@ -173,6 +190,16 @@ export const useAppStore = create<AppState>((set, get) => {
     }
   }
 
+  const updatePermitForm = (
+    itemId: string,
+    patch: Partial<PermitFormState>,
+  ): void => {
+    const current = get().permitForms[itemId] ?? EMPTY_FORM_STATE
+    const permitForms = { ...get().permitForms, [itemId]: { ...current, ...patch } }
+    set({ permitForms })
+    saveJson(permitFormsKey(get().profile), permitForms)
+  }
+
   return {
     appPhase: initialPhase,
     continueToSession: () => {
@@ -206,6 +233,7 @@ export const useAppStore = create<AppState>((set, get) => {
         permitChecklist: null,
         permitStatus: 'idle',
         completedPermitItems: loadStringArray(permitProgressKey(profile)),
+        permitForms: loadPermitForms(permitFormsKey(profile)),
         recommendations: [],
         recommendationStatus: 'idle',
         selectedSpotId: null,
@@ -360,5 +388,19 @@ export const useAppStore = create<AppState>((set, get) => {
       set({ completedPermitItems })
       saveJson(permitProgressKey(get().profile), completedPermitItems)
     },
+
+    permitForms: loadPermitForms(permitFormsKey(initialProfile)),
+    setPermitFormField: (itemId, profileKey, value) => {
+      const current = get().permitForms[itemId] ?? EMPTY_FORM_STATE
+      updatePermitForm(itemId, { values: { ...current.values, [profileKey]: value } })
+    },
+    exportPermitForm: (itemId) => updatePermitForm(itemId, { exported: true }),
+    setPermitFormSubmission: (itemId, submitted) =>
+      updatePermitForm(
+        itemId,
+        submitted
+          ? { submission: 'submitted', submittedAt: Date.now() }
+          : { submission: 'not_submitted', submittedAt: null },
+      ),
   }
 })

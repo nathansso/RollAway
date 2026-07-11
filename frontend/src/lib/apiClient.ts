@@ -3,6 +3,8 @@ import type {
   ClosuresResponse,
   EasyApplyFieldKey,
   EventOpportunity,
+  FilledForm,
+  FilledFormField,
   OutreachDraft,
   LegacyChatResponse,
   PermitChecklist,
@@ -752,6 +754,27 @@ export function normalizeVendors(value: unknown): VendorCollection | null {
 }
 
 
+// Carry the additive §D `filled_form` paperwork record through, defensively.
+// Returns null unless the record names a real allowlisted form and a valid
+// fields[] array. Values pass through as string|null only; unknown statuses are
+// coerced so a malformed agent payload can never inject arbitrary shapes.
+function normalizeFilledForm(value: unknown): FilledForm | null {
+  if (!isRecord(value)) return null
+  if (typeof value.agency !== 'string' || typeof value.form !== 'string') return null
+  if (!allowedPermitFormUrl(value.form_url)) return null
+  if (!Array.isArray(value.fields)) return null
+  const fields: FilledFormField[] = []
+  for (const raw of value.fields) {
+    if (!isRecord(raw)) continue
+    if (typeof raw.label !== 'string' || typeof raw.profile_key !== 'string') continue
+    const val = typeof raw.value === 'string' ? raw.value : null
+    const status = raw.status === 'filled' && val !== null ? 'filled' : 'unknown'
+    fields.push({ label: raw.label, profile_key: raw.profile_key, value: val, status })
+  }
+  if (fields.length === 0) return null
+  return { agency: value.agency, form: value.form, form_url: value.form_url, fields }
+}
+
 export function adaptAgentPermitChecklist(
   value: unknown,
   vendorType: VendorType,
@@ -786,6 +809,7 @@ export function adaptAgentPermitChecklist(
           deadline_label: typeof step.deadline_label === 'string' ? step.deadline_label : null,
           cite: String(step.cite ?? ''),
           form_url: allowedPermitFormUrl(step.form_url) ? step.form_url : null,
+          filled_form: normalizeFilledForm(step.filled_form),
           easy_apply: Boolean(autofill),
           fields: autofill && allowedAutofill.includes(autofill)
             ? [{

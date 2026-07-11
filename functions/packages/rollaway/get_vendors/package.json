@@ -1,0 +1,7 @@
+{
+  "name": "get_vendors",
+  "version": "1.0.0",
+  "description": "Rollaway: SF mobile food vendors near a point (CONTRACTS.md B.1)",
+  "main": "index.js",
+  "license": "MIT"
+}

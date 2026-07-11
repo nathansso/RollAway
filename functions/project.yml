@@ -1,0 +1,49 @@
+# DigitalOcean Functions project spec — deploy with:
+#   doctl serverless deploy functions
+# Env values are substituted from functions/.env at deploy time (create it
+# from functions/.env.example; never commit it). All four vars must EXIST in
+# .env (empty values are fine — functions degrade to documented fixtures).
+packages:
+  - name: rollaway
+    environment:
+      SOCRATA_APP_TOKEN: "${SOCRATA_APP_TOKEN}"
+      GOOGLE_PLACES_KEY: "${GOOGLE_PLACES_KEY}"
+      TICKETMASTER_KEY: "${TICKETMASTER_KEY}"
+      SFMTA_EVENTS_URL: "${SFMTA_EVENTS_URL}"
+    functions:
+      - name: get_vendors
+        runtime: "nodejs:18"
+        web: true
+        limits:
+          timeout: 30000   # ms — covers Socrata retry/backoff worst case
+          memory: 256
+      - name: get_closures
+        runtime: "nodejs:18"
+        web: true
+        limits:
+          timeout: 30000
+          memory: 256
+      - name: get_foot_traffic
+        runtime: "nodejs:18"
+        web: true
+        limits:
+          timeout: 30000
+          memory: 256
+      - name: get_restaurants
+        runtime: "nodejs:18"
+        web: true
+        limits:
+          timeout: 30000
+          memory: 256
+      - name: get_events
+        runtime: "nodejs:18"
+        web: true
+        limits:
+          timeout: 30000
+          memory: 256
+      - name: check_clearance
+        runtime: "nodejs:18"
+        web: true
+        limits:
+          timeout: 30000
+          memory: 512    # turf + citywide sidewalk/hydrant/school snapshots

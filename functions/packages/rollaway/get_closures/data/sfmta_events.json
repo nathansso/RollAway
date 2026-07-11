@@ -1,0 +1,32 @@
+{
+  "_synthetic": true,
+  "_note": "TODO:replace-with-real-data — sample of the SFMTA weekly event-closure list, hand-built from typical recurring SF events so the merge path is exercised. Replace by pointing SFMTA_EVENTS_URL at a JSON mirror of the real weekly list in this same shape: { closures: [ { id, reason, geometry(GeoJSON), active_from, active_to } ] }.",
+  "closures": [
+    {
+      "id": "sfmta-giants-homestand-kingst",
+      "reason": "SF Giants game — King St event closure (Oracle Park)",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-122.394276, 37.776359],
+          [-122.392384, 37.778381]
+        ]
+      },
+      "active_from": "2026-07-11T16:00:00",
+      "active_to": "2026-07-11T23:00:00"
+    },
+    {
+      "id": "sfmta-sundaystreets-mission",
+      "reason": "Sunday Streets — Valencia St closed to vehicles",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-122.421186, 37.768569],
+          [-122.420446, 37.752768]
+        ]
+      },
+      "active_from": "2026-07-12T09:00:00",
+      "active_to": "2026-07-12T16:00:00"
+    }
+  ]
+}

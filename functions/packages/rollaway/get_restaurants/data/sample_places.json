@@ -1,0 +1,143 @@
+{
+  "_synthetic": true,
+  "_note": "TODO(real-key) — fixture used only when GOOGLE_PLACES_KEY is unset or Places is unreachable. Hand-placed food establishments approximating the real SoMa/downtown SF mix so bucketing/saturation/window logic is exercised. periods use the Google regularOpeningHours encoding (day 0=Sunday..6=Saturday); every venue keeps the same hours all 7 days except where noted. Boba Bliss intentionally has NO periods (missing-hours branch); Third St Coffee is 24h (open with no close); Night Owl Bar closes overnight (close.day = next day).",
+  "places": [
+    { "name": "SoMa Taqueria", "types": ["restaurant", "mexican_restaurant"], "price_level": 1, "lat": 37.7803, "lng": -122.3999, "rating": 4.4, "user_rating_count": 620,
+      "periods": [
+        { "open": { "day": 0, "hour": 10, "minute": 0 }, "close": { "day": 0, "hour": 22, "minute": 0 } },
+        { "open": { "day": 1, "hour": 10, "minute": 0 }, "close": { "day": 1, "hour": 22, "minute": 0 } },
+        { "open": { "day": 2, "hour": 10, "minute": 0 }, "close": { "day": 2, "hour": 22, "minute": 0 } },
+        { "open": { "day": 3, "hour": 10, "minute": 0 }, "close": { "day": 3, "hour": 22, "minute": 0 } },
+        { "open": { "day": 4, "hour": 10, "minute": 0 }, "close": { "day": 4, "hour": 22, "minute": 0 } },
+        { "open": { "day": 5, "hour": 10, "minute": 0 }, "close": { "day": 5, "hour": 22, "minute": 0 } },
+        { "open": { "day": 6, "hour": 10, "minute": 0 }, "close": { "day": 6, "hour": 22, "minute": 0 } }
+      ] },
+    { "name": "Burrito Bandito", "types": ["restaurant", "mexican_restaurant"], "price_level": 1, "lat": 37.7811, "lng": -122.4008, "rating": 4.1, "user_rating_count": 180,
+      "periods": [
+        { "open": { "day": 1, "hour": 11, "minute": 0 }, "close": { "day": 1, "hour": 21, "minute": 0 } },
+        { "open": { "day": 2, "hour": 11, "minute": 0 }, "close": { "day": 2, "hour": 21, "minute": 0 } },
+        { "open": { "day": 3, "hour": 11, "minute": 0 }, "close": { "day": 3, "hour": 21, "minute": 0 } },
+        { "open": { "day": 4, "hour": 11, "minute": 0 }, "close": { "day": 4, "hour": 21, "minute": 0 } },
+        { "open": { "day": 5, "hour": 11, "minute": 0 }, "close": { "day": 5, "hour": 21, "minute": 0 } }
+      ] },
+    { "name": "Patty Palace Burgers", "types": ["hamburger_restaurant"], "price_level": 2, "lat": 37.7794, "lng": -122.4013, "rating": 4.6, "user_rating_count": 1450,
+      "periods": [
+        { "open": { "day": 0, "hour": 11, "minute": 0 }, "close": { "day": 0, "hour": 23, "minute": 0 } },
+        { "open": { "day": 1, "hour": 11, "minute": 0 }, "close": { "day": 1, "hour": 23, "minute": 0 } },
+        { "open": { "day": 2, "hour": 11, "minute": 0 }, "close": { "day": 2, "hour": 23, "minute": 0 } },
+        { "open": { "day": 3, "hour": 11, "minute": 0 }, "close": { "day": 3, "hour": 23, "minute": 0 } },
+        { "open": { "day": 4, "hour": 11, "minute": 0 }, "close": { "day": 4, "hour": 23, "minute": 0 } },
+        { "open": { "day": 5, "hour": 11, "minute": 0 }, "close": { "day": 5, "hour": 23, "minute": 0 } },
+        { "open": { "day": 6, "hour": 11, "minute": 0 }, "close": { "day": 6, "hour": 23, "minute": 0 } }
+      ] },
+    { "name": "Third St Coffee", "types": ["coffee_shop", "cafe"], "price_level": 1, "lat": 37.7808, "lng": -122.3992, "rating": 4.2, "user_rating_count": 310,
+      "periods": [ { "open": { "day": 0, "hour": 0, "minute": 0 } } ] },
+    { "name": "Ritual Grind Cafe", "types": ["cafe"], "price_level": 2, "lat": 37.7786, "lng": -122.4021, "rating": 4.7, "user_rating_count": 890,
+      "periods": [
+        { "open": { "day": 0, "hour": 6, "minute": 0 }, "close": { "day": 0, "hour": 15, "minute": 0 } },
+        { "open": { "day": 1, "hour": 6, "minute": 0 }, "close": { "day": 1, "hour": 15, "minute": 0 } },
+        { "open": { "day": 2, "hour": 6, "minute": 0 }, "close": { "day": 2, "hour": 15, "minute": 0 } },
+        { "open": { "day": 3, "hour": 6, "minute": 0 }, "close": { "day": 3, "hour": 15, "minute": 0 } },
+        { "open": { "day": 4, "hour": 6, "minute": 0 }, "close": { "day": 4, "hour": 15, "minute": 0 } },
+        { "open": { "day": 5, "hour": 6, "minute": 0 }, "close": { "day": 5, "hour": 15, "minute": 0 } },
+        { "open": { "day": 6, "hour": 6, "minute": 0 }, "close": { "day": 6, "hour": 15, "minute": 0 } }
+      ] },
+    { "name": "Bayside Espresso", "types": ["coffee_shop"], "price_level": 1, "lat": 37.7815, "lng": -122.3986, "rating": 3.9, "user_rating_count": 95,
+      "periods": [
+        { "open": { "day": 1, "hour": 6, "minute": 30 }, "close": { "day": 1, "hour": 14, "minute": 0 } },
+        { "open": { "day": 2, "hour": 6, "minute": 30 }, "close": { "day": 2, "hour": 14, "minute": 0 } },
+        { "open": { "day": 3, "hour": 6, "minute": 30 }, "close": { "day": 3, "hour": 14, "minute": 0 } },
+        { "open": { "day": 4, "hour": 6, "minute": 30 }, "close": { "day": 4, "hour": 14, "minute": 0 } },
+        { "open": { "day": 5, "hour": 6, "minute": 30 }, "close": { "day": 5, "hour": 14, "minute": 0 } }
+      ] },
+    { "name": "Golden Wok", "types": ["chinese_restaurant"], "price_level": 2, "lat": 37.7799, "lng": -122.4029, "rating": 4.0, "user_rating_count": 520,
+      "periods": [
+        { "open": { "day": 0, "hour": 11, "minute": 0 }, "close": { "day": 0, "hour": 21, "minute": 30 } },
+        { "open": { "day": 1, "hour": 11, "minute": 0 }, "close": { "day": 1, "hour": 21, "minute": 30 } },
+        { "open": { "day": 2, "hour": 11, "minute": 0 }, "close": { "day": 2, "hour": 21, "minute": 30 } },
+        { "open": { "day": 3, "hour": 11, "minute": 0 }, "close": { "day": 3, "hour": 21, "minute": 30 } },
+        { "open": { "day": 4, "hour": 11, "minute": 0 }, "close": { "day": 4, "hour": 21, "minute": 30 } },
+        { "open": { "day": 5, "hour": 11, "minute": 0 }, "close": { "day": 5, "hour": 21, "minute": 30 } },
+        { "open": { "day": 6, "hour": 11, "minute": 0 }, "close": { "day": 6, "hour": 21, "minute": 30 } }
+      ] },
+    { "name": "Sushi Ichiban", "types": ["japanese_restaurant", "sushi_restaurant"], "price_level": 3, "lat": 37.7822, "lng": -122.4005, "rating": 4.5, "user_rating_count": 780,
+      "periods": [
+        { "open": { "day": 2, "hour": 17, "minute": 0 }, "close": { "day": 2, "hour": 22, "minute": 0 } },
+        { "open": { "day": 3, "hour": 17, "minute": 0 }, "close": { "day": 3, "hour": 22, "minute": 0 } },
+        { "open": { "day": 4, "hour": 17, "minute": 0 }, "close": { "day": 4, "hour": 22, "minute": 0 } },
+        { "open": { "day": 5, "hour": 17, "minute": 0 }, "close": { "day": 5, "hour": 22, "minute": 30 } },
+        { "open": { "day": 6, "hour": 17, "minute": 0 }, "close": { "day": 6, "hour": 22, "minute": 30 } }
+      ] },
+    { "name": "Pho Harbor", "types": ["vietnamese_restaurant"], "price_level": 1, "lat": 37.7779, "lng": -122.3998, "rating": 4.3, "user_rating_count": 410,
+      "periods": [
+        { "open": { "day": 0, "hour": 10, "minute": 0 }, "close": { "day": 0, "hour": 20, "minute": 0 } },
+        { "open": { "day": 1, "hour": 10, "minute": 0 }, "close": { "day": 1, "hour": 20, "minute": 0 } },
+        { "open": { "day": 2, "hour": 10, "minute": 0 }, "close": { "day": 2, "hour": 20, "minute": 0 } },
+        { "open": { "day": 3, "hour": 10, "minute": 0 }, "close": { "day": 3, "hour": 20, "minute": 0 } },
+        { "open": { "day": 4, "hour": 10, "minute": 0 }, "close": { "day": 4, "hour": 20, "minute": 0 } },
+        { "open": { "day": 5, "hour": 10, "minute": 0 }, "close": { "day": 5, "hour": 20, "minute": 0 } },
+        { "open": { "day": 6, "hour": 10, "minute": 0 }, "close": { "day": 6, "hour": 20, "minute": 0 } }
+      ] },
+    { "name": "Slice House Pizza", "types": ["pizza_restaurant"], "price_level": 1, "lat": 37.7806, "lng": -122.4018, "rating": 4.2, "user_rating_count": 950,
+      "periods": [
+        { "open": { "day": 0, "hour": 11, "minute": 0 }, "close": { "day": 1, "hour": 1, "minute": 0 } },
+        { "open": { "day": 1, "hour": 11, "minute": 0 }, "close": { "day": 2, "hour": 1, "minute": 0 } },
+        { "open": { "day": 2, "hour": 11, "minute": 0 }, "close": { "day": 3, "hour": 1, "minute": 0 } },
+        { "open": { "day": 3, "hour": 11, "minute": 0 }, "close": { "day": 4, "hour": 1, "minute": 0 } },
+        { "open": { "day": 4, "hour": 11, "minute": 0 }, "close": { "day": 5, "hour": 1, "minute": 0 } },
+        { "open": { "day": 5, "hour": 11, "minute": 0 }, "close": { "day": 6, "hour": 2, "minute": 0 } },
+        { "open": { "day": 6, "hour": 11, "minute": 0 }, "close": { "day": 0, "hour": 2, "minute": 0 } }
+      ] },
+    { "name": "The Codfather Seafood", "types": ["seafood_restaurant"], "price_level": 3, "lat": 37.7791, "lng": -122.3979, "rating": 4.4, "user_rating_count": 260,
+      "periods": [
+        { "open": { "day": 2, "hour": 16, "minute": 0 }, "close": { "day": 2, "hour": 21, "minute": 0 } },
+        { "open": { "day": 3, "hour": 16, "minute": 0 }, "close": { "day": 3, "hour": 21, "minute": 0 } },
+        { "open": { "day": 4, "hour": 16, "minute": 0 }, "close": { "day": 4, "hour": 21, "minute": 0 } },
+        { "open": { "day": 5, "hour": 16, "minute": 0 }, "close": { "day": 5, "hour": 22, "minute": 0 } },
+        { "open": { "day": 6, "hour": 16, "minute": 0 }, "close": { "day": 6, "hour": 22, "minute": 0 } }
+      ] },
+    { "name": "Sweet Tooth Desserts", "types": ["dessert_shop", "bakery"], "price_level": 2, "lat": 37.7817, "lng": -122.4024, "rating": 4.8, "user_rating_count": 340,
+      "periods": [
+        { "open": { "day": 0, "hour": 12, "minute": 0 }, "close": { "day": 0, "hour": 22, "minute": 0 } },
+        { "open": { "day": 2, "hour": 12, "minute": 0 }, "close": { "day": 2, "hour": 22, "minute": 0 } },
+        { "open": { "day": 3, "hour": 12, "minute": 0 }, "close": { "day": 3, "hour": 22, "minute": 0 } },
+        { "open": { "day": 4, "hour": 12, "minute": 0 }, "close": { "day": 4, "hour": 22, "minute": 0 } },
+        { "open": { "day": 5, "hour": 12, "minute": 0 }, "close": { "day": 5, "hour": 23, "minute": 0 } },
+        { "open": { "day": 6, "hour": 12, "minute": 0 }, "close": { "day": 6, "hour": 23, "minute": 0 } }
+      ] },
+    { "name": "Boba Bliss", "types": ["tea_house"], "price_level": 1, "lat": 37.7801, "lng": -122.3985, "rating": 4.0, "user_rating_count": 150 },
+    { "name": "Deli on Howard", "types": ["sandwich_shop", "deli"], "price_level": 1, "lat": 37.7788, "lng": -122.4041, "rating": 4.1, "user_rating_count": 220,
+      "periods": [
+        { "open": { "day": 1, "hour": 8, "minute": 0 }, "close": { "day": 1, "hour": 16, "minute": 0 } },
+        { "open": { "day": 2, "hour": 8, "minute": 0 }, "close": { "day": 2, "hour": 16, "minute": 0 } },
+        { "open": { "day": 3, "hour": 8, "minute": 0 }, "close": { "day": 3, "hour": 16, "minute": 0 } },
+        { "open": { "day": 4, "hour": 8, "minute": 0 }, "close": { "day": 4, "hour": 16, "minute": 0 } },
+        { "open": { "day": 5, "hour": 8, "minute": 0 }, "close": { "day": 5, "hour": 16, "minute": 0 } }
+      ] },
+    { "name": "Smokehouse BBQ Co", "types": ["barbecue_restaurant"], "price_level": 2, "lat": 37.7826, "lng": -122.3993, "rating": 4.5, "user_rating_count": 1100,
+      "periods": [
+        { "open": { "day": 0, "hour": 12, "minute": 0 }, "close": { "day": 0, "hour": 21, "minute": 0 } },
+        { "open": { "day": 3, "hour": 12, "minute": 0 }, "close": { "day": 3, "hour": 21, "minute": 0 } },
+        { "open": { "day": 4, "hour": 12, "minute": 0 }, "close": { "day": 4, "hour": 21, "minute": 0 } },
+        { "open": { "day": 5, "hour": 12, "minute": 0 }, "close": { "day": 5, "hour": 22, "minute": 0 } },
+        { "open": { "day": 6, "hour": 12, "minute": 0 }, "close": { "day": 6, "hour": 22, "minute": 0 } }
+      ] },
+    { "name": "Halal Guys SoMa", "types": ["restaurant"], "price_level": 1, "lat": 37.7797, "lng": -122.4046, "rating": 4.2, "user_rating_count": 530,
+      "periods": [
+        { "open": { "day": 0, "hour": 11, "minute": 0 }, "close": { "day": 0, "hour": 22, "minute": 0 } },
+        { "open": { "day": 1, "hour": 11, "minute": 0 }, "close": { "day": 1, "hour": 22, "minute": 0 } },
+        { "open": { "day": 2, "hour": 11, "minute": 0 }, "close": { "day": 2, "hour": 22, "minute": 0 } },
+        { "open": { "day": 3, "hour": 11, "minute": 0 }, "close": { "day": 3, "hour": 22, "minute": 0 } },
+        { "open": { "day": 4, "hour": 11, "minute": 0 }, "close": { "day": 4, "hour": 22, "minute": 0 } },
+        { "open": { "day": 5, "hour": 11, "minute": 0 }, "close": { "day": 5, "hour": 23, "minute": 0 } },
+        { "open": { "day": 6, "hour": 11, "minute": 0 }, "close": { "day": 6, "hour": 23, "minute": 0 } }
+      ] },
+    { "name": "Night Owl Bar", "types": ["bar"], "price_level": 2, "lat": 37.7793, "lng": -122.4036, "rating": 4.3, "user_rating_count": 480,
+      "periods": [
+        { "open": { "day": 3, "hour": 16, "minute": 0 }, "close": { "day": 4, "hour": 2, "minute": 0 } },
+        { "open": { "day": 4, "hour": 16, "minute": 0 }, "close": { "day": 5, "hour": 2, "minute": 0 } },
+        { "open": { "day": 5, "hour": 16, "minute": 0 }, "close": { "day": 6, "hour": 2, "minute": 0 } },
+        { "open": { "day": 6, "hour": 16, "minute": 0 }, "close": { "day": 0, "hour": 2, "minute": 0 } }
+      ] }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "get_restaurants",
+  "version": "1.0.0",
+  "description": "Rollaway: nearby food establishments bucketed by cuisine/price (CONTRACTS.md B.4)",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test test/restaurants.test.js"
+  },
+  "license": "MIT"
+}

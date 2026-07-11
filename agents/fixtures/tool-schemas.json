@@ -1,0 +1,113 @@
+{
+  "_comment": "Function-calling tool definitions to paste into the Gradient console for spot_scout. Input parameter field names are VERBATIM from docs/CONTRACTS.md §B (freeze them). 'endpoint' points at the fixture server; swap the base URL for Person 3's live Function URLs (one-line change: TOOL_BASE_URL). See RUNBOOK.md.",
+  "tool_base_url": "http://localhost:8787",
+  "tools": [
+    {
+      "name": "get_vendors",
+      "description": "Mobile-food vendors already operating near a point (who's claimed the spot, what cuisine, whether scheduled here now). cuisine is enriched by serverless inference (P2).",
+      "method": "POST",
+      "endpoint": "/get_vendors",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "radius_m": { "type": "integer", "default": 500 },
+          "day": { "type": "string", "description": "e.g. 'fri'" },
+          "time": { "type": "string", "description": "HH:MM, e.g. '12:00'" }
+        },
+        "required": ["lat", "lng"]
+      },
+      "output_shape": { "vendors": [{ "permit_id": "", "name": "", "type": "", "cuisine": "", "status": "", "point": { "lat": 0, "lng": 0 }, "scheduled_here": false, "schedule_window": "" }], "count": 0 }
+    },
+    {
+      "name": "get_closures",
+      "description": "Street closures / permitted events blocking the curb in a date range.",
+      "method": "POST",
+      "endpoint": "/get_closures",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "radius_m": { "type": "integer", "default": 800 },
+          "date_from": { "type": "string", "description": "YYYY-MM-DD" },
+          "date_to": { "type": "string", "description": "YYYY-MM-DD" }
+        },
+        "required": ["lat", "lng"]
+      },
+      "output_shape": { "closures": [{ "id": "", "reason": "", "source": "sfmta_event|dpw_permit", "geometry": { "type": "LineString|Polygon", "coordinates": [] }, "active_from": "", "active_to": "" }], "count": 0 }
+    },
+    {
+      "name": "get_foot_traffic",
+      "description": "Demand proxy from Bay Wheels bike activity (a PROXY for pedestrian traffic — label as such).",
+      "method": "POST",
+      "endpoint": "/get_foot_traffic",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "radius_m": { "type": "integer", "default": 400 },
+          "day": { "type": "string" },
+          "hour": { "type": "integer" }
+        },
+        "required": ["lat", "lng"]
+      },
+      "output_shape": { "score": 0, "basis": "bay_wheels", "nearby_stations": 0, "live_activity": 0, "historical_avg": 0 }
+    },
+    {
+      "name": "get_restaurants",
+      "description": "Fixed-restaurant competition and popularity-weighted saturation near a point. Pass day/time_from/time_to (all together) to scope competition to a set-up window; the output then adds a 'window' block with open-during-window counts and per-cuisine demand gap. §B.4.",
+      "method": "POST",
+      "endpoint": "/get_restaurants",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "radius_m": { "type": "integer", "default": 300 },
+          "day": { "type": "string", "description": "mon..sun; required if a time window is given" },
+          "time_from": { "type": "string", "description": "HH:MM; requires time_to + day" },
+          "time_to": { "type": "string", "description": "HH:MM; requires time_from + day; may wrap past midnight" }
+        },
+        "required": ["lat", "lng"]
+      },
+      "output_shape": { "total": 0, "by_cuisine": {}, "by_price": {}, "saturation": "low|medium|high", "window": { "day": "", "time_from": "", "time_to": "", "open_count": 0, "open_weighted": 0, "saturation": "low|medium|high", "by_cuisine_open": {} } }
+    },
+    {
+      "name": "get_events",
+      "description": "Upcoming events that draw crowds near a point (growth pillar).",
+      "method": "POST",
+      "endpoint": "/get_events",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "radius_m": { "type": "integer", "default": 3000 },
+          "date_from": { "type": "string", "description": "YYYY-MM-DD" },
+          "date_to": { "type": "string", "description": "YYYY-MM-DD" }
+        },
+        "required": ["lat", "lng"]
+      },
+      "output_shape": { "events": [{ "name": "", "venue": "", "point": { "lat": 0, "lng": 0 }, "start": "", "expected_attendance": 0, "source": "ticketmaster" }], "count": 0 }
+    },
+    {
+      "name": "check_clearance",
+      "description": "Clearance geometry check — CODE computes real distances; the agent only explains the result and cites 'cite'. Never let the model compute distances or decide pass/allowed. Returns 3 rows for truck/trailer (cite dpw-182101) and a 4th sidewalk-width row for pushcart types (cite sf-sidewalk-width).",
+      "method": "POST",
+      "endpoint": "/check_clearance",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number" },
+          "lng": { "type": "number" },
+          "vendor_type": { "type": "string", "enum": ["truck", "trailer", "pushcart_cooking", "pushcart_nocook"] }
+        },
+        "required": ["lat", "lng", "vendor_type"]
+      },
+      "output_shape": { "allowed": false, "checks": [{ "rule": "", "required_ft": 0, "actual_ft": 0, "pass": false, "cite": "dpw-182101 (rows 1-3) | sf-sidewalk-width (row 4, pushcarts only)" }] }
+    }
+  ]
+}

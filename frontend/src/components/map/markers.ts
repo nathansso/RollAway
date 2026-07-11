@@ -3,13 +3,17 @@ import type { RecommendationSpot, VendorProperties } from '../../types/contract'
 export function buildSpotMarkerElement(
   spot: RecommendationSpot,
   onSelect: () => void,
+  // #31: candidate pins beyond the top 3 render as smaller, muted "minor"
+  // markers so the top 3 stay visually dominant. All pins remain clickable.
+  options: { minor?: boolean } = {},
 ): HTMLButtonElement {
+  const minor = options.minor ?? false
   const button = document.createElement('button')
   button.type = 'button'
-  button.className = `rank-marker rank-marker--${spot.verdict}`
+  button.className = `rank-marker rank-marker--${spot.verdict}${minor ? ' rank-marker--minor' : ''}`
   button.setAttribute(
     'aria-label',
-    `Suggested spot: ${spot.block_label}, ${spot.verdict}. Open Good to Know details.`,
+    `${minor ? 'Candidate' : 'Suggested'} spot: ${spot.block_label}, ${spot.verdict}. Open Good to Know details.`,
   )
   const badge = document.createElement('span')
   // Neutral location dot — these are suggestions to navigate to, not a ranked list.

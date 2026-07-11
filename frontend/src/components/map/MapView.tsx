@@ -212,9 +212,13 @@ export default function MapView({ onViewReadyChange }: MapViewProps) {
     const map = mapRef.current
     if (!map || !mapReady) return
     spotMarkers.current.forEach((marker) => marker.remove())
-    spotMarkers.current = recommendations.map((spot) => {
-      const element = buildSpotMarkerElement(spot, () =>
-        useAppStore.getState().selectSpot(spot.id),
+    // #31: render every candidate as a pin (top 3 dominant, the rest as smaller
+    // "minor" markers) — all clickable — but only fit the camera to the top 3.
+    spotMarkers.current = recommendations.map((spot, index) => {
+      const element = buildSpotMarkerElement(
+        spot,
+        () => useAppStore.getState().selectSpot(spot.id),
+        { minor: index >= 3 },
       )
       return new mapboxgl.Marker({ element, anchor: 'bottom' })
         .setLngLat([spot.point.lng, spot.point.lat])
@@ -222,7 +226,7 @@ export default function MapView({ onViewReadyChange }: MapViewProps) {
     })
     if (recommendations.length > 0) {
       const bounds = new mapboxgl.LngLatBounds()
-      getFitCoordinates(recommendations, location).forEach((coordinate) =>
+      getFitCoordinates(recommendations.slice(0, 3), location).forEach((coordinate) =>
         bounds.extend(coordinate),
       )
       map.fitBounds(bounds, {

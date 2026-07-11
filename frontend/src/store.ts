@@ -156,9 +156,10 @@ export const useAppStore = create<AppState>((set, get) => {
       if (requestId !== latestRecommendationRequest) return
       set({
         appPhase: 'ready',
-        // Normalize verdicts by relative quality, then keep the top 3 for both
-        // the map pins and the bottom tray.
-        recommendations: normalizeRecommendations(response.recommendations).slice(0, 3),
+        // #31: normalize verdicts by relative quality, then keep a wider
+        // candidate pool (up to 12) so the map feels populated. The tray only
+        // renders tiles for the top 3; every pin stays clickable for details.
+        recommendations: normalizeRecommendations(response.recommendations).slice(0, 12),
         recommendationStatus: 'success',
       })
     } catch (error) {

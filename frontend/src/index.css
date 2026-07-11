@@ -450,6 +450,32 @@ button:disabled {
   font-weight: 800;
 }
 
+/* #31: minor candidate pins — smaller and recessive so the top 3 dominate. */
+.rank-marker--minor {
+  height: 26px;
+  width: 26px;
+  opacity: 0.82;
+  filter: drop-shadow(0 2px 3px rgb(15 23 42 / 22%));
+}
+.rank-marker--minor span {
+  height: 18px;
+  width: 18px;
+  border-width: 2px;
+}
+.rank-marker--minor span > svg {
+  width: 9px;
+  height: 9px;
+}
+.rank-marker--minor span::after {
+  bottom: -4px;
+  border-left-width: 4px;
+  border-right-width: 4px;
+  border-top-width: 5px;
+}
+.rank-marker--minor:hover {
+  opacity: 1;
+}
+
 .rank-marker span::after {
   content: '';
   position: absolute;

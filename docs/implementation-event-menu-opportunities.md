@@ -15,11 +15,12 @@ This branch owns event opportunities, vendor outreach drafts, and a dedicated Gr
 
 ## Event opportunities
 
+- Use Ticketmaster live/upcoming event data as a vendor-facing opportunity source, not merely as a demand-score signal.
 - Add a Functions endpoint that discovers nearby events relevant to the vendor's selected location and dates.
 - Normalize title, venue, coordinates, dates, deadline, organizer, contact channel, official source, retrieval time, fees, attendance, restrictions, and eligibility.
 - Rank deterministically by distance, schedule, deadline, eligibility, demand, menu fit, and fees.
-- Use AI only to explain verified results and draft outreach, not to decide eligibility.
-- Require explicit vendor approval before opening or invoking a send action.
+- Use AI only to explain verified results, draft organizer outreach, and prepare a proposed food-vendor contract for review, not to decide eligibility.
+- Require explicit vendor approval before opening or invoking a send action, and never finalize a contract automatically.
 - Track draft, contacted, awaiting response, accepted, rejected, and expired states.
 
 ## Frontend
@@ -47,3 +48,4 @@ This branch owns event opportunities, vendor outreach drafts, and a dedicated Gr
 ## Definition of done
 
 All boundaries are typed and versioned, uncertainty and data freshness are visible, no outreach is sent automatically, and fixture and live builds pass their test suites.
+

@@ -5,6 +5,7 @@ import {
   ClockIcon,
   FileIcon,
   PermitIcon,
+  ShieldIcon,
   UserIcon,
 } from '../common/Icons'
 import EasyApplyModal from './EasyApplyModal'
@@ -17,6 +18,11 @@ const DEADLINES = [
   { value: '90 days', label: 'Tentative approval' },
   { value: '15 days', label: 'Appeal window' },
 ]
+
+const AGENCY_ICONS = [ShieldIcon, FileIcon, ClockIcon, CheckIcon]
+
+const RING_RADIUS = 18
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
 
 export default function PermitChecklist() {
   const profile = useAppStore((state) => state.profile)
@@ -48,33 +54,53 @@ export default function PermitChecklist() {
             </button>
           </header>
 
-          <section className="my-auto flex flex-col items-center py-10 text-center" aria-labelledby="permit-landing-title">
-            <span className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary text-white" aria-hidden="true">
-              <PermitIcon className="h-10 w-10" />
+          <section className="permit-hero my-auto flex flex-col items-center gap-6 px-6 py-10 text-center sm:px-10" aria-labelledby="permit-landing-title">
+            <span className="permit-hero__rings">
+              <span className="permit-hero__badge" aria-hidden="true">
+                <PermitIcon className="h-9 w-9" />
+              </span>
             </span>
-            <p className="mt-7 text-xs font-bold uppercase tracking-[0.18em] text-primary">
-              San Francisco permits
-            </p>
-            <h1 id="permit-landing-title" className="mt-2 max-w-md font-display text-3xl text-foreground">
-              Build your San Francisco permit path
-            </h1>
-            <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
-              Get a personalized checklist ordered across the San Francisco agencies that shape your launch, with key deadlines and application guidance.
-            </p>
+
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                San Francisco permits
+              </p>
+              <h1 id="permit-landing-title" className="mt-2 max-w-md font-display text-3xl text-foreground">
+                Build your San Francisco permit path
+              </h1>
+              <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
+                Get a personalized checklist ordered across the San Francisco agencies that shape your launch, with key deadlines and application guidance.
+              </p>
+            </div>
 
             {status === 'error' && (
-              <div role="alert" className="mt-6 w-full max-w-lg rounded-2xl border border-destructive/30 bg-white p-4">
+              <div role="alert" className="w-full max-w-lg rounded-2xl border border-destructive/30 bg-white p-4">
                 <p className="font-semibold text-destructive">{error}</p>
               </div>
             )}
 
             <button
               type="button"
-              className="primary-button mt-7"
+              className="primary-button"
               onClick={() => void startPermitChecklist()}
             >
               {status === 'error' ? 'Try building again' : 'Build my permit checklist'}
             </button>
+
+            <div className="grid w-full max-w-lg grid-cols-1 gap-2 sm:grid-cols-3">
+              <div className="permit-feature">
+                <span className="permit-feature__icon" aria-hidden="true"><ShieldIcon className="h-4 w-4" /></span>
+                <span className="text-xs font-semibold text-foreground">4 agencies, ordered</span>
+              </div>
+              <div className="permit-feature">
+                <span className="permit-feature__icon" aria-hidden="true"><ClockIcon className="h-4 w-4" /></span>
+                <span className="text-xs font-semibold text-foreground">Deadlines tracked</span>
+              </div>
+              <div className="permit-feature">
+                <span className="permit-feature__icon" aria-hidden="true"><FileIcon className="h-4 w-4" /></span>
+                <span className="text-xs font-semibold text-foreground">Pre-filled paperwork</span>
+              </div>
+            </div>
           </section>
 
           <aside className="rounded-2xl border border-caution/30 bg-caution/10 p-4 text-sm leading-relaxed text-foreground">
@@ -94,30 +120,58 @@ export default function PermitChecklist() {
             Map
           </button>
         </div>
-        <header className="flex items-start justify-between gap-4">
-          <div>
+        <header className="permit-header-card flex items-center justify-between gap-4 p-4 sm:p-5">
+          <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
               Personalized guidance
             </p>
-            <h1 className="mt-1 font-display text-3xl text-foreground">Your permit path</h1>
+            <h1 className="mt-1 font-display text-2xl text-foreground sm:text-3xl">Your permit path</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Ordered across the four SF agencies that shape your launch.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button type="button" className="touch-button bg-white shadow-sm" onClick={openProfile} aria-label="Edit vendor profile">
+          <div className="flex flex-none flex-col items-center gap-2.5">
+            <button type="button" className="touch-button bg-white/70 shadow-sm" onClick={openProfile} aria-label="Edit vendor profile">
               <UserIcon className="h-5 w-5" />
             </button>
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white" aria-hidden="true">
-              <PermitIcon className="h-6 w-6" />
-            </span>
+            {status === 'success' && checklist ? (
+              <div
+                className="permit-progress-ring"
+                role="progressbar"
+                aria-label="Permit checklist progress"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progress}
+              >
+                <svg viewBox="0 0 44 44" width="100%" height="100%" aria-hidden="true">
+                  <circle className="permit-progress-ring__track" cx="22" cy="22" r={RING_RADIUS} fill="none" strokeWidth="5" />
+                  <circle
+                    className="permit-progress-ring__fill"
+                    cx="22"
+                    cy="22"
+                    r={RING_RADIUS}
+                    fill="none"
+                    strokeWidth="5"
+                    strokeDasharray={RING_CIRCUMFERENCE}
+                    strokeDashoffset={RING_CIRCUMFERENCE * (1 - progress / 100)}
+                  />
+                </svg>
+                <span>{progress}%</span>
+              </div>
+            ) : (
+              <span className="permit-progress-ring permit-progress-ring--placeholder" aria-hidden="true">
+                <PermitIcon className="h-6 w-6 text-primary" />
+              </span>
+            )}
           </div>
         </header>
 
-        <section aria-label="Important permit deadlines" className="mt-5 grid grid-cols-3 gap-2">
+        <section aria-label="Important permit deadlines" className="deadline-rail mt-5">
           {DEADLINES.map((deadline) => (
-            <div key={deadline.value} className="deadline-card">
-              <ClockIcon className="h-4 w-4 text-caution" />
+            <div key={deadline.value} className="deadline-pill">
+              <span className="deadline-pill__icon" aria-hidden="true">
+                <ClockIcon className="h-3.5 w-3.5" />
+              </span>
               <strong>{deadline.value}</strong>
               <span>{deadline.label}</span>
             </div>
@@ -126,26 +180,27 @@ export default function PermitChecklist() {
 
         {status === 'success' && checklist && (
           <>
-            <section className="mt-6 rounded-2xl border border-border bg-white p-4">
-              <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="font-semibold text-foreground">
-                  {completeCount} of {items.length} complete
-                </span>
-                <span className="font-mono text-muted-foreground">{progress}%</span>
-              </div>
-              <div role="progressbar" aria-label="Permit checklist progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="mt-2 h-2 overflow-hidden rounded-md bg-border">
-                <div className="h-full origin-left rounded-md bg-primary transition-transform" style={{ transform: `scaleX(${progress / 100})` }} />
-              </div>
-            </section>
+            <p className="mt-4 text-sm font-semibold text-foreground">
+              {completeCount} of {items.length} steps complete
+            </p>
 
-            <div className="mt-6 space-y-7">
-              {checklist.sections.map((section, sectionIndex) => (
+            <div className="mt-4 space-y-7">
+              {checklist.sections.map((section, sectionIndex) => {
+                const sectionDone = section.items.filter((item) => completed.includes(item.id)).length
+                const AgencyIcon = AGENCY_ICONS[sectionIndex % AGENCY_ICONS.length]
+                return (
                 <section key={section.agency} aria-labelledby={`agency-${sectionIndex}`}>
                   <div className="mb-3 flex items-center gap-3">
-                    <span className="agency-number">{sectionIndex + 1}</span>
-                    <h2 id={`agency-${sectionIndex}`} className="font-display text-xl text-foreground">
+                    <span className={`agency-badge agency-badge--${sectionIndex % 4}`} aria-hidden="true">
+                      <AgencyIcon className="h-5 w-5" />
+                      <span className="agency-badge__index">{sectionIndex + 1}</span>
+                    </span>
+                    <h2 id={`agency-${sectionIndex}`} className="min-w-0 flex-1 font-display text-xl text-foreground">
                       {section.agency}
                     </h2>
+                    <span className="agency-progress-chip">
+                      {sectionDone}/{section.items.length}
+                    </span>
                   </div>
                   <ul className="space-y-3">
                     {section.items.map((item) => {
@@ -204,7 +259,8 @@ export default function PermitChecklist() {
                     })}
                   </ul>
                 </section>
-              ))}
+                )
+              })}
             </div>
           </>
         )}

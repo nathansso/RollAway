@@ -23,7 +23,11 @@ export const MapIcon = (props: Props) => (
   <Icon {...props}><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" /><path d="M9 3v15M15 6v15" /></Icon>
 )
 export const PermitIcon = (props: Props) => (
-  <Icon {...props}><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V2h6v2M9 10h6M9 14h6M9 18h4" /></Icon>
+  <Icon {...props}>
+    <circle cx="12" cy="8.5" r="6" />
+    <path d="m9 8.5 2 2 4-4" />
+    <path d="M8.3 13.8 6.5 21l5.5-2.8L17.5 21l-1.8-7.2" />
+  </Icon>
 )
 export const UserIcon = (props: Props) => (
   <Icon {...props}><circle cx="12" cy="8" r="4" /><path d="M4 22a8 8 0 0 1 16 0" /></Icon>

@@ -1,4 +1,5 @@
 import type { ComponentType, SVGProps } from 'react'
+import { FallingPattern } from '@/components/ui/falling-pattern'
 import BrandMark from '../common/BrandMark'
 import HeroMock from './HeroMock'
 import {
@@ -66,10 +67,18 @@ export default function LandingPage() {
       <main>
         {/* Hero */}
         <section
-          className="landing-hero"
+          className="landing-hero relative overflow-hidden"
           aria-labelledby="hero-heading"
         >
-          <div className="landing-shell grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+          {/* Decorative animated backdrop: orange streaks over the cream theme,
+              masked to fade out behind the headline so text stays readable. */}
+          <div
+            className="pointer-events-none absolute inset-0 z-0 opacity-60 [mask-image:radial-gradient(ellipse_78%_62%_at_50%_42%,transparent_8%,black_78%)]"
+            aria-hidden="true"
+          >
+            <FallingPattern className="h-full w-full" />
+          </div>
+          <div className="landing-shell relative z-10 grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
                 {HERO.eyebrow}

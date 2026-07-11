@@ -9,10 +9,13 @@ export function buildSpotMarkerElement(
   button.className = `rank-marker rank-marker--${spot.verdict}`
   button.setAttribute(
     'aria-label',
-    `Recommendation ${spot.rank}: ${spot.block_label}, ${spot.verdict}, ${Math.round(spot.score * 100)} out of 100. Open Good to Know details.`,
+    `Suggested spot: ${spot.block_label}, ${spot.verdict}. Open Good to Know details.`,
   )
   const badge = document.createElement('span')
-  badge.textContent = String(spot.rank)
+  // Neutral location dot — these are suggestions to navigate to, not a ranked list.
+  badge.innerHTML =
+    '<svg width="13" height="13" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="3.5" fill="currentColor"/></svg>'
+  badge.style.color = 'white'
   badge.setAttribute('aria-hidden', 'true')
   button.appendChild(badge)
   button.addEventListener('click', (event) => {

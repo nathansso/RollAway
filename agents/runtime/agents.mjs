@@ -57,8 +57,26 @@ function inferVendorType(message) {
   }
   return null;
 }
+// Normalize vendor-type slug variants to the canonical KB filename. Without this, a spec-style
+// slug like "pushcart_no_cook" misses kb/pushcart_nocook.md, drops off the fast authored-checklist
+// path into slow generate-from-scratch (≈45s + can pick the wrong type). Keep the fast path robust.
+const VT_ALIASES = {
+  pushcart_no_cook: "pushcart_nocook",
+  pushcart_nocooking: "pushcart_nocook",
+  pushcart_with_cooking: "pushcart_cooking",
+  pushcart_cook: "pushcart_cooking",
+};
+const canonVendorType = (vt) => {
+  const k = String(vt || "").toLowerCase().trim();
+  return VT_ALIASES[k] || k;
+};
 // Authored §D checklist straight from kb/<vt>.md (single source of truth — never regenerated).
-const loadChecklist = (vt) => extractEnvelope(readOne(`${vt}.md`));
+// Returns null (not throw) for unknown types so the caller degrades cleanly.
+const loadChecklist = (vt) => {
+  const file = `${canonVendorType(vt)}.md`;
+  if (!CHECKLISTS.includes(file)) return null;
+  try { return extractEnvelope(readOne(file)); } catch { return null; }
+};
 
 // source id -> { file, label } from the SOURCES.md table.
 const SRC = (() => {
@@ -299,7 +317,11 @@ export async function runSpotScoutSingleTurn(payload = {}) {
 }
 
 export async function runPermitCopilot(message, context = {}) {
-  const vt = VENDOR_TYPES.includes(context.vendor_type) ? context.vendor_type : inferVendorType(message);
+  // Normalize slug variants (e.g. spec's "pushcart_no_cook") to canonical BEFORE the known-type
+  // check, so a valid vendor type never falls through to keyword inference (which would see "cook"
+  // and mis-guess pushcart_cooking). Only infer from the message when there's genuinely no type.
+  const canon = canonVendorType(context.vendor_type);
+  const vt = VENDOR_TYPES.includes(canon) ? canon : inferVendorType(message);
   const retrieved = retrieveRuleDocs(message);
 
   // Fast path: vendor type known -> the checklist is AUTHORED data (kb/<vt>.md). Load it directly

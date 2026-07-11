@@ -126,7 +126,7 @@ export default function SpotPanel() {
         <header className="flex items-start justify-between gap-3 px-5 pb-2 pt-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-              Good to know · Rank {spot.rank}
+              Good to know
             </p>
             <h2 id="spot-title" className="mt-1 font-display text-2xl text-foreground">
               {spot.block_label}
@@ -150,6 +150,17 @@ export default function SpotPanel() {
           <p className="rounded-xl border border-border bg-white px-4 py-3 text-sm font-medium leading-snug text-foreground">
             {spot.why_one_line}
           </p>
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${spot.point.lat},${spot.point.lng}&travelmode=driving`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-on-primary"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polygon points="3 11 22 2 13 21 11 13 3 11" />
+            </svg>
+            Navigate to this spot
+          </a>
           <Details spot={spot} />
           <div className="mt-3 rounded-xl border border-border bg-white p-3 text-xs leading-relaxed text-muted-foreground">
             <strong className="text-foreground">Sources:</strong> placement rule{' '}

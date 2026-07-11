@@ -66,10 +66,12 @@ export function FallbackMap() {
           type="button"
           className={`fallback-rank fallback-rank--${spot.verdict}`}
           style={{ left: `${37 + index * 17}%`, top: `${32 + index * 14}%` }}
-          aria-label={`Recommendation ${spot.rank}: ${spot.block_label}. Open details.`}
+          aria-label={`Suggested spot: ${spot.block_label}. Open details.`}
           onClick={() => selectSpot(spot.id)}
         >
-          {spot.rank}
+          <svg width="13" height="13" viewBox="0 0 12 12" aria-hidden="true">
+            <circle cx="6" cy="6" r="3.5" fill="currentColor" />
+          </svg>
         </button>
       ))}
       <div className="fallback-map__notice">

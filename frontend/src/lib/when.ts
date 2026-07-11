@@ -50,6 +50,30 @@ export function createPresetWhen(
   }
 }
 
+/**
+ * #14: default the session window to "now" — a range starting at the current
+ * time (rounded down to :00/:30) and running three hours. Shown when the vendor
+ * first lands on the map, before they pick a different time.
+ */
+export function createNowWhen(now = new Date()): SessionWhen {
+  const start = new Date(now)
+  start.setMinutes(start.getMinutes() < 30 ? 0 : 30, 0, 0)
+  const end = new Date(start)
+  end.setHours(end.getHours() + 3)
+  const hhmm = (date: Date) =>
+    `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  const timeFrom = hhmm(start)
+  const timeTo = hhmm(end)
+  return {
+    preset: 'custom',
+    date: toLocalDate(now),
+    day: toDayCode(now),
+    time_from: timeFrom,
+    time_to: timeTo,
+    label: `Now · ${timeFrom}–${timeTo}`,
+  }
+}
+
 export function createCustomWhen(
   date: string,
   timeFrom: string,

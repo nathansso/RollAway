@@ -17,6 +17,7 @@
         "lng": -122.3982
       },
       "block_label": "2nd & Howard",
+      "address": "2nd St & Howard St, San Francisco, CA 94105",
       "score": 0.86,
       "verdict": "good",
       "why_one_line": "Strong office-lunch signal with low direct menu overlap.",
@@ -123,6 +124,7 @@
         "lng": -122.3953
       },
       "block_label": "Folsom & 1st",
+      "address": "Folsom St & 1st St, San Francisco, CA 94105",
       "score": 0.68,
       "verdict": "caution",
       "why_one_line": "Low menu overlap, but activity is more moderate.",
@@ -217,6 +219,7 @@
         "lng": -122.4058
       },
       "block_label": "Mission & 5th",
+      "address": "Mission St & 5th St, San Francisco, CA 94103",
       "score": 0.31,
       "verdict": "avoid",
       "why_one_line": "A street closure and two direct competitors weaken this setup.",

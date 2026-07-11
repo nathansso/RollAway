@@ -6,11 +6,12 @@ import {
   validateProfile,
 } from './lib/profile'
 import { isWithinSanFrancisco } from './lib/sfBounds'
-import { createPresetWhen, isValidCustomWindow } from './lib/when'
+import { createNowWhen, isValidCustomWindow } from './lib/when'
 import { loadStringArray, saveJson } from './lib/storage'
 import type {
   AppPhase,
   ClosuresResponse,
+  LatLng,
   PermitChecklist,
   RecommendSpotsRequest,
   RecommendationSpot,
@@ -28,6 +29,7 @@ export type LocationStatus =
   | 'denied'
   | 'unavailable'
   | 'outside_sf'
+  | 'address'
 
 const SOMA_FALLBACK = { lat: 37.7793, lng: -122.4013 }
 const PERMIT_PROGRESS_KEY = 'rollaway.permit-progress.v1'
@@ -69,7 +71,9 @@ interface AppState {
   locationStatus: LocationStatus
   location: { lat: number; lng: number }
   locationNotice: string | null
+  originLabel: string | null
   requestLocation: () => void
+  setStartLocation: (point: LatLng, address: string) => void
 
   vendors: VendorCollection | null
   closures: ClosuresResponse | null
@@ -94,7 +98,9 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => {
   const initialProfile = storedProfile()
-  const initialPhase: AppPhase = initialProfile ? 'session' : 'profile'
+  // #14: a returning vendor with a stored profile lands straight on the
+  // recommendation map (via the loading screen), not a separate setup page.
+  const initialPhase: AppPhase = initialProfile ? 'loading_recommendations' : 'profile'
 
   const startRecommendations = async () => {
     const { profile, location, when, recommendationStatus, locationStatus } = get()
@@ -104,9 +110,9 @@ export const useAppStore = create<AppState>((set, get) => {
       !isValidCustomWindow(when.date, when.time_from, when.time_to)
     ) {
       set({
-        appPhase: 'session',
+        appPhase: get().profile ? 'ready' : 'profile',
         recommendationStatus: 'error',
-        recommendationError: 'Complete your profile and session setup before finding spots.',
+        recommendationError: 'Complete your profile before finding spots.',
       })
       return
     }
@@ -134,8 +140,10 @@ export const useAppStore = create<AppState>((set, get) => {
       })
     } catch (error) {
       if (requestId !== latestRecommendationRequest) return
+      // #14: stay on the map and surface the error in the recommendation tray
+      // (with a retry), rather than bouncing back to a separate setup page.
       set({
-        appPhase: 'session',
+        appPhase: 'ready',
         recommendationStatus: 'error',
         recommendationError: errorMessage(
           error,
@@ -169,7 +177,7 @@ export const useAppStore = create<AppState>((set, get) => {
     appPhase: initialPhase,
     continueToSession: () => {
       if (get().profile && validateProfile(get().profile)) {
-        set({ appPhase: 'session', profileEditorOpen: false })
+        set({ appPhase: 'loading_recommendations', profileEditorOpen: false })
       }
     },
 
@@ -187,13 +195,12 @@ export const useAppStore = create<AppState>((set, get) => {
       const isFirstProfile = get().profile === null
       const currentPhase = get().appPhase
       const nextPhase =
-        currentPhase === 'loading_recommendations'
-          ? 'session'
-          : currentPhase === 'loading_permits'
-            ? 'ready'
-            : currentPhase
+        currentPhase === 'loading_permits' ? 'ready' : currentPhase
+      // #14: creating the first profile drops the vendor straight onto the
+      // loading screen -> recommendation map. Editing an existing profile mid
+      // recommendation-load re-runs the search (stays in loading_recommendations).
       set({
-        appPhase: isFirstProfile ? 'session' : nextPhase,
+        appPhase: isFirstProfile ? 'loading_recommendations' : nextPhase,
         profile,
         profileEditorOpen: false,
         permitChecklist: null,
@@ -209,13 +216,14 @@ export const useAppStore = create<AppState>((set, get) => {
       return true
     },
 
-    when: createPresetWhen('today_lunch'),
+    when: createNowWhen(),
     setWhen: (when) => {
       latestRecommendationRequest += 1
       latestBaseRequest += 1
+      // #14: changing the time on the map keeps you on the map; the idle
+      // recommendation status lets the app auto-re-run the search.
       set({
-        appPhase:
-          get().appPhase === 'loading_recommendations' ? 'session' : get().appPhase,
+        appPhase: get().appPhase,
         when,
         recommendations: [],
         recommendationStatus: 'idle',
@@ -229,6 +237,7 @@ export const useAppStore = create<AppState>((set, get) => {
     locationStatus: 'idle',
     location: SOMA_FALLBACK,
     locationNotice: null,
+    originLabel: null,
     requestLocation: () => {
       latestBaseRequest += 1
       set({ vendors: null, closures: null, baseDataError: null })
@@ -243,6 +252,7 @@ export const useAppStore = create<AppState>((set, get) => {
       latestRecommendationRequest += 1
       set({
         locationStatus: 'requesting',
+        originLabel: null,
         recommendations: [],
         recommendationStatus: 'idle',
         recommendationError: null,
@@ -255,8 +265,7 @@ export const useAppStore = create<AppState>((set, get) => {
           const location = { lat: coords.latitude, lng: coords.longitude }
           const outsideSanFrancisco = !isWithinSanFrancisco(location)
           set({
-            appPhase:
-              get().appPhase === 'loading_recommendations' ? 'session' : get().appPhase,
+            appPhase: get().appPhase,
             locationStatus: outsideSanFrancisco ? 'outside_sf' : 'granted',
             location: outsideSanFrancisco ? SOMA_FALLBACK : location,
             locationNotice: outsideSanFrancisco
@@ -270,8 +279,7 @@ export const useAppStore = create<AppState>((set, get) => {
         (error) => {
           latestRecommendationRequest += 1
           set({
-            appPhase:
-              get().appPhase === 'loading_recommendations' ? 'session' : get().appPhase,
+            appPhase: get().appPhase,
             locationStatus: error.code === error.PERMISSION_DENIED ? 'denied' : 'unavailable',
             location: SOMA_FALLBACK,
             locationNotice: null,
@@ -282,6 +290,29 @@ export const useAppStore = create<AppState>((set, get) => {
         },
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 120000 },
       )
+    },
+    setStartLocation: (point, address) => {
+      // #14: origin chosen from Places autocomplete. Setting the recommendation
+      // status idle lets the app auto-re-run the search from the new origin.
+      latestBaseRequest += 1
+      latestRecommendationRequest += 1
+      const outsideSanFrancisco = !isWithinSanFrancisco(point)
+      set({
+        appPhase: get().appPhase,
+        location: outsideSanFrancisco ? SOMA_FALLBACK : point,
+        originLabel: outsideSanFrancisco ? null : address,
+        locationStatus: outsideSanFrancisco ? 'outside_sf' : 'address',
+        locationNotice: outsideSanFrancisco
+          ? 'That address is outside San Francisco. Using the SoMa demo origin.'
+          : null,
+        recommendations: [],
+        recommendationStatus: 'idle',
+        recommendationError: null,
+        selectedSpotId: null,
+        vendors: null,
+        closures: null,
+        baseDataError: null,
+      })
     },
 
     vendors: null,

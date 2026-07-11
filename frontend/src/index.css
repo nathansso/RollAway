@@ -1430,3 +1430,47 @@ html.landing-route #root {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* #14 time-range scroll wheel */
+.time-wheel__frame {
+  position: relative;
+  height: 132px;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
+  background: #fff;
+}
+.time-wheel__viewport {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  outline: none;
+}
+.time-wheel__viewport::-webkit-scrollbar {
+  display: none;
+}
+.time-wheel__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  scroll-snap-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+  background: transparent;
+}
+.time-wheel__item.is-active {
+  color: var(--color-foreground);
+}
+.time-wheel__band {
+  position: absolute;
+  inset-inline: 0;
+  top: 44px;
+  height: 44px;
+  pointer-events: none;
+  border-top: 1px solid var(--color-primary);
+  border-bottom: 1px solid var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}

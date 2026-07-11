@@ -32,7 +32,7 @@ export default function AddressSearch() {
         setSuggestions(results)
         setOpen(true)
         setError(null)
-      } catch (caught) {
+      } catch {
         if (!controller.signal.aborted) {
           setSuggestions([])
           setError('Address search is unavailable right now.')

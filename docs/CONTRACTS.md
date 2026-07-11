@@ -245,14 +245,24 @@ step's `cite` resolves to a real allowlisted `form_url`. When present:
   "form": "Application for Mobile Food Facility",    // verbatim from kb/FORMS.md
   "form_url": "https://sfpublicworks.org/...pdf",    // same allowlisted URL
   "fields": [                                        // fields authored in kb/FORM_FIELDS.md by cite
-    { "label": "Business name", "profile_key": "business_name", "value": "El Sabor", "status": "filled" },
-    { "label": "Contact email", "profile_key": "email", "value": null, "status": "unknown" }
+    { "label": "Business name", "profile_key": "business_name", "type": "text",  "required": true,  "value": "El Sabor", "status": "filled" },
+    { "label": "Contact email", "profile_key": "email",         "type": "email", "required": false, "value": null,       "status": "unknown" }
   ] }
 ```
 
 Every `value` is a string or `null`, copied **only** from the vendor's supplied profile/context;
 unmatched fields are `value:null, status:"unknown"`. `status` ∈ `filled | unknown`. Agents never
 fabricate a value, form, agency, or URL, and `filled_form` never asserts the form was submitted.
+
+`type` and `required` are **additive, optional** (added 2026-07-11 for the form-fill pipeline;
+`contract_version` unchanged). `type` ∈ `text | email | tel | date | number | select | textarea`
+(the input the fillable UI renders) and `required` is a boolean (a form-required field vs an
+optional one); both are authored in `kb/FORM_FIELDS.md`. Consumers that ignore them see the exact
+prior shape. The same fields (plus the `source` id and `required_open`/`optional_open` tallies) are
+returned by the doc-ingestion route **`POST /form_fill`** on the serverless-inference runtime
+(`agents/runtime/server.mjs`), which ingests one verified form and pre-fills it from supplied
+context. Plain JSON, not a §A envelope; a source with no verified allowlisted form returns
+`{ "error": { "code": "BAD_INPUT", ... } }` — never a fabricated form.
 
 Vendor types (canonical strings, shared everywhere):
 `truck, trailer, pushcart_cooking, pushcart_nocook`.

@@ -10,6 +10,7 @@ import { normalizeRecommendations } from './lib/recommendations'
 import { createNowWhen, isValidCustomWindow } from './lib/when'
 import { loadJson, loadStringArray, saveJson } from './lib/storage'
 import { EMPTY_FORM_STATE, type PermitFormState } from './components/permits/permitForms'
+import { attachFilledForms } from './lib/formCatalog'
 import type {
   AppPhase,
   ClosuresResponse,
@@ -184,7 +185,13 @@ export const useAppStore = create<AppState>((set, get) => {
     try {
       const permitChecklist = await apiClient.getPermitChecklist(profile.vendor_type)
       if (requestId !== latestPermitRequest) return
-      set({ appPhase: 'ready', permitChecklist, permitStatus: 'success' })
+      // Pre-fill every included form (Public Works, Public Health, Fire) from the vendor profile so
+      // each gets a fillable card + auto-filled editable PDF — not just Public Works.
+      set({
+        appPhase: 'ready',
+        permitChecklist: attachFilledForms(permitChecklist, profile),
+        permitStatus: 'success',
+      })
     } catch (error) {
       if (requestId !== latestPermitRequest) return
       set({

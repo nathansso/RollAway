@@ -1,8 +1,10 @@
 <!--
-version: 1.3.0
+version: 1.4.0
 updated: 2026-07-11
 owner: Person 2 (Agents & Platform)
 changelog:
+  - 1.4.0 (2026-07-11): add additive, optional `type` + `required` to filled_form.fields for the
+    form-fill pipeline (also returned by POST /form_fill). contract_version unchanged (additive).
   - 1.3.0 (2026-07-11): add nullable, additive filled_form paperwork record to Permit Copilot
     checklist steps (field->value map + source form_url); values copied only from supplied vendor
     profile, unknowns marked. contract_version unchanged (additive).
@@ -114,16 +116,19 @@ real allowlisted `form_url`. When present it is:
   "form": "Application for Mobile Food Facility",// from kb/FORMS.md (verbatim)
   "form_url": "https://sfpublicworks.org/...pdf",// the same allowlisted URL
   "fields": [                                    // which applicant fields Rollaway pre-filled
-    { "label": "Business name", "profile_key": "business_name", "value": "El Sabor Taqueria", "status": "filled" },
-    { "label": "Proposed location (lat, lng)", "profile_key": "pinned_point", "value": null, "status": "unknown" }
+    { "label": "Business name", "profile_key": "business_name", "type": "text", "required": true, "value": "El Sabor Taqueria", "status": "filled" },
+    { "label": "Proposed location (lat, lng)", "profile_key": "pinned_point", "type": "text", "required": true, "value": null, "status": "unknown" }
   ]
 }
 ```
 
-Which fields each form carries is authored in `kb/FORM_FIELDS.md` (keyed by the same frozen `cite`).
-Every `value` is copied **only** from the vendor's supplied profile/context; a field with no
+Which fields each form carries is authored in `kb/FORM_FIELDS.md` (keyed by the same frozen `cite`),
+along with each field's `type` (`text | email | tel | date | number | select | textarea`) and
+whether it is `required` — both **additive/optional** (consumers that ignore them see the prior
+shape). Every `value` is copied **only** from the vendor's supplied profile/context; a field with no
 supplied value is `value: null, status: "unknown"`. The model never fabricates a value, a form, an
 agency, or a URL, and `filled_form` never means the form was submitted — it is a record for review.
+The doc-ingestion route `POST /form_fill` returns these same fields for one verified form.
 
 ---
 

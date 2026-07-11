@@ -5,15 +5,11 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id: string) {
-          if (id.includes('node_modules/mapbox-gl')) return 'mapbox'
-        },
-      },
-    },
-  },
+  // No manual mapbox chunk: a *named* manual chunk is treated as an eager
+  // shared chunk, which let Rolldown co-locate Vite's preload helper there and
+  // made the landing entry statically import (and eagerly fetch) all ~1.8MB of
+  // Mapbox. Reached only through the lazy `App` import, Mapbox becomes a pure
+  // async chunk that loads only when a visitor enters /app.
   plugins: [
     react(),
     tailwindcss(),
@@ -29,7 +25,10 @@ export default defineConfig({
         background_color: '#FFF7ED',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        // Launch installed app straight into the map app; keep the whole
+        // origin (incl. the marketing landing at /) in scope.
+        start_url: '/app',
+        scope: '/',
         id: '/',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },

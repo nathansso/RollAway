@@ -29,7 +29,7 @@ test('production PWA shell and fixture data reload offline', async ({
     else rollAwayBusinessRequests.push(request.url())
   })
 
-  await page.goto('/')
+  await page.goto('/app')
   await page.evaluate(() => {
     localStorage.setItem(
       'rollaway.profile.v1',

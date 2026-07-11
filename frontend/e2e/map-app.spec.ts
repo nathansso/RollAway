@@ -110,7 +110,7 @@ test('full-screen loader covers recommendation and permit operations', async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.goto('/')
+  await page.goto('/app')
   await page.evaluate(() => localStorage.clear())
   await page.reload()
 
@@ -136,7 +136,7 @@ test('full-screen loader covers recommendation and permit operations', async ({
 test('permit generation is explicit and shows the personalized checklist', async ({
   page,
 }) => {
-  await page.goto('/')
+  await page.goto('/app')
   await page.evaluate(() => localStorage.clear())
   await page.reload()
 
@@ -188,7 +188,7 @@ test('guided setup stages profile, location, and recommendations', async ({ page
       },
     })
   })
-  await page.goto('/')
+  await page.goto('/app')
   await page.evaluate(() => localStorage.clear())
   await page.reload()
 
@@ -250,7 +250,7 @@ test('first launch, map recommendations, details, permits, and EasyApply', async
   page,
 }) => {
   const { mapboxRequests, rollAwayBusinessRequests } = trackFixtureNetwork(page)
-  await page.goto('/')
+  await page.goto('/app')
   await page.evaluate(() => localStorage.clear())
   await page.reload()
 
@@ -372,7 +372,7 @@ test('granted geolocation updates the session state', async ({ browser }) => {
     geolocation: { latitude: 37.7869, longitude: -122.3982 },
   })
   const page = await context.newPage()
-  await page.goto('/')
+  await page.goto('/app')
   await page.evaluate(() => {
     localStorage.setItem(
       'rollaway.profile.v1',
@@ -416,7 +416,7 @@ test('outside-SF geolocation uses the SoMa fallback with notice', async ({
     geolocation: { latitude: 37.8044, longitude: -122.2712 },
   })
   const page = await context.newPage()
-  await page.goto('/')
+  await page.goto('/app')
   await page.evaluate(() => {
     localStorage.setItem(
       'rollaway.profile.v1',
@@ -464,7 +464,7 @@ test('fixture mode keeps the schematic map usable without a Mapbox token', async
   page,
 }) => {
   const { mapboxRequests, rollAwayBusinessRequests } = trackFixtureNetwork(page)
-  await page.goto('/')
+  await page.goto('/app')
   await page.evaluate(() => {
     localStorage.setItem(
       'rollaway.profile.v1',

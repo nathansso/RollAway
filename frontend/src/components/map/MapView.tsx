@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
+// Ships with the app chunk (not the marketing landing) since MapView is lazy.
+import 'mapbox-gl/dist/mapbox-gl.css'
 import { useAppStore } from '../../store'
 import { isWithinSanFrancisco } from '../../lib/sfBounds'
 import {

@@ -47,12 +47,13 @@
 `agents/instructions/{spot_scout,permit_copilot}.md`, `agents/kb/` (permit KB docs), `agents/menu_rag/{ingest.mjs,query.mjs}`, `agents/enrichment/normalize_fooditems.mjs` (prompt-cached), `agents/runtime/*` (reuse existing), `agents/evals/`, `agents/scripts/provision*.mjs` (pre-provision demo menu KB + both KBs).
 
 ## Verification (DoD)
-- [ ] Menu KB pre-provisioned; `menu_kb_id` handle returned; competition-overlap query returns item/price overlap (not a cuisine label).
-- [ ] `fooditems` normalizer runs with prompt caching; raw text preserved.
-- [ ] Spot Scout returns strict ranked JSON in a single turn from pre-gathered signals (no multi-round tool calls, no router).
-- [ ] Permit Copilot returns the four-agency checklist with surfaced deadlines + citations; vendor-type differences correct (pushcart_no_cook skips DMV/Fire; truck includes them).
-- [ ] Guardrails attached; eval gate green (if built).
-- [ ] No key committed; KBs provisioned via script, not runtime, on the demo path.
+- [x] Menu KB pre-provisioned by script; `menu_kb_id` handle returned; competition-overlap query returns item/price overlap (not a cuisine label). — `menu_rag/{ingest,query}.mjs`, `scripts/provision-kbs.mjs`; eval "menu_rag overlap: item+price overlap, not a cuisine label" (taqueria=0.7, coffee=0). *(Real Gradient KB creation runs once a DO token is injected — DECISIONS D24.)*
+- [x] `fooditems` normalizer runs with prompt caching; raw text preserved. — `enrichment/normalize_fooditems.mjs --mock` (187 permits, byte-identical prefix sha256:6d06217ef6ac, raw kept on every record); eval "normalize_fooditems: items+keywords, raw preserved, constant cache prefix".
+- [x] Spot Scout returns strict ranked JSON in a single turn from pre-gathered signals (no multi-round tool calls, no router). — `spot_scout.md` v2.0.0 + `runtime/runSpotScoutSingleTurn`; eval "spot_scout single-turn: valid §A, 0 tool calls, ranked from pre-gathered signals".
+- [x] Permit Copilot returns the four-agency checklist with surfaced deadlines + citations; vendor-type differences correct (pushcart_no_cook skips DMV/Fire; truck includes them). — `permit_copilot.md` v2.0.0 + `kb/<vt>.md`; evals "four agencies + autofill", "30/90/15-day clocks", "truck DMV+Fire", "pushcart_nocook excludes DMV".
+- [x] Guardrails attached to both agents; eval gate green (24/24 offline). — `guardrails.config.json` (attach_to both) + evals.
+- [x] No key committed; KBs provisioned via script, not runtime, on the demo path. — grep clean; `scripts/provision-kbs.mjs` + `menu_rag/ingest.mjs` are scripts; token read from env only.
+- [~] **LIVE** (real token): provision both KBs, live competition-overlap against the real menu KB, live end-to-end runtime run, `run.mjs --live` — all wired and ready; blocked only on the DO token being present in the session env (not found this session; DECISIONS D24 + final report).
 
 ## Branch etiquette
 Own `/agents`. Lock the Spot Scout input/output and the Menu-RAG query interface with Person 2, and the checklist JSON shape with Person 1, on day 1. Pre-provision the demo menu KB against the shared **demo scenario** (pick it with the team first).

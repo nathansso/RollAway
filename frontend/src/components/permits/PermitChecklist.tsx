@@ -183,6 +183,52 @@ export default function PermitChecklist() {
                                 <ChevronIcon className="h-4 w-4" />
                               </button>
                             )}
+                            {item.filled_form && (
+                              <section
+                                aria-label={`Saved paperwork record for ${item.filled_form.form}`}
+                                className="mt-3 rounded-xl border border-border bg-muted/40 p-3"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
+                                      Your saved paperwork
+                                    </p>
+                                    <p className="mt-0.5 truncate text-sm font-semibold text-foreground">
+                                      {item.filled_form.form}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">{item.filled_form.agency}</p>
+                                  </div>
+                                  <a
+                                    href={item.filled_form.form_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="shrink-0 text-xs font-semibold text-primary underline"
+                                  >
+                                    View form
+                                    <span className="sr-only"> for {item.filled_form.form}</span>
+                                  </a>
+                                </div>
+                                <dl className="mt-2 space-y-1">
+                                  {item.filled_form.fields.map((field) => (
+                                    <div key={field.profile_key} className="flex items-baseline justify-between gap-3 text-sm">
+                                      <dt className="shrink-0 text-muted-foreground">{field.label}</dt>
+                                      {field.status === 'filled' ? (
+                                        <dd className="min-w-0 truncate text-right font-medium text-foreground">
+                                          {field.value}
+                                        </dd>
+                                      ) : (
+                                        <dd className="shrink-0 text-right text-xs font-medium text-caution">
+                                          Add in profile
+                                        </dd>
+                                      )}
+                                    </div>
+                                  ))}
+                                </dl>
+                                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                                  Pre-filled from your profile for your records. Review on the official form before submitting; this does not file it.
+                                </p>
+                              </section>
+                            )}
                           </div>
                         </li>
                       )

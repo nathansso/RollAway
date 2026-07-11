@@ -1,8 +1,11 @@
 <!--
-version: 1.2.0
+version: 1.3.0
 updated: 2026-07-11
 owner: Person 2 (Agents & Platform)
 changelog:
+  - 1.3.0 (2026-07-11): add nullable, additive filled_form paperwork record to Permit Copilot
+    checklist steps (field->value map + source form_url); values copied only from supplied vendor
+    profile, unknowns marked. contract_version unchanged (additive).
   - 1.2.0 (2026-07-11): add nullable, table-backed form_url to Permit Copilot checklist steps.
   - 1.1.0 (2026-07-11): add nullable event_opportunity and outreach_draft fields to Spot Scout map actions.
   - 1.0.0 (2026-07-10): initial shared envelope contract. Both agents import this verbatim.
@@ -87,7 +90,8 @@ or phone number.
   "steps": [
     { "order": 1, "agency": "Public Works", "title": "Apply for MFF permit",
       "detail": "...", "deadline_days": 30, "deadline_label": "30-day public notice",
-      "cite": "dpw-182101", "autofill_field": "pinned_point", "form_url": null, "status": "todo" }
+      "cite": "dpw-182101", "autofill_field": "pinned_point", "form_url": null,
+      "filled_form": null, "status": "todo" }
   ]
 }
 ```
@@ -99,6 +103,27 @@ name of a vendor-profile field the app can pre-fill on that agency's form (e.g. 
 omit it when nothing pre-fills. **`form_url`** is additive and always a string or `null`. Runtime
 copies it verbatim from `kb/FORMS.md` by `cite` and rejects domains outside the deterministic SF
 agency allowlist. The model never constructs a URL; missing or `SOURCE-NEEDED` forms are `null`.
+
+**`filled_form`** is additive and nullable — the viewable/persistable paperwork record so a vendor
+keeps a copy of the legal forms they filed. It is `null` unless the step's `cite` resolves to a
+real allowlisted `form_url`. When present it is:
+
+```jsonc
+{
+  "agency": "San Francisco Public Works",       // from kb/FORMS.md (verbatim)
+  "form": "Application for Mobile Food Facility",// from kb/FORMS.md (verbatim)
+  "form_url": "https://sfpublicworks.org/...pdf",// the same allowlisted URL
+  "fields": [                                    // which applicant fields Rollaway pre-filled
+    { "label": "Business name", "profile_key": "business_name", "value": "El Sabor Taqueria", "status": "filled" },
+    { "label": "Proposed location (lat, lng)", "profile_key": "pinned_point", "value": null, "status": "unknown" }
+  ]
+}
+```
+
+Which fields each form carries is authored in `kb/FORM_FIELDS.md` (keyed by the same frozen `cite`).
+Every `value` is copied **only** from the vendor's supplied profile/context; a field with no
+supplied value is `value: null, status: "unknown"`. The model never fabricates a value, a form, an
+agency, or a URL, and `filled_form` never means the form was submitted — it is a record for review.
 
 ---
 
@@ -152,7 +177,7 @@ agency allowlist. The model never constructs a URL; missing or `SOURCE-NEEDED` f
     "steps": [
       { "order": 1, "agency": "Treasurer", "title": "Register the business", "detail": "Obtain/renew the SF Business Registration Certificate; keep it current.", "deadline_days": 90, "deadline_label": "90-day document window", "cite": "ttx-cert", "autofill_field": "business_name", "form_url": null, "status": "todo" },
       { "order": 2, "agency": "Public Health", "title": "Health permit (no-cook tier) + commissary", "detail": "Lower-tier health permit for prepackaged/cold items; commissary/base agreement.", "deadline_days": 90, "deadline_label": "90-day document window", "cite": "sfdph-mff", "autofill_field": "business_name", "form_url": "https://www.sf.gov/sites/default/files/2024-06/MFF%20Unified%20Application.pdf", "status": "todo" },
-      { "order": 3, "agency": "Public Works", "title": "Apply for the MFF permit (sidewalk location)", "detail": "Apply for your sidewalk location; triggers a 30-day public notice.", "deadline_days": 30, "deadline_label": "30-day public notice", "cite": "sfpw-mff", "autofill_field": "pinned_point", "form_url": "https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf", "status": "todo" },
+      { "order": 3, "agency": "Public Works", "title": "Apply for the MFF permit (sidewalk location)", "detail": "Apply for your sidewalk location; triggers a 30-day public notice.", "deadline_days": 30, "deadline_label": "30-day public notice", "cite": "sfpw-mff", "autofill_field": "pinned_point", "form_url": "https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf", "filled_form": { "agency": "San Francisco Public Works", "form": "Application for Mobile Food Facility", "form_url": "https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf", "fields": [ { "label": "Business name", "profile_key": "business_name", "value": "El Sabor Taqueria", "status": "filled" }, { "label": "Proposed location (lat, lng)", "profile_key": "pinned_point", "value": "37.7852, -122.3969", "status": "filled" }, { "label": "Contact email", "profile_key": "email", "value": null, "status": "unknown" } ] }, "status": "todo" },
       { "order": 4, "agency": "Public Works", "title": "Appeal window", "detail": "Grant/deny decisions can be appealed within 15 days.", "deadline_days": 15, "deadline_label": "15-day appeal window", "cite": "sfpw-mff", "form_url": "https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf", "status": "todo" },
       { "order": 5, "agency": "Public Works", "title": "Maintain wide sidewalk pedestrian clearance", "detail": "Leave the required unobstructed sidewalk path; stay 75 ft from restaurant entrances, 7 ft from hydrants, 500 ft from schools during school hours.", "deadline_days": null, "deadline_label": null, "cite": "dpw-182101", "form_url": null, "status": "todo" }
     ]

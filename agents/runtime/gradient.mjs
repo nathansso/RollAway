@@ -4,10 +4,14 @@
 // Env:
 //   GRADIENT_API_KEY        (required to run live)
 //   GRADIENT_INFERENCE_URL  (default https://inference.do-ai.run/v1)
-//   GRADIENT_MODEL          (default llama3.3-70b-instruct)
+//   GRADIENT_MODEL          (default anthropic-claude-haiku-4.5)
 
 const URL = (process.env.GRADIENT_INFERENCE_URL || "https://inference.do-ai.run/v1").replace(/\/$/, "");
-const MODEL = process.env.GRADIENT_MODEL || "llama3.3-70b-instruct";
+// Default to a fast model: the agents only write short prose (one-line "why", a permit intro)
+// over pre-gathered signals, so latency matters far more than raw size here. Benchmarked on DO
+// Gradient: llama3.3-70b ~28s vs claude-haiku-4.5 ~1.9s for the same why-line. Override with
+// GRADIENT_MODEL if a different model is provisioned on the target account.
+const MODEL = process.env.GRADIENT_MODEL || "anthropic-claude-haiku-4.5";
 // Per-call inference timeout (ms). A stalled/slow serverless call must not hang the whole request
 // (or the eval suite) forever — it aborts and the caller degrades to a valid §A envelope.
 const TIMEOUT_MS = Number(process.env.GRADIENT_TIMEOUT_MS || 45000);

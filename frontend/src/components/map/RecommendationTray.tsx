@@ -86,10 +86,12 @@ export default function RecommendationTray() {
           onClick={() => selectSpot(spot.id)}
           onKeyDown={moveCardFocus}
           className="recommendation-card"
-          aria-label={`Open details for rank ${spot.rank}, ${spot.block_label}`}
+          aria-label={`Open details for suggested spot, ${spot.block_label}`}
         >
           <span className={`recommendation-card__rank recommendation-card__rank--${spot.verdict}`}>
-            {spot.rank}
+            <svg width="16" height="16" viewBox="0 0 12 12" aria-hidden="true">
+              <circle cx="6" cy="6" r="3.5" fill="currentColor" />
+            </svg>
           </span>
           <span className="min-w-0 flex-1 text-left">
             <span className="block truncate text-sm font-bold text-foreground">

@@ -9,6 +9,27 @@ const isObj = (v) => v && typeof v === "object" && !Array.isArray(v);
 const VENDOR_TYPES = ["truck", "trailer", "pushcart_cooking", "pushcart_nocook"];
 const VERDICTS = ["good", "caution", "avoid"];
 const STATUSES = ["todo", "in_progress", "done"];
+const FIELD_STATUSES = ["filled", "unknown"];
+
+// Additive §D: a step may carry a `filled_form` paperwork record (object or null). When present as
+// an object it must name the real form (agency/form/form_url all strings) and a fields[] array of
+// { label, profile_key, value:string|null, status: filled|unknown }. Values are string|null only —
+// unknown fields are null, never fabricated.
+function validateFilledForm(ff, p) {
+  const e = [];
+  if (!isStr(ff.agency)) e.push(`${p}.agency must be string`);
+  if (!isStr(ff.form)) e.push(`${p}.form must be string`);
+  if (!isStr(ff.form_url)) e.push(`${p}.form_url must be string`);
+  if (!isArr(ff.fields)) { e.push(`${p}.fields must be array`); return e; }
+  ff.fields.forEach((f, i) => {
+    const fp = `${p}.fields[${i}]`;
+    if (!isStr(f.label)) e.push(`${fp}.label must be string`);
+    if (!isStr(f.profile_key)) e.push(`${fp}.profile_key must be string`);
+    if (!(f.value === null || isStr(f.value))) e.push(`${fp}.value must be string|null`);
+    if (!FIELD_STATUSES.includes(f.status)) e.push(`${fp}.status invalid: ${f.status}`);
+  });
+  return e;
+}
 
 export function validateChecklist(cl, path = "checklist") {
   const e = [];
@@ -25,6 +46,8 @@ export function validateChecklist(cl, path = "checklist") {
     if (!(s.deadline_label === null || isStr(s.deadline_label))) e.push(`${p}.deadline_label must be string|null`);
     if (!isStr(s.cite)) e.push(`${p}.cite must be string`);
     if (!(s.form_url === undefined || s.form_url === null || isStr(s.form_url))) e.push(`${p}.form_url must be string|null when present`);
+    if (!(s.filled_form === undefined || s.filled_form === null || isObj(s.filled_form))) e.push(`${p}.filled_form must be object|null when present`);
+    else if (isObj(s.filled_form)) e.push(...validateFilledForm(s.filled_form, `${p}.filled_form`));
     if (!STATUSES.includes(s.status)) e.push(`${p}.status invalid: ${s.status}`);
   });
   return e;

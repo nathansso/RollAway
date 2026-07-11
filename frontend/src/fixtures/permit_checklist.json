@@ -23,7 +23,19 @@
             { "key": "location", "label": "Proposed location", "requirement": "must_verify" },
             { "key": "proposed_start_date", "label": "Proposed start date", "requirement": "missing" },
             { "key": "signature", "label": "Applicant signature", "requirement": "must_verify" }
-          ]
+          ],
+          "filled_form": {
+            "agency": "San Francisco Public Works",
+            "form": "Application for Mobile Food Facility",
+            "form_url": "https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf",
+            "fields": [
+              { "label": "Business name", "profile_key": "business_name", "value": "El Sabor Taqueria", "status": "filled" },
+              { "label": "Applicant / owner name", "profile_key": "owner_name", "value": "Ana Ruiz", "status": "filled" },
+              { "label": "Mobile food facility type", "profile_key": "vendor_type", "value": "truck", "status": "filled" },
+              { "label": "Proposed location (lat, lng)", "profile_key": "pinned_point", "value": "37.7852, -122.3969", "status": "filled" },
+              { "label": "Contact email", "profile_key": "email", "value": null, "status": "unknown" }
+            ]
+          }
         },
         {
           "id": "pw-public-notice",

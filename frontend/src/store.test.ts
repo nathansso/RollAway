@@ -360,4 +360,48 @@ describe('guided app store phases', () => {
       baseDataError: 'Base map data is temporarily unavailable.',
     })
   })
+
+  it('tracks per-form fill, export, and submission and persists them', async () => {
+    const store = await loadStore(validProfile)
+
+    store.getState().setPermitFormField('pw-location-application', 'email', 'ana@example.com')
+    expect(store.getState().permitForms['pw-location-application'].values.email).toBe(
+      'ana@example.com',
+    )
+
+    store.getState().exportPermitForm('pw-location-application')
+    expect(store.getState().permitForms['pw-location-application'].exported).toBe(true)
+
+    store.getState().setPermitFormSubmission('pw-location-application', true)
+    const form = store.getState().permitForms['pw-location-application']
+    expect(form.submission).toBe('submitted')
+    expect(typeof form.submittedAt).toBe('number')
+
+    // persisted under the vendor-type-scoped key
+    const persisted = JSON.parse(
+      localStorage.getItem('rollaway.permit-forms.v1.truck') ?? '{}',
+    )
+    expect(persisted['pw-location-application'].submission).toBe('submitted')
+
+    // "Not yet" clears the submission back to in-progress territory
+    store.getState().setPermitFormSubmission('pw-location-application', false)
+    expect(store.getState().permitForms['pw-location-application'].submission).toBe(
+      'not_submitted',
+    )
+    expect(store.getState().permitForms['pw-location-application'].submittedAt).toBeNull()
+  })
+
+  it('reloads per-vendor-type form state and isolates it from other types', async () => {
+    const store = await loadStore(validProfile)
+    store.getState().exportPermitForm('pw-location-application')
+    expect(store.getState().permitForms['pw-location-application'].exported).toBe(true)
+
+    // switching vendor_type loads a different, empty scope
+    store.getState().saveProfile({ ...validProfile, vendor_type: 'pushcart_nocook' })
+    expect(store.getState().permitForms).toEqual({})
+
+    // switching back reloads the persisted truck scope
+    store.getState().saveProfile(validProfile)
+    expect(store.getState().permitForms['pw-location-application'].exported).toBe(true)
+  })
 })

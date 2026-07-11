@@ -1,0 +1,10 @@
+.env
+functions/.env
+node_modules/
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+# local scratch files from data probing
+hydrant_cat.json
+schools_cat.json

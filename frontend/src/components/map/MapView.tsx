@@ -11,6 +11,7 @@ import {
   vendorMarkerLabel,
 } from './markers'
 import {
+  applyBrandBasemap,
   attachMapFailureFallback,
   getFitCoordinates,
   initializeMapbox,
@@ -140,6 +141,7 @@ export default function MapView({ onViewReadyChange }: MapViewProps) {
     const clearFailureHandlers = attachMapFailureFallback(map, {
       onReady: () => {
         setFailed(false)
+        applyBrandBasemap(map)
         setMapReady(true)
         map.resize()
       },

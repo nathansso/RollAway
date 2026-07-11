@@ -10,11 +10,48 @@ export const SF_MAX_BOUNDS: [[number, number], [number, number]] = [
 export function createMapOptions(container: HTMLElement): mapboxgl.MapOptions {
   return {
     container,
-    style: 'mapbox://styles/mapbox/streets-v12',
+    // #34: a clean, minimal base (not the busy default streets style). We warm
+    // it toward the brand palette on load via applyBrandBasemap().
+    style: 'mapbox://styles/mapbox/light-v11',
     center: [-122.4013, 37.7835],
     zoom: 14,
     maxBounds: SF_MAX_BOUNDS,
     attributionControl: true,
+  }
+}
+
+/**
+ * #34: warm the stock Mapbox basemap toward the RollAway palette so it reads as
+ * intentional rather than default. Pattern-matches the loaded style's layers
+ * (resilient to style-version churn) and nudges the big color fields — the land
+ * canvas and water — toward the brand cream / muted tones. Every write is
+ * guarded so a missing layer or unsupported paint property is a no-op, never a
+ * throw. Call once the map's style has loaded.
+ */
+export function applyBrandBasemap(map: mapboxgl.Map): void {
+  const LAND = '#faf4ec' // warm cream canvas, in the brand background family
+  const WATER = '#c7d4d8' // muted blue-gray, low saturation so pins stay legible
+  let layers: { id: string; type: string }[]
+  try {
+    layers = (map.getStyle()?.layers ?? []) as { id: string; type: string }[]
+  } catch {
+    return
+  }
+  for (const layer of layers) {
+    const { id, type } = layer
+    try {
+      if (type === 'background') {
+        map.setPaintProperty(id, 'background-color', LAND)
+      } else if (type === 'fill' && id === 'land') {
+        map.setPaintProperty(id, 'fill-color', LAND)
+      } else if (type === 'fill' && /water/i.test(id)) {
+        map.setPaintProperty(id, 'fill-color', WATER)
+      } else if (type === 'line' && /water/i.test(id)) {
+        map.setPaintProperty(id, 'line-color', WATER)
+      }
+    } catch {
+      // layer doesn't support this paint property under the current style — skip
+    }
   }
 }
 

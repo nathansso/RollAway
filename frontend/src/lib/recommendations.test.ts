@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeRecommendations } from './recommendations'
+import { footTrafficSummary, normalizeRecommendations } from './recommendations'
 import type { RecommendationSpot } from '../types/contract'
 
 function spot(over: Partial<RecommendationSpot> & { id: string }): RecommendationSpot {
@@ -49,5 +49,19 @@ describe('normalizeRecommendations', () => {
     expect(out.find((s) => s.id === 'illegal')!.verdict).toBe('avoid')
     expect(out.find((s) => s.id === 'closed')!.verdict).toBe('avoid')
     expect(out.find((s) => s.id === 'legal')!.verdict).toBe('good')
+  })
+})
+
+describe('footTrafficSummary', () => {
+  it('phrases a vendor-facing volume read by level, with no Bay Wheels note', () => {
+    const high = footTrafficSummary('high', 'Friday lunch')
+    expect(high.toLowerCase()).toContain('busy')
+    expect(high.toLowerCase()).toContain('lunchtime')
+    expect(footTrafficSummary('moderate', 'Now · 12:30–15:30').toLowerCase()).toContain('steady')
+    expect(footTrafficSummary('low', 'Tomorrow · dinner').toLowerCase()).toContain('light')
+    // never leaks the internal data-source methodology note
+    for (const level of ['high', 'moderate', 'low']) {
+      expect(footTrafficSummary(level, 'Friday lunch').toLowerCase()).not.toContain('bay wheels')
+    }
   })
 })

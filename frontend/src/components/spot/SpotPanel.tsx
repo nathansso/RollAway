@@ -14,6 +14,7 @@ import { useAppStore } from '../../store'
 import { useDialogFocus } from '../../lib/useDialogFocus'
 import { buildNavigationUrl } from '../../lib/navigation'
 import { buildStreetViewUrl } from '../../lib/streetView'
+import { footTrafficSummary } from '../../lib/recommendations'
 import type { RecommendationSpot } from '../../types/contract'
 
 // #17: Street View image for the spot. Hides itself if there's no browser key
@@ -85,9 +86,9 @@ function Details({ spot }: { spot: RecommendationSpot }) {
     <ul className="mt-3 rounded-2xl border border-border bg-white px-4">
       <FactRow
         icon={<FootTrafficIcon className="h-5 w-5" />}
-        title="Estimated foot traffic"
+        title="Anticipated foot traffic"
         value={`${spot.foot_traffic.level} · ${spot.foot_traffic.time_context}`}
-        detail={`${spot.foot_traffic.detail} Bay Wheels activity is an estimate/proxy, not a pedestrian count.`}
+        detail={footTrafficSummary(spot.foot_traffic.level, spot.foot_traffic.time_context)}
       />
       <FactRow
         icon={<FoodIcon className="h-5 w-5" />}

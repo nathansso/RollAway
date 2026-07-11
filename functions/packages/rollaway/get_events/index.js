@@ -2,7 +2,10 @@
  * get_events — CONTRACTS.md §B.5 (growth pillar)
  *
  * Ticketmaster Discovery API events near a point within a date range,
- * filtered to San Francisco venues, capped at MAX_EVENTS.
+ * filtered to San Francisco venues, capped at MAX_EVENTS. Dates are
+ * interpreted strictly in San Francisco local time (America/Los_Angeles):
+ * an event belongs to [date_from, date_to] by its Pacific calendar date,
+ * not its UTC instant.
  *
  * expected_attendance: Ticketmaster does not publish attendance, so we map
  * well-known SF venues to their capacity (VENUE_CAPACITY below) and return
@@ -69,9 +72,13 @@ async function fetchTicketmaster(lat, lng, radius_m, dateFrom, dateTo) {
   if (!key) return fixtureEvents(lat, lng, radius_m, dateFrom, dateTo); // TODO(real-key)
 
   const radiusMiles = Math.max(1, Math.ceil(radius_m / 1609.34));
+  // Query in UTC but widen by a day on each side so no event whose SF-local
+  // date falls in [dateFrom, dateTo] is dropped at the UTC boundary (Pacific
+  // is UTC-7/-8, so a late-evening event spills into the next UTC day). The
+  // exact San Francisco calendar-date window is enforced below.
   const url = `${TM_URL}?apikey=${key}` +
     `&latlong=${lat},${lng}&radius=${radiusMiles}&unit=miles` +
-    `&startDateTime=${dateFrom}T00:00:00Z&endDateTime=${dateTo}T23:59:59Z` +
+    `&startDateTime=${addDays(dateFrom, -1)}T00:00:00Z&endDateTime=${addDays(dateTo, 1)}T23:59:59Z` +
     `&size=100&sort=date,asc`;
   try {
     const res = await fetchJSON(url, { timeoutMs: 8000, retries: 2 });
@@ -84,13 +91,14 @@ async function fetchTicketmaster(lat, lng, radius_m, dateFrom, dateTo) {
         if (city !== 'San Francisco') return null; // SF-relevant venues only
         const loc = venue.location || {};
         const start = e.dates && e.dates.start;
+        // localDate is the venue's (SF) calendar date — the field we scope on.
+        const localDate = start && start.localDate;
+        if (!localDate || localDate < dateFrom || localDate > dateTo) return null;
         return {
           name: e.name,
           venue: venue.name,
           point: { lat: Number(loc.latitude), lng: Number(loc.longitude) },
-          start: start
-            ? `${start.localDate}T${start.localTime || '00:00:00'}`
-            : null,
+          start: `${localDate}T${start.localTime || '00:00:00'}`,
           expected_attendance: expectedAttendance(venue.name),
           source: 'ticketmaster',
         };

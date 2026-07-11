@@ -105,14 +105,26 @@ HTTP endpoint taking JSON, returning JSON. **Freeze the field names.**
 
 ### 4. `get_restaurants`
 ```jsonc
-// input  (day/time_from/time_to are OPTIONAL and additive — omit ⇒ behaviour identical to before)
+// input — day/time_from/time_to are OPTIONAL (additive, 2026-07-11); provided
+// together they describe the vendor's planned setup window ("fri 18:00-22:00").
+// time_to <= time_from means the window runs overnight into the next day.
 { "lat": 37.78, "lng": -122.40, "radius_m": 300,
   "day": "fri", "time_from": "18:00", "time_to": "22:00" }
-// output
+// output — total/by_cuisine/by_price/saturation unchanged (all venues).
+// saturation is popularity-weighted (review mass × rating; a typical venue ≈
+// weight 1), not a raw count. `window` appears ONLY when a window was
+// requested: competition among venues OPEN during that window (open = open
+// ≥ 50% of the window, from Google regularOpeningHours).
 { "total": 14,
   "by_cuisine": { "tacos": 2, "burgers": 3, "coffee": 5 },
   "by_price": { "1": 6, "2": 7, "3": 1 },
-  "saturation": "low | medium | high" }   // now popularity-WEIGHTED (Σ venueWeight); same enum, same field
+  "saturation": "low | medium | high",
+  "window": {
+    "day": "fri", "time_from": "18:00", "time_to": "22:00",
+    "open_total": 9,
+    "open_by_cuisine": { "tacos": 1, "burgers": 3 },
+    "saturation_open": "low | medium | high"
+  } }
 ```
 
 #### §B.4 — window-aware competition (additive; contract_version unchanged)

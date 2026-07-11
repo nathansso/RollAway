@@ -1,0 +1,9 @@
+# Fixtures deps (re-installed via npm install)
+fixtures/node_modules/
+
+# Re-fetchable raw dataset (pull with the curl in enrichment/README.md). The DERIVED
+# deliverable cuisine_lookup.json IS tracked.
+enrichment/permits.json
+
+# logs / scratch
+*.log

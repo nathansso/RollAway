@@ -1,0 +1,13 @@
+{
+  "name": "rollaway-fixtures",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local fixture tool server returning docs/CONTRACTS.md §B example payloads verbatim, for building/evaluating the agents before Person 3's Functions are live.",
+  "scripts": {
+    "start": "node serve.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

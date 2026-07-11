@@ -10,6 +10,12 @@ date range.
 
 - Filtered to venues whose city is **San Francisco**, then radius-filtered by
   the venue point, capped at **20** results.
+- **Dates are strictly San Francisco-local** (`America/Los_Angeles`): an event
+  is in range when its Pacific calendar date is within `[date_from, date_to]`.
+  The upstream query is widened ±1 UTC day and results are then filtered on the
+  venue's `localDate`, so a late-evening Pacific event near a boundary is
+  neither dropped nor allowed to leak in from the adjacent day (Pacific is
+  UTC−7/−8). Events without a date are excluded.
 - `expected_attendance`: Ticketmaster publishes no attendance figures, so
   known SF venues are mapped to capacity (Oracle Park 40,000, Chase Center
   18,064, Bill Graham 8,500, …see `VENUE_CAPACITY` in index.js); unknown

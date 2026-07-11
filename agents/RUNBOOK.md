@@ -17,8 +17,29 @@ step can be scripted, `scripts/provision.sh` does it.
 
 Optional scripted pass:
 ```bash
-DIGITALOCEAN_ACCESS_TOKEN=... agents/scripts/provision.sh
+DIGITALOCEAN_ACCESS_TOKEN=... agents/scripts/provision.sh          # doctl/console pointers
+DIGITALOCEAN_ACCESS_TOKEN=... node agents/scripts/provision-genai.mjs   # real REST provisioner
 ```
+
+## 0b. Managed Agents vs the runtime (current status — read this first)
+
+Probed the DO token on 2026-07-11: **serverless inference works** and **KB creation works**, but
+**managed Agent creation is currently forbidden** on this account (`POST /v2/gen-ai/agents` → 403).
+So there are two ways to be "online", and we run the second today:
+
+- **Managed Gradient Agents** (steps §1–§8 below) — the production target. **Blocked** until the
+  account enables the Gradient **Agents** feature (DO console → Gradient → Agents, or ask DO
+  support to enable agent creation for the team). Then `node agents/scripts/provision-genai.mjs`
+  creates both agents from the repo instructions and you finish §3–§8.
+- **The runtime** (`agents/runtime/`, `runtime/README.md`) — a working implementation on Gradient
+  **serverless inference** that runs **now**, using the same instructions/KB/tools/guardrails.
+  Start it and hand Person 1 its `POST /chat` URL:
+  ```bash
+  cd agents/fixtures && npm install && PORT=8787 node serve.js &
+  cd agents/runtime && GRADIENT_API_KEY=<key> TOOL_BASE_URL=http://localhost:8787 node server.mjs
+  ```
+  Both paths emit the same §A envelope, so Person 1's integration doesn't change when you flip from
+  the runtime to managed Agents.
 
 ## 1. Project
 

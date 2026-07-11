@@ -8,6 +8,7 @@ import { dirname, resolve } from "node:path";
 import { complete, runWithTools, haveKey } from "./gradient.mjs";
 import { openaiTools, executeTool } from "./tools.mjs";
 import { competitionOverlap } from "../menu_rag/query.mjs";
+import { attachFormUrls, parseFormsTable } from "./forms.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const INSTR = resolve(__dir, "..", "instructions");
@@ -27,6 +28,7 @@ const RULE_DOCS = ["dpw-182101.md", "sf-sidewalk-width.md", "clearance-rules.md"
   "sfpw-mff-permit.md", "sfdph-mff.md", "sffd-permit.md", "ttx-cert.md", "ca-dmv.md"];
 const CHECKLISTS = ["truck.md", "trailer.md", "pushcart_cooking.md", "pushcart_nocook.md"];
 const readOne = (f) => readFileSync(resolve(KB, f), "utf8");
+const FORMS = parseFormsTable(readOne("FORMS.md"));
 const readKbFiles = (files) => [...new Set(files)]
   .filter((f) => { try { readOne(f); return true; } catch { return false; } })
   .map((f) => `### FILE: kb/${f}\n${readOne(f)}`).join("\n\n");
@@ -39,7 +41,7 @@ function retrieveRuleDocs(message = "") {
     .filter((x) => x.s > 0).sort((a, b) => b.s - a.s).slice(0, 3).map((x) => x.f);
 }
 function kbContext(vendorType, message = "") {
-  const files = ["SOURCES.md"];
+  const files = ["SOURCES.md", "FORMS.md"];
   if (vendorType && CHECKLISTS.includes(`${vendorType}.md`)) files.push(`${vendorType}.md`);
   else files.push(...CHECKLISTS);
   files.push(...retrieveRuleDocs(message));
@@ -75,7 +77,7 @@ const canonVendorType = (vt) => {
 const loadChecklist = (vt) => {
   const file = `${canonVendorType(vt)}.md`;
   if (!CHECKLISTS.includes(file)) return null;
-  try { return extractEnvelope(readOne(file)); } catch { return null; }
+  try { return attachFormUrls(extractEnvelope(readOne(file)), FORMS); } catch { return null; }
 };
 
 // source id -> { file, label } from the SOURCES.md table.
@@ -409,5 +411,6 @@ export async function runPermitCopilot(message, context = {}) {
   if (!Array.isArray(env.map_actions)) env.map_actions = [];
   if (!Array.isArray(env.citations)) env.citations = [];
   if (env.checklist === undefined) env.checklist = null;
+  env.checklist = attachFormUrls(env.checklist, FORMS);
   return { env, trace: [] };
 }

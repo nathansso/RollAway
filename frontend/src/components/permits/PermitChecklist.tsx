@@ -169,6 +169,13 @@ export default function PermitChecklist() {
                                 {item.cite}
                               </span>
                             </div>
+                            {item.form_url && (
+                              <a href={item.form_url} target="_blank" rel="noopener noreferrer" className="easyapply-button">
+                                Open official PDF form
+                                <span className="sr-only"> for {item.title}</span>
+                                <ChevronIcon className="h-4 w-4" />
+                              </a>
+                            )}
                             {item.easy_apply && (
                               <button type="button" className="easyapply-button" onClick={() => setEasyApplyItem(item)}>
                                 Review &amp; submit

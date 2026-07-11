@@ -13,6 +13,7 @@
           "deadline_days": 90,
           "deadline_label": "90-day tentative approval window",
           "cite": "sfpw-mff",
+          "form_url": "https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf",
           "easy_apply": true,
           "fields": [
             { "key": "owner_name", "label": "Owner name", "requirement": "auto_filled" },
@@ -32,6 +33,7 @@
           "deadline_days": 30,
           "deadline_label": "30-day notice",
           "cite": "dpw-182101",
+          "form_url": null,
           "easy_apply": false,
           "fields": []
         },
@@ -43,6 +45,7 @@
           "deadline_days": 15,
           "deadline_label": "15-day appeal",
           "cite": "dpw-182101",
+          "form_url": null,
           "easy_apply": false,
           "fields": []
         }
@@ -59,6 +62,7 @@
           "deadline_days": null,
           "deadline_label": null,
           "cite": "sfdph-mff",
+          "form_url": "https://www.sf.gov/sites/default/files/2024-06/MFF%20Unified%20Application.pdf",
           "easy_apply": true,
           "fields": [
             { "key": "owner_name", "label": "Owner name", "requirement": "auto_filled" },
@@ -76,6 +80,7 @@
           "deadline_days": null,
           "deadline_label": null,
           "cite": "sfdph-mff",
+          "form_url": "https://www.sf.gov/sites/default/files/2024-06/MFF%20Unified%20Application.pdf",
           "easy_apply": false,
           "fields": []
         }
@@ -92,6 +97,7 @@
           "deadline_days": null,
           "deadline_label": null,
           "cite": "sffd-permit",
+          "form_url": "https://sf-fire.org/media/3681/download?inline",
           "easy_apply": true,
           "fields": [
             { "key": "business_name", "label": "Business name", "requirement": "auto_filled" },
@@ -112,6 +118,7 @@
           "deadline_days": null,
           "deadline_label": null,
           "cite": "ttx-cert",
+          "form_url": null,
           "easy_apply": true,
           "fields": [
             { "key": "owner_name", "label": "Owner name", "requirement": "auto_filled" },

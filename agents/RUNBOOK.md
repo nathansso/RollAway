@@ -55,13 +55,18 @@ KBs are provisioned by **script, not at runtime** (invariant §3). One command d
 
 ```bash
 DIGITALOCEAN_ACCESS_TOKEN=<rw token> node agents/scripts/provision-kbs.mjs
-#   -> permit KB  (agents/kb/*.md)          attach to permit_copilot
+#   -> permit KB  (agents/kb/*.md, including FORMS.md) attach to permit_copilot
 #   -> demo menu KB (menu_rag/menu.demo.json) returns a REAL menu_kb_id for recommend_spots
 node agents/scripts/provision-kbs.mjs --mock       # offline dry-run (local menu manifest)
 ```
 
 The token is read from env only, never printed or written to a file. Re-running reuses existing
 KBs (matched by name) instead of duplicating them.
+
+`kb/FORMS.md` contains only verified agency-hosted PDFs keyed by frozen citation id. Verify every
+new URL returns a PDF before adding it. Use `SOURCE-NEEDED` when no current official PDF can be
+confirmed; deterministic runtime assembly converts that marker to `form_url: null` and applies the
+SF agency domain allowlist.
 
 ### 0d. Menu KB ingest + query (Person 3's Menu RAG)
 

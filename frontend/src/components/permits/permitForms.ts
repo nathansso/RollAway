@@ -49,8 +49,17 @@ export function isFieldOutstanding(
   return fieldValue(field, state) === ''
 }
 
+// A field the form requires. Absent `required` means required (back-compat with pre-pipeline
+// records); only an explicit `required: false` marks a field optional.
+export function isFieldRequired(field: FilledFormField): boolean {
+  return field.required !== false
+}
+
+// Completion gates on REQUIRED fields only: optional blanks never block export/submission.
 export function allFieldsComplete(form: FilledForm, state: PermitFormState): boolean {
-  return form.fields.every((field) => !isFieldOutstanding(field, state))
+  return form.fields.every(
+    (field) => !isFieldRequired(field) || !isFieldOutstanding(field, state),
+  )
 }
 
 export function formStatus(form: FilledForm, state: PermitFormState): FormStatus {
@@ -65,6 +74,7 @@ export interface ExportRow {
   label: string
   value: string
   provided: boolean
+  required: boolean
 }
 
 // Rows for the exportable partially-filled representation. Blank fields are kept
@@ -75,8 +85,55 @@ export function filledFormExportRows(
 ): ExportRow[] {
   return form.fields.map((field) => {
     const value = fieldValue(field, state)
-    return { label: field.label, value, provided: value !== '' }
+    return { label: field.label, value, provided: value !== '', required: isFieldRequired(field) }
   })
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+// A safe, stable filename for the downloaded artifact.
+export function filledFormFilename(form: FilledForm): string {
+  const slug = form.form.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  return `${slug || 'permit-form'}-rollaway.html`
+}
+
+// The generated filled-out form as a self-contained HTML document (the downloadable/viewable
+// artifact). Autofilled + user-supplied values are shown; any still-unknown field is clearly
+// marked "— to complete —" rather than guessed, and optional fields are labelled.
+export function buildFilledFormHtml(form: FilledForm, state: PermitFormState): string {
+  const rows = filledFormExportRows(form, state)
+    .map(
+      (row) =>
+        `<tr><th scope="row">${escapeHtml(row.label)}${
+          row.required ? '' : ' <span class="opt">(optional)</span>'
+        }</th><td class="${row.provided ? 'filled' : 'todo'}">${
+          row.provided ? escapeHtml(row.value) : '— to complete —'
+        }</td></tr>`,
+    )
+    .join('')
+  return (
+    `<!doctype html><html lang="en"><head><meta charset="utf-8">` +
+    `<meta name="viewport" content="width=device-width, initial-scale=1">` +
+    `<title>${escapeHtml(form.form)} — Rollaway record</title><style>` +
+    'body{font:15px/1.5 system-ui,-apple-system,sans-serif;color:#111;margin:2rem auto;max-width:44rem;padding:0 1rem}' +
+    'h1{font-size:1.4rem;margin:0 0 .25rem}.agency{color:#555;margin:0 0 1.25rem}' +
+    'table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:.55rem .5rem;border-bottom:1px solid #ddd;vertical-align:top}' +
+    'th{width:46%;color:#333;font-weight:600}td.todo{color:#a15c00;font-style:italic}.opt{color:#888;font-weight:400}' +
+    '.note{margin-top:1.5rem;padding:.85rem 1rem;background:#fff7ed;border:1px solid #fed7aa;border-radius:.6rem;font-size:.85rem;color:#7c2d12}a{color:#1d4ed8}' +
+    '</style></head><body>' +
+    `<h1>${escapeHtml(form.form)}</h1><p class="agency">${escapeHtml(form.agency)}</p>` +
+    `<p><a href="${escapeHtml(form.form_url)}" rel="noopener noreferrer">Official form (${escapeHtml(form.form_url)})</a></p>` +
+    `<table><tbody>${rows}</tbody></table>` +
+    '<p class="note"><strong>Guidance, not legal advice.</strong> This is a personal record pre-filled from your ' +
+    'profile. Copy these values onto the official agency form and verify every answer before submitting. ' +
+    'Rollaway does not file it for you.</p></body></html>'
+  )
 }
 
 export function renewalAt(state: PermitFormState): number | null {

@@ -68,9 +68,11 @@ export const payloads = {
     count: 1
   },
 
-  // 6. clearance geometry check — 50ft < 75ft ⇒ pass:false ⇒ NOT allowed.
-  //    This is the exact §B example and the answer eval seed #2 asserts (answers NO from geometry).
-  clearance_check: {
+  // 6. check_clearance — 50ft < 75ft ⇒ pass:false ⇒ NOT allowed.
+  //    This is the exact §B example (truck ⇒ 3 rows) and the answer eval seed #2 asserts
+  //    (answers NO from geometry). Pushcart types get a 4th sidewalk-width row — see
+  //    clearancePayload() below, which is what serve.js returns per vendor_type.
+  check_clearance: {
     allowed: false,
     checks: [
       { rule: "75ft from restaurant entrance", required_ft: 75, actual_ft: 50, pass: false, cite: "dpw-182101" },
@@ -79,6 +81,24 @@ export const payloads = {
     ]
   }
 };
+
+// The 4th clearance row (sidewalk width) — pushcart types ONLY, distinct legal basis, so it
+// cites sf-sidewalk-width (NOT dpw-182101). 10 ft min = 6 ft clear path + 4 ft cart footprint.
+export const SIDEWALK_WIDTH_ROW = {
+  rule: "10ft min sidewalk width (6ft path + 4ft cart)",
+  required_ft: 10, actual_ft: 12, pass: true, cite: "sf-sidewalk-width"
+};
+
+const PUSHCART_TYPES = new Set(["pushcart_cooking", "pushcart_nocook"]);
+
+// check_clearance's real, vendor-type-aware shape: 3 rows for truck/trailer, 4 for pushcarts.
+// This is what agents are built and evaluated against.
+export function clearancePayload(vendorType) {
+  const base = payloads.check_clearance;
+  if (!PUSHCART_TYPES.has(vendorType)) return base;                 // truck / trailer -> 3 rows
+  const checks = [...base.checks, SIDEWALK_WIDTH_ROW];              // pushcart -> 4 rows
+  return { allowed: checks.every((c) => c.pass), checks };
+}
 
 // Common error envelope (all Functions) — reachable via ?fail=CODE on any route.
 export function errorEnvelope(code) {

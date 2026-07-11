@@ -19,7 +19,7 @@ cd "$AGENTS/fixtures"
 PORT=8799 node serve.js >/tmp/rollaway-fixtures.log 2>&1 &
 SRV=$!
 sleep 1
-for t in get_vendors get_closures get_foot_traffic get_restaurants get_events clearance_check; do
+for t in get_vendors get_closures get_foot_traffic get_restaurants get_events check_clearance; do
   code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8799/$t")
   echo "  /$t -> HTTP $code"
   [ "$code" = "200" ] || FAIL=1

@@ -4,13 +4,15 @@
 //
 //   cd agents/fixtures && npm install && node serve.js
 //   curl -s localhost:8787/get_foot_traffic | jq .
-//   curl -s "localhost:8787/clearance_check?fail=UPSTREAM_TIMEOUT" | jq .   # error envelope
+//   curl -s "localhost:8787/check_clearance?fail=UPSTREAM_TIMEOUT" | jq .   # error envelope
+//   curl -s -X POST localhost:8787/check_clearance -d '{"vendor_type":"pushcart_cooking"}' \
+//     -H 'content-type: application/json' | jq .   # 4 rows (adds sidewalk width)
 //
 // Node/Express (per SETUP.md). Payloads come from payloads.mjs so the fixture responses
 // and the offline eval's expectations can never drift.
 
 import express from "express";
-import { payloads, errorEnvelope, errorStatus, TOOL_NAMES } from "./payloads.mjs";
+import { payloads, errorEnvelope, errorStatus, TOOL_NAMES, clearancePayload } from "./payloads.mjs";
 
 const app = express();
 app.use(express.json());
@@ -40,6 +42,11 @@ for (const tool of TOOL_NAMES) {
     if (fail) {
       const body = errorEnvelope(String(fail).toUpperCase());
       return res.status(errorStatus[body.error.code] || 500).json(body);
+    }
+    // check_clearance is vendor-type-aware: 3 rows for truck/trailer, 4 (adds sidewalk width) for pushcarts.
+    if (tool === "check_clearance") {
+      const vt = (req.body && req.body.vendor_type) || req.query.vendor_type || "truck";
+      return res.json(clearancePayload(vt));
     }
     return res.json(payloads[tool]);
   };

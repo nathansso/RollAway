@@ -55,7 +55,7 @@ note "permit/license/fire/legal/checklist -> permit-copilot. This routed URL is 
 
 say "Function tools on spot-scout (schemas verbatim from §B)"
 note "Register 6 tools from fixtures/tool-schemas.json: get_vendors, get_closures, get_foot_traffic,"
-note "get_restaurants, get_events, clearance_check. Endpoint = fixtures URL now (tunnel/throwaway"
+note "get_restaurants, get_events, check_clearance. Endpoint = fixtures URL now (tunnel/throwaway"
 note "Function); swap tool_base_url to Person 3's live Function URLs later (one line each)."
 
 say "Knowledge base -> attach to permit-copilot ONLY"

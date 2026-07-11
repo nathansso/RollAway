@@ -60,13 +60,15 @@ key** — early, even while the agents are still dumb. Person 1 puts the key in 
 
 Register **6** tools from `fixtures/tool-schemas.json` (names + input params are verbatim §B):
 `get_vendors`, `get_closures`, `get_foot_traffic`, `get_restaurants`, `get_events`,
-`clearance_check`.
+`check_clearance`.
 
 - **Now (stub):** point each tool's endpoint at the fixture server. Expose it to Gradient with a
   tunnel (`ngrok http 8787`) or deploy `fixtures/serve.js` as a throwaway DO Function. Set
   `tool_base_url` accordingly.
 - **Go-live:** replace `tool_base_url` (and each console endpoint) with **Person 3's real
-  Function URLs** — one line per tool. Then re-run the eval suite.
+  Function URLs** — one line per tool. Tool names now match Person 3's Function names exactly
+  (including `check_clearance`), so this is a clean same-named swap for every tool — e.g.
+  `check_clearance` maps directly to `.../rollaway/check_clearance`. Then re-run the eval suite.
 
 ## 6. Guardrails → attach to BOTH agents
 
@@ -111,7 +113,31 @@ Also keep `node run.mjs --offline` GREEN after every instruction edit.
 ## 10. Hand-offs
 
 - **Person 1:** routed endpoint URL + agent key (put in App Platform env).
-- **Person 3:** `cuisine_lookup.json` + the `kb/SOURCES.md` id list (return `cite: "dpw-182101"`
-  for clearance rows); when their Functions are live, send their URLs so we swap `tool_base_url`.
+- **Person 3:** `cuisine_lookup.json` + the `kb/SOURCES.md` id list; return `cite: "dpw-182101"`
+  for the three clearance **distance** rows and `cite: "sf-sidewalk-width"` for the **4th**
+  sidewalk-width row (pushcart types only) — see HANDOFF below. When their Functions are live,
+  send their URLs so we swap `tool_base_url`.
 - **Contract changes** (cuisine enum §C, tool schema §B, envelope §A): edit `docs/CONTRACTS.md`
   and ping both.
+
+---
+
+## HANDOFF → Person 3 (`feat/functions-data`, not editable from here)
+
+**1. Sidewalk-width row cite (Issue 1).** In
+`functions/packages/rollaway/check_clearance/constants.js`, the 4th clearance row (minimum
+sidewalk width, returned for `pushcart_cooking` / `pushcart_nocook`) must set its `cite` to the
+newly-registered source id — a one-line change, no §B field names change:
+
+```js
+// the sidewalk-width row (pushcart types) — set cite to the registered source id:
+cite: "sf-sidewalk-width"   // was "dpw-182101"; 10 ft min = 6 ft path + 4 ft cart
+```
+
+The three distance rows (75 / 7 / 500 ft) keep `cite: "dpw-182101"`. `sf-sidewalk-width` is
+registered in `agents/kb/SOURCES.md` and `docs/CONTRACTS.md §E`, and its source doc is
+`agents/kb/sf-sidewalk-width.md`. (The dataset `4g86-grxu` is the compute input, not the cite.)
+
+**2. Function name (Issue 2).** The clearance Function is `check_clearance` (now pinned in
+`docs/CONTRACTS.md §B`). Our tool/fixtures/prompt were renamed `clearance_check → check_clearance`
+to match, so the go-live `tool_base_url` swap needs no per-tool aliasing.

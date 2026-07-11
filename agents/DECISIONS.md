@@ -114,6 +114,50 @@ appended as work proceeded. Dates are absolute (today = 2026-07-10).
   is validated correctly by the eval (checks `citations[].source` and checklist `step.cite`
   only). No action needed; documented so a reviewer isn't misled.
 
+## D13. Issue 1 — 4th clearance row (sidewalk width) gets a distinct cite `sf-sidewalk-width`
+- **Decision:** add a **new** source id `sf-sidewalk-width` (do NOT reuse `dpw-182101`).
+- **Evidence (from the repo, source doc):** `agents/kb/dpw-182101.md` does **not** establish the
+  sidewalk minimum-width rule — it explicitly states "The exact minimum clear width is
+  `SOURCE-NEEDED`" and lists "minimum unobstructed sidewalk pedestrian clear width (ft) for
+  pushcarts" as a field to fill *from the Order*. So `dpw-182101` cannot honestly carry it today.
+- **Legal-basis evidence:** the rule (10 ft = 6 ft clear pedestrian path + 4 ft cart footprint)
+  is grounded in the **SF Public Works Code + ADA path-of-travel**, a *different* legal basis than
+  the Order's placement distances. And a `cite` must resolve to a **source document**, not the
+  dataset `4g86-grxu` (that's Person 3's compute input). `SOURCES.md` also requires new distance
+  rules to be registered before use. All three point to a distinct id.
+- **Slug:** `sf-sidewalk-width` (matches the recommendation and the existing kebab-case naming).
+- **Registered + propagated:** new KB doc `kb/sf-sidewalk-width.md` (legal basis stated; exact PW
+  Code § left `SOURCE-NEEDED`, not fabricated); added to `kb/SOURCES.md` and `docs/CONTRACTS.md
+  §E`; `dpw-182101.md` / `clearance-rules.md` updated to point the sidewalk rule at the new id;
+  fixtures return the true **4-row** shape for pushcart types (`clearancePayload()` in
+  `payloads.mjs`, vendor-type-aware in `serve.js`); `spot_scout.md` explains the 4th row and cites
+  it (still only *explaining* the tool, never computing width); pushcart checklists split the
+  clearance step into a sidewalk-width step (`sf-sidewalk-width`) + a distances step
+  (`dpw-182101`); evals add checks 8b/8c and tighten #9.
+- **Row 4 applies to pushcart types only** (they operate on the sidewalk); truck/trailer stay at 3
+  rows. Values 75/7/500 (§B-frozen) unchanged.
+
+## D14. Issue 2 — clearance tool name aligned to `check_clearance`, pinned in §B
+- **Decision:** rename OUR tool/route/payload/prompt `clearance_check → check_clearance` to match
+  Person 3's DO Function, and **pin the name in `docs/CONTRACTS.md §B`** so it can't recur (§B
+  never named the function, which is how the two branches diverged). This makes the go-live
+  `tool_base_url` swap a clean same-named mapping to `.../rollaway/check_clearance` (no silent
+  404). Renamed across `fixtures/{tool-schemas.json,serve.js,payloads.mjs,README.md}`,
+  `instructions/spot_scout.md`, `evals/run.mjs`, `evals/README.md`, `RUNBOOK.md`. Only remaining
+  `clearance_check` string is the deliberate old→new note in `RUNBOOK.md → HANDOFF`.
+
+## D15. PING P1 + P3 (contract clarifications — non-breaking, no version bump)
+- **PING P1 + P3 (`docs/CONTRACTS.md §B`):** the clearance Function is named **`check_clearance`**;
+  pushcart vendor types return a **4th** sidewalk-width row citing `sf-sidewalk-width`. Non-breaking
+  (no §A/§B field name changes; truck example unchanged). **`contract_version` intentionally NOT
+  bumped** (clarification, not a breaking change).
+- **PING P1 + P3 (`docs/CONTRACTS.md §E` + `kb/SOURCES.md`):** new source id **`sf-sidewalk-width`**
+  added to the citation/cite vocabulary. P1 may render it as a citation; P3 must return it.
+- **PING P3 (handoff, one line):** in
+  `functions/packages/rollaway/check_clearance/constants.js`, set the sidewalk-width row's `cite`
+  to `"sf-sidewalk-width"` (was `dpw-182101`). Exact snippet in `agents/RUNBOOK.md → HANDOFF`.
+  I did **not** edit that file — it lives on `feat/functions-data`, not this branch.
+
 ## D12. Verification (this session) — all GREEN
 - `fixtures`: `npm install` (express) + all 6 routes HTTP 200 with §B keys; `?fail=CODE` returns
   the §B error envelope (RATE_LIMIT→429, UPSTREAM_TIMEOUT→504).

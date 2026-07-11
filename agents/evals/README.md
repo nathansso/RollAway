@@ -26,6 +26,8 @@ No `npm install` — pure Node (v20+), no dependencies.
 | SOURCES ⇄ CONTRACTS §E in sync | the id lists match |
 | fixtures tool schemas match §B | input params ⊇ §B, output keys == §B, item fields == §B |
 | clearance fixture 50<75 fails | seed #2: the NO comes from geometry, cite `dpw-182101` |
+| check_clearance row count | 3 rows for truck/trailer, 4 for pushcart types |
+| sidewalk-width row cite | 4th row cites `sf-sidewalk-width` (resolves in SOURCES.md), pushcart-only |
 | pushcart_nocook excludes DMV / has sidewalk clearance | seed #1 |
 | truck includes DMV + Fire | the pushcart≠truck contrast |
 | fire-permit seed grounded | seed #4: no-cook cart has no Fire step + KB says so |

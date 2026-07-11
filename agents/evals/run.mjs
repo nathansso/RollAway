@@ -13,7 +13,7 @@ import { read, readRepo, extractJsonBlocks, parseSourceIds, parseContractSourceI
 import { route } from "./lib/route.mjs";
 import { detectJailbreak, anonymize, refusalEnvelope } from "./lib/guardrails.mjs";
 import { validateEnvelope, validateChecklist } from "./lib/schema.mjs";
-import { payloads } from "../fixtures/payloads.mjs";
+import { payloads, clearancePayload } from "../fixtures/payloads.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const seeds = JSON.parse(read("evals/seeds.json")).seeds;
@@ -38,7 +38,7 @@ const B = {
   get_foot_traffic: { in: ["lat","lng","radius_m","day","hour"], out: ["score","basis","nearby_stations","live_activity","historical_avg"] },
   get_restaurants:  { in: ["lat","lng","radius_m"], out: ["total","by_cuisine","by_price","saturation"] },
   get_events:       { in: ["lat","lng","radius_m","date_from","date_to"], out: ["events","count"], item: ["name","venue","point","start","expected_attendance","source"], itemKey: "events" },
-  clearance_check:  { in: ["lat","lng","vendor_type"], out: ["allowed","checks"], item: ["rule","required_ft","actual_ft","pass","cite"], itemKey: "checks" }
+  check_clearance:  { in: ["lat","lng","vendor_type"], out: ["allowed","checks"], item: ["rule","required_ft","actual_ft","pass","cite"], itemKey: "checks" }
 };
 
 const setEq = (a, b) => a.length === b.length && a.every((x) => b.includes(x));
@@ -153,7 +153,7 @@ function runOffline() {
 
   // 8. clearance geometry seed (#2): NO comes from the tool, 75ft fails, cite dpw-182101
   check("clearance fixture: 50ft<75ft fails, allowed=false, cite dpw-182101", () => {
-    const cc = payloads.clearance_check;
+    const cc = payloads.check_clearance;
     if (cc.allowed !== false) return bad("allowed should be false");
     const r = cc.checks.find((x) => x.required_ft === 75);
     if (!r) return bad("no 75ft check");
@@ -162,14 +162,35 @@ function runOffline() {
     return ok("geometry returns NO with dpw-182101 (not model math)");
   });
 
-  // 9. seed #1: pushcart_nocook excludes DMV, includes wide sidewalk clearance
+  // 8b. check_clearance row count by vendor type: truck=3 rows, pushcart=4 rows (4th=sidewalk)
+  check("check_clearance: 3 rows truck/trailer, 4 rows pushcart types", () => {
+    const errs = [];
+    for (const vt of ["truck", "trailer"]) if (clearancePayload(vt).checks.length !== 3) errs.push(`${vt} not 3 rows`);
+    for (const vt of ["pushcart_cooking", "pushcart_nocook"]) if (clearancePayload(vt).checks.length !== 4) errs.push(`${vt} not 4 rows`);
+    return errs.length ? bad(errs.join("; ")) : ok("truck/trailer=3, pushcart_cooking/pushcart_nocook=4");
+  });
+
+  // 8c. the 4th (sidewalk-width) row cites sf-sidewalk-width AND that id resolves in SOURCES.md
+  check("sidewalk-width row cites sf-sidewalk-width (resolves in SOURCES.md)", () => {
+    const row = clearancePayload("pushcart_cooking").checks.find((x) => /sidewalk/i.test(x.rule));
+    if (!row) return bad("no sidewalk-width row for pushcart");
+    if (row.cite !== "sf-sidewalk-width") return bad(`cite ${row.cite} != sf-sidewalk-width`);
+    if (!sourceIds.has("sf-sidewalk-width")) return bad("sf-sidewalk-width not registered in SOURCES.md");
+    if (row.required_ft !== 10) return bad(`required_ft ${row.required_ft} != 10`);
+    // truck must NOT carry the sidewalk row
+    if (clearancePayload("truck").checks.some((x) => /sidewalk/i.test(x.rule))) return bad("truck wrongly has a sidewalk row");
+    return ok("sidewalk row: cite sf-sidewalk-width, required 10ft, pushcart-only");
+  });
+
+  // 9. seed #1: pushcart_nocook excludes DMV, includes wide sidewalk clearance (cite sf-sidewalk-width)
   check("pushcart_nocook checklist excludes DMV & includes sidewalk clearance", () => {
     const cl = checklistDocs.pushcart_nocook;
     const hasDmv = cl.steps.some((s) => s.agency.toLowerCase() === "dmv" || /dmv|vehicle registration/i.test(`${s.title} ${s.detail}`));
-    const hasSidewalk = cl.steps.some((s) => /sidewalk/i.test(`${s.title} ${s.detail}`) && /clearance/i.test(`${s.title} ${s.detail}`));
+    const sidewalkStep = cl.steps.find((s) => /sidewalk/i.test(`${s.title} ${s.detail}`) && /clearance/i.test(`${s.title} ${s.detail}`));
     if (hasDmv) return bad("found a DMV step");
-    if (!hasSidewalk) return bad("no wide sidewalk clearance step");
-    return ok("no DMV; has wide sidewalk clearance");
+    if (!sidewalkStep) return bad("no wide sidewalk clearance step");
+    if (sidewalkStep.cite !== "sf-sidewalk-width") return bad(`sidewalk step cite ${sidewalkStep.cite} != sf-sidewalk-width`);
+    return ok("no DMV; has wide sidewalk clearance step (cite sf-sidewalk-width)");
   });
 
   // 10. contrast: truck includes DMV + Fire

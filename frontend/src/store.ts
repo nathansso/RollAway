@@ -1,10 +1,6 @@
 import { create } from 'zustand'
 import { apiClient, ApiClientError } from './lib/apiClient'
-import {
-  PROFILE_STORAGE_KEY,
-  parseStoredProfile,
-  validateProfile,
-} from './lib/profile'
+import { PROFILE_STORAGE_KEY, validateProfile } from './lib/profile'
 import { isWithinSanFrancisco } from './lib/sfBounds'
 import { normalizeRecommendations } from './lib/recommendations'
 import { createNowWhen, isValidCustomWindow } from './lib/when'
@@ -53,14 +49,6 @@ function loadPermitForms(key: string): Record<string, PermitFormState> {
   const raw = loadJson<unknown>(key, {})
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
   return raw as Record<string, PermitFormState>
-}
-
-function storedProfile(): VendorProfile | null {
-  try {
-    return parseStoredProfile(localStorage.getItem(PROFILE_STORAGE_KEY))
-  } catch {
-    return null
-  }
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -116,10 +104,11 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set, get) => {
-  const initialProfile = storedProfile()
-  // #14: a returning vendor with a stored profile lands straight on the
-  // recommendation map (via the loading screen), not a separate setup page.
-  const initialPhase: AppPhase = initialProfile ? 'loading_recommendations' : 'profile'
+  // Every launch starts as a brand-new, first-time user: ignore any previously
+  // stored profile so the app always opens on the onboarding/initialization page
+  // and walks through landing -> profile setup -> map from scratch.
+  const initialProfile: VendorProfile | null = null
+  const initialPhase: AppPhase = 'profile'
 
   const startRecommendations = async () => {
     const { profile, location, when, recommendationStatus, locationStatus } = get()
@@ -156,9 +145,10 @@ export const useAppStore = create<AppState>((set, get) => {
       if (requestId !== latestRecommendationRequest) return
       set({
         appPhase: 'ready',
-        // Normalize verdicts by relative quality, then keep the top 3 for both
-        // the map pins and the bottom tray.
-        recommendations: normalizeRecommendations(response.recommendations).slice(0, 3),
+        // #31: normalize verdicts by relative quality, then keep a wider
+        // candidate pool (up to 12) so the map feels populated. The tray only
+        // renders tiles for the top 3; every pin stays clickable for details.
+        recommendations: normalizeRecommendations(response.recommendations).slice(0, 12),
         recommendationStatus: 'success',
       })
     } catch (error) {

@@ -1,5 +1,32 @@
 import type { RecommendationSpot, Verdict } from '../types/contract'
 
+/**
+ * #32: a rough, vendor-facing read on how busy a spot is likely to be, keyed off
+ * the modeled traffic `level` and lightly off the daypart in `timeContext`.
+ * Intentionally vague — it replaces the internal "estimated from nearby Bay
+ * Wheels activity" methodology note that used to leak into the spot sheet.
+ */
+export function footTrafficSummary(level: string, timeContext = ''): string {
+  const ctx = timeContext.toLowerCase()
+  const daypart = ctx.includes('lunch')
+    ? 'lunchtime '
+    : ctx.includes('dinner')
+      ? 'dinner '
+      : ctx.includes('breakfast') || ctx.includes('morning')
+        ? 'morning '
+        : ctx.includes('evening')
+          ? 'evening '
+          : ''
+  switch (level) {
+    case 'high':
+      return `Expect busy ${daypart}foot traffic here — one of the stronger crowds for this window.`
+    case 'moderate':
+      return `Expect steady ${daypart}foot traffic — a workable, mid-level crowd for this window.`
+    default:
+      return `Quiet spot — light ${daypart}foot traffic expected for this window.`
+  }
+}
+
 /** A spot the vendor legally cannot use: fails a setback or sits in a closure. */
 function isBlocked(spot: RecommendationSpot): boolean {
   return spot.legality?.pass === false || spot.closure?.active === true

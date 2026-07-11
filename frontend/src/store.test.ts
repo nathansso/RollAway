@@ -125,13 +125,16 @@ function createMemoryStorage(): Storage {
   }
 }
 
-async function loadStore(storedProfile: VendorProfile | null = null) {
+// Every launch is a fresh first-time user, so a "returning" vendor is set up by
+// saving the profile through the store (not by pre-seeding localStorage).
+async function loadStore(withProfile: VendorProfile | null = null) {
   localStorage.clear()
-  if (storedProfile) {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(storedProfile))
-  }
   vi.resetModules()
-  return (await import('./store')).useAppStore
+  const store = (await import('./store')).useAppStore
+  if (withProfile) {
+    store.getState().saveProfile(withProfile)
+  }
+  return store
 }
 
 describe('guided app store phases', () => {
@@ -170,11 +173,16 @@ describe('guided app store phases', () => {
     expect(store.getState().permitStatus).toBe('success')
   })
 
-  it('initializes a stored valid profile straight onto the recommendation map', async () => {
-    const store = await loadStore(validProfile)
+  it('always starts as a first-time user, ignoring any stored profile', async () => {
+    // Even with a valid profile persisted from a previous session, every launch
+    // opens on the onboarding/initialization page as a brand-new user.
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(validProfile))
+    vi.resetModules()
+    const store = (await import('./store')).useAppStore
 
-    expect(store.getState().profile).toEqual(validProfile)
-    expect(store.getState().appPhase).toBe('loading_recommendations')
+    expect(store.getState().profile).toBeNull()
+    expect(store.getState().appPhase).toBe('profile')
+    expect(store.getState().profileEditorOpen).toBe(true)
   })
 
   it('keeps ready phase when an existing profile is edited', async () => {

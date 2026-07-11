@@ -170,7 +170,7 @@ test('first launch: profile -> loading -> map -> spot details -> permits -> Easy
   await expect(panel).toBeVisible()
   await expect(panel.getByRole('img', { name: 'Street View near 2nd & Howard' })).toBeVisible()
   await expect(panel.getByText('2nd St & Howard St, San Francisco, CA 94105')).toBeVisible()
-  await expect(panel.getByText('Estimated foot traffic')).toBeVisible()
+  await expect(panel.getByText('Anticipated foot traffic')).toBeVisible()
   await expect(
     page.getByRole('link', { name: 'Navigate to suggested parking' }),
   ).toHaveAttribute('href', /origin=.*destination=/)
@@ -216,7 +216,9 @@ test('full-screen loader covers the auto-fired recommendation and permit operati
   await expect(page.getByRole('heading', { name: 'Public Works' })).toBeVisible()
 })
 
-test('#14 controls: time wheel + address autocomplete on the map', async ({ page }) => {
+test('#30 controls: minimized box expands to time wheel + address autocomplete', async ({
+  page,
+}) => {
   await mockPlaces(page)
   await page.addInitScript((profile) => {
     localStorage.setItem('rollaway.profile.v1', JSON.stringify(profile))
@@ -224,7 +226,10 @@ test('#14 controls: time wheel + address autocomplete on the map', async ({ page
   await page.goto('/app')
   await awaitRecommendations(page)
 
-  // The time wheel is a first-class control now (no preset buttons / Custom toggle).
+  // #30: the search box minimizes to a summary pill after the auto-search.
+  await page.getByRole('button', { name: 'Edit search time and location' }).click()
+  // Time defaults to a compact summary behind a clock; open the wheel.
+  await page.getByRole('button', { name: /Change time window/ }).click()
   const startWheel = page.getByRole('listbox', { name: 'Start' })
   await expect(startWheel).toBeVisible()
   await expect(page.getByRole('listbox', { name: 'End' })).toBeVisible()
@@ -233,6 +238,8 @@ test('#14 controls: time wheel + address autocomplete on the map', async ({ page
   await page.getByRole('button', { name: 'Find spots' }).click()
   await awaitRecommendations(page)
 
+  // The box minimizes again; expand and search a different starting address.
+  await page.getByRole('button', { name: 'Edit search time and location' }).click()
   const search = page.getByPlaceholder('Search a starting address')
   await search.fill('Ferry Building')
   await page.getByRole('option', { name: /Ferry Building/ }).click()

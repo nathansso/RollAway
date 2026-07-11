@@ -14,6 +14,7 @@ import { useAppStore } from '../../store'
 import { useDialogFocus } from '../../lib/useDialogFocus'
 import { buildNavigationUrl } from '../../lib/navigation'
 import { buildStreetViewUrl } from '../../lib/streetView'
+import { footTrafficSummary } from '../../lib/recommendations'
 import type { RecommendationSpot } from '../../types/contract'
 
 // #17: Street View image for the spot. Hides itself if there's no browser key
@@ -85,9 +86,9 @@ function Details({ spot }: { spot: RecommendationSpot }) {
     <ul className="mt-3 rounded-2xl border border-border bg-white px-4">
       <FactRow
         icon={<FootTrafficIcon className="h-5 w-5" />}
-        title="Estimated foot traffic"
+        title="Anticipated foot traffic"
         value={`${spot.foot_traffic.level} · ${spot.foot_traffic.time_context}`}
-        detail={`${spot.foot_traffic.detail} Bay Wheels activity is an estimate/proxy, not a pedestrian count.`}
+        detail={footTrafficSummary(spot.foot_traffic.level, spot.foot_traffic.time_context)}
       />
       <FactRow
         icon={<FoodIcon className="h-5 w-5" />}
@@ -179,8 +180,7 @@ export default function SpotPanel() {
         aria-labelledby="spot-title"
         className="spot-sheet"
       >
-        <div className="mx-auto mt-2 h-1 w-10 rounded-md bg-slate-300" aria-hidden="true" />
-        <header className="flex items-start justify-between gap-3 px-5 pb-2 pt-3">
+        <header className="flex items-start justify-between gap-3 px-5 pb-2 pt-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
               Good to know
@@ -207,10 +207,21 @@ export default function SpotPanel() {
           </button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-          <StreetViewImage spot={spot} />
           <p className="mt-3 rounded-xl border border-border bg-white px-4 py-3 text-sm font-medium leading-snug text-foreground">
             {spot.why_one_line}
           </p>
+          <a
+            href={navigationUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-on-primary"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polygon points="3 11 22 2 13 21 11 13 3 11" />
+            </svg>
+            Navigate to suggested parking
+          </a>
+          <StreetViewImage spot={spot} />
           {spot.event_opportunity && (
             <section className="mt-3 rounded-xl border border-border bg-white p-4" aria-labelledby="event-opportunity-title">
               <h3 id="event-opportunity-title" className="text-sm font-bold text-foreground">Nearby event opportunity</h3>
@@ -234,17 +245,6 @@ export default function SpotPanel() {
               )}
             </section>
           )}
-          <a
-            href={navigationUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-on-primary"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polygon points="3 11 22 2 13 21 11 13 3 11" />
-            </svg>
-            Navigate to suggested parking
-          </a>
           <Details spot={spot} />
           <div className="mt-3 rounded-xl border border-border bg-white p-3 text-xs leading-relaxed text-muted-foreground">
             <strong className="text-foreground">Sources:</strong> placement rule{' '}

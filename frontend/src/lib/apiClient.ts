@@ -24,6 +24,7 @@ import closureFixture from '../fixtures/get_closures.json'
 import permitFixture from '../fixtures/permit_checklist.json'
 import { isWithinSanFrancisco } from './sfBounds'
 import { parseMenu } from './profile'
+import { footTrafficSummary } from './recommendations'
 import type { MenuItem } from '../types/contract'
 
 const USE_FIXTURES =
@@ -433,7 +434,10 @@ export function adaptNativeRecommendations(
         score: traffic,
         basis: 'bay_wheels',
         time_context: request.when.label,
-        detail: 'Estimated from nearby Bay Wheels activity.',
+        detail: footTrafficSummary(
+          traffic >= 0.7 ? 'high' : traffic >= 0.4 ? 'moderate' : 'low',
+          request.when.label,
+        ),
       },
       competition: {
         overlap_count:
@@ -568,7 +572,10 @@ export function adaptLegacyRecommendations(
           score: traffic,
           basis: 'bay_wheels',
           time_context: request.when.label,
-          detail: 'Estimated from nearby Bay Wheels activity.',
+          detail: footTrafficSummary(
+            traffic >= 0.7 ? 'high' : traffic >= 0.4 ? 'moderate' : 'low',
+            request.when.label,
+          ),
         },
         competition: {
           overlap_count: overlap.length,

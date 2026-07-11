@@ -266,6 +266,49 @@ button:disabled {
   backdrop-filter: blur(14px);
 }
 
+/* #30: single location bar — pin toggles live location, input searches. */
+.location-bar__pin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 32px;
+  flex-shrink: 0;
+  border-radius: var(--radius-ui);
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-accent);
+}
+.location-bar__pin.is-live {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+/* #30: the minimized search summary pill shown after a search runs. */
+.map-controls__pill {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--color-border);
+  background: rgb(255 255 255 / 96%);
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 6px 18px rgb(15 23 42 / 14%);
+  text-align: left;
+}
+.map-controls__time-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-ui);
+  border: 1px solid var(--color-border);
+  background: #fff;
+  padding: 0.55rem 0.7rem;
+}
+
 .map-recenter {
   position: absolute;
   top: calc(env(safe-area-inset-top) + 10rem);
@@ -448,6 +491,32 @@ button:disabled {
   border-radius: var(--radius-ui);
   color: white;
   font-weight: 800;
+}
+
+/* #31: minor candidate pins — smaller and recessive so the top 3 dominate. */
+.rank-marker--minor {
+  height: 26px;
+  width: 26px;
+  opacity: 0.82;
+  filter: drop-shadow(0 2px 3px rgb(15 23 42 / 22%));
+}
+.rank-marker--minor span {
+  height: 18px;
+  width: 18px;
+  border-width: 2px;
+}
+.rank-marker--minor span > svg {
+  width: 9px;
+  height: 9px;
+}
+.rank-marker--minor span::after {
+  bottom: -4px;
+  border-left-width: 4px;
+  border-right-width: 4px;
+  border-top-width: 5px;
+}
+.rank-marker--minor:hover {
+  opacity: 1;
 }
 
 .rank-marker span::after {
@@ -707,19 +776,22 @@ button:disabled {
   font-size: 0.82rem;
 }
 
+/* #33: open as a viewport-centered modal (not a bottom sheet) so the primary
+   content is visible on open without scrolling; the fact list scrolls inside. */
 .spot-sheet {
   position: fixed;
-  inset-inline: 0;
-  bottom: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 50;
   display: flex;
-  max-height: 82dvh;
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: min(90dvh, 48rem);
   flex-direction: column;
-  border-radius: 1.5rem 1.5rem 0 0;
   background: var(--color-background);
-  box-shadow: 0 -12px 40px rgb(15 23 42 / 22%);
+  box-shadow: 0 24px 60px rgb(15 23 42 / 28%);
   outline: none;
-  animation: sheet-in 220ms ease-out;
+  animation: sheet-in 200ms ease-out;
 }
 
 .fact-icon {
@@ -1073,10 +1145,18 @@ button:disabled {
 
 @keyframes sheet-in {
   from {
-    transform: translateY(100%);
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
   }
   to {
-    transform: translateY(0);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spot-sheet {
+    animation: none;
   }
 }
 
@@ -1154,10 +1234,7 @@ button:disabled {
   }
 
   .spot-sheet {
-    inset-inline: 50% auto;
-    width: min(34rem, calc(100vw - 2rem));
-    border-radius: 1.5rem 1.5rem 0 0;
-    transform: translateX(-50%);
+    width: min(36rem, calc(100vw - 2rem));
   }
 
   .recommendation-tray {
@@ -1498,7 +1575,7 @@ html.landing-route #root {
 /* #14 time-range scroll wheel */
 .time-wheel__frame {
   position: relative;
-  height: 132px;
+  height: 108px;
   overflow: hidden;
   border-radius: 0.75rem;
   border: 1px solid var(--color-border);
@@ -1531,8 +1608,8 @@ html.landing-route #root {
 .time-wheel__band {
   position: absolute;
   inset-inline: 0;
-  top: 44px;
-  height: 44px;
+  top: 36px;
+  height: 36px;
   pointer-events: none;
   border-top: 1px solid var(--color-primary);
   border-bottom: 1px solid var(--color-primary);

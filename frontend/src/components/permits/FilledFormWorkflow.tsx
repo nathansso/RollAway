@@ -13,6 +13,7 @@ import {
 } from './permitForms'
 import type { PermitFormState } from './permitForms'
 import FilledPdfView from './FilledPdfView'
+import { vendorProfileValues } from '../../lib/formCatalog'
 
 // HTML input `type` for a field type. select/textarea are handled separately; text is the default.
 const INPUT_TYPE: Partial<Record<FilledFormFieldType, string>> = {
@@ -30,25 +31,11 @@ function buildPdfValues(
   profile: VendorProfile | null,
   state: PermitFormState,
 ): Record<string, string> {
-  const out: Record<string, string> = {}
+  const out: Record<string, string> = { ...vendorProfileValues(profile) }
   const put = (key: string, value: unknown) => {
     if (typeof value === 'string' && value.trim()) out[key] = value.trim()
   }
-  if (profile) {
-    const ap = profile.autofill_profile ?? {}
-    put('business_name', ap.business_name)
-    put('owner_name', ap.owner_name)
-    put('email', ap.email)
-    put('phone', ap.phone)
-    put('address', ap.address)
-    put('city', ap.city)
-    put('state', ap.state)
-    put('postal_code', ap.postal_code)
-    put('vendor_type', profile.vendor_type)
-    put('menu', profile.menu?.raw)
-    const point = profile.home_base?.point
-    if (point) put('pinned_point', `${point.lat}, ${point.lng}`)
-  }
+  // Overlay the card's resolved field values, then the user's typed entries (both win over profile).
   for (const field of form.fields) put(field.profile_key, fieldValue(field, state))
   for (const [key, value] of Object.entries(state.values)) put(key, value)
   return out

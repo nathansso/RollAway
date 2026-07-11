@@ -6,6 +6,12 @@
  *
  * Run after any edit to functions/lib/shared.js:
  *   node functions/scripts/sync_shared.js
+ *
+ * ALSO copies the canonical functions/demo_data/ snapshot dir into each
+ * function package as ./demo_data/ (AGENT-BRIEF §2a). DO bundles each function
+ * dir independently, so loadSnapshot() reads snapshots from <fnDir>/demo_data.
+ * The per-function copies are gitignored (see functions/.gitignore); this sync
+ * is a required predeploy step (documented in DEPLOY.md).
  */
 
 'use strict';
@@ -16,6 +22,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const SOURCE = path.join(ROOT, 'lib', 'shared.js');
 const PACKAGES_DIR = path.join(ROOT, 'packages', 'rollaway');
+const DEMO_DATA_DIR = path.join(ROOT, 'demo_data');
 
 const HEADER =
   '// AUTO-GENERATED COPY — edit functions/lib/shared.js and run\n' +
@@ -27,9 +34,25 @@ const fnDirs = fs
   .filter((d) => d.isDirectory())
   .map((d) => d.name);
 
+/** Mirror every file in functions/demo_data/ into <fnDir>/demo_data/. */
+function syncDemoData(fnDir) {
+  const destDir = path.join(fnDir, 'demo_data');
+  if (!fs.existsSync(DEMO_DATA_DIR)) return 0;
+  fs.mkdirSync(destDir, { recursive: true });
+  const files = fs.readdirSync(DEMO_DATA_DIR, { withFileTypes: true })
+    .filter((d) => d.isFile())
+    .map((d) => d.name);
+  for (const f of files) {
+    fs.copyFileSync(path.join(DEMO_DATA_DIR, f), path.join(destDir, f));
+  }
+  return files.length;
+}
+
 for (const dir of fnDirs) {
-  const dest = path.join(PACKAGES_DIR, dir, 'shared.js');
+  const fnDir = path.join(PACKAGES_DIR, dir);
+  const dest = path.join(fnDir, 'shared.js');
   fs.writeFileSync(dest, HEADER + src);
-  console.log(`synced -> ${path.relative(ROOT, dest)}`);
+  const n = syncDemoData(fnDir);
+  console.log(`synced -> ${path.relative(ROOT, dest)}  (+${n} demo_data files)`);
 }
 console.log(`done (${fnDirs.length} function dirs).`);

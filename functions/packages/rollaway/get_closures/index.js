@@ -20,6 +20,7 @@ const {
   guard, ok,
   validatePoint, validateDate,
   fetchJSON, socrataHeaders, TTLCache, haversineMeters,
+  withData, demoFetchOpts,
 } = require('./shared');
 
 const CLOSURES_URL = 'https://data.sfgov.org/resource/8x25-yybr.json';
@@ -65,7 +66,7 @@ async function fetchSocrataClosures(dateFrom, dateTo) {
   const where =
     `start_dt <= '${dateTo}T23:59:59' AND end_dt >= '${dateFrom}T00:00:00'`;
   const url = `${CLOSURES_URL}?$where=${encodeURIComponent(where)}&$limit=5000`;
-  const rows = await fetchJSON(url, { headers: socrataHeaders(), timeoutMs: 8000, retries: 2 });
+  const rows = await fetchJSON(url, { headers: socrataHeaders(), timeoutMs: 8000, retries: 2, ...demoFetchOpts() });
   return rows
     .filter((r) => r.shape && r.shape.coordinates)
     .map((r) => ({
@@ -88,7 +89,7 @@ async function fetchSfmtaClosures() {
     const url = process.env.SFMTA_EVENTS_URL;
     if (url) {
       try {
-        return await fetchJSON(url, { timeoutMs: 8000, retries: 2 });
+        return await fetchJSON(url, { timeoutMs: 8000, retries: 2, ...demoFetchOpts() });
       } catch (err) {
         console.error('SFMTA feed degraded to bundled sample:', err.message);
       }
@@ -113,29 +114,34 @@ exports.main = guard(async (args) => {
   const dateFrom = validateDate(args.date_from, 'date_from') || sfDate(0);
   const dateTo = validateDate(args.date_to, 'date_to') || sfDate(7);
 
-  // Fetch both sources in parallel; a single source failing degrades the
-  // response to the other source rather than failing the whole call.
-  const [socrataRes, sfmtaRes] = await Promise.allSettled([
-    fetchSocrataClosures(dateFrom, dateTo),
-    fetchSfmtaClosures(),
-  ]);
-  if (socrataRes.status === 'rejected' && sfmtaRes.status === 'rejected') {
-    throw socrataRes.reason; // both dead -> surface the envelope
-  }
-  if (socrataRes.status === 'rejected') {
-    console.error('Socrata closures degraded:', socrataRes.reason.message);
-  }
+  // Honors DEMO_DATA_MODE; a live miss degrades to snapshot in ~2.5s.
+  const body = await withData('get_closures', { lat, lng, radius_m }, async () => {
+    // Fetch both sources in parallel; a single source failing degrades the
+    // response to the other source rather than failing the whole call.
+    const [socrataRes, sfmtaRes] = await Promise.allSettled([
+      fetchSocrataClosures(dateFrom, dateTo),
+      fetchSfmtaClosures(),
+    ]);
+    if (socrataRes.status === 'rejected' && sfmtaRes.status === 'rejected') {
+      throw socrataRes.reason; // both dead -> surface the envelope (or degrade to snapshot)
+    }
+    if (socrataRes.status === 'rejected') {
+      console.error('Socrata closures degraded:', socrataRes.reason.message);
+    }
 
-  const sfmtaInRange = (sfmtaRes.status === 'fulfilled' ? sfmtaRes.value : [])
-    .filter((c) =>
-      (!c.active_from || c.active_from.slice(0, 10) <= dateTo) &&
-      (!c.active_to || c.active_to.slice(0, 10) >= dateFrom)
-    );
+    const sfmtaInRange = (sfmtaRes.status === 'fulfilled' ? sfmtaRes.value : [])
+      .filter((c) =>
+        (!c.active_from || c.active_from.slice(0, 10) <= dateTo) &&
+        (!c.active_to || c.active_to.slice(0, 10) >= dateFrom)
+      );
 
-  const closures = [
-    ...(socrataRes.status === 'fulfilled' ? socrataRes.value : []),
-    ...sfmtaInRange,
-  ].filter((c) => geometryNear(c.geometry, lat, lng, radius_m));
+    const closures = [
+      ...(socrataRes.status === 'fulfilled' ? socrataRes.value : []),
+      ...sfmtaInRange,
+    ].filter((c) => geometryNear(c.geometry, lat, lng, radius_m));
 
-  return ok({ closures, count: closures.length });
+    return { closures, count: closures.length };
+  });
+
+  return ok(body);
 });

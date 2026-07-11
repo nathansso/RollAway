@@ -1,0 +1,3031 @@
+{
+  "12MFF-0083": {
+    "raw": "Hot Indian Chai (Tea)",
+    "items": [
+      "hot indian chai tea"
+    ],
+    "keywords": [
+      "tea"
+    ]
+  },
+  "15MFF-0007": {
+    "raw": "Hot dogs: bacon-wrapped hot dogs: chicken burgers: energy drinks: water and various other drinks.",
+    "items": [
+      "hot dog",
+      "bacon-wrapped hot dog",
+      "chicken burger",
+      "energy drink",
+      "water",
+      "drink"
+    ],
+    "keywords": [
+      "hot_dog",
+      "burger",
+      "energy_drink",
+      "water",
+      "drink"
+    ]
+  },
+  "15MFF-0039": {
+    "raw": "varies truck to truck",
+    "items": [
+      "varies truck to truck"
+    ],
+    "keywords": [
+      "varies_truck_to_truck"
+    ]
+  },
+  "15MFF-0145": {
+    "raw": "Gyro pita bread (Lamb or chicken): lamb over rice: chicken over rice: chicken biryani rice: soft drinks",
+    "items": [
+      "gyro pita bread lamb chicken",
+      "lamb over rice",
+      "chicken over rice",
+      "chicken biryani rice",
+      "soft drink"
+    ],
+    "keywords": [
+      "middle_eastern",
+      "lamb_over_rice",
+      "chicken_over_rice",
+      "chicken_biryani_rice",
+      "soda"
+    ]
+  },
+  "15MFF-0159": {
+    "raw": "",
+    "items": [],
+    "keywords": []
+  },
+  "16MFF-0010": {
+    "raw": "Tacos: Burritos: Hot Dogs: and Hamburgers",
+    "items": [
+      "taco",
+      "burrito",
+      "hot dog",
+      "hamburger"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "hot_dog",
+      "burger"
+    ]
+  },
+  "16MFF-0011": {
+    "raw": "Fruits including mangoes: pineapples: coconuts: watermelon: corn: cucumber: potatoes chips: water: Mexican drinks: sodas: juices: snow cones",
+    "items": [
+      "fruits including mangoe",
+      "pineapple",
+      "coconut",
+      "watermelon",
+      "corn",
+      "cucumber",
+      "potatoes chip",
+      "water",
+      "mexican drink",
+      "soda",
+      "juice",
+      "snow cone"
+    ],
+    "keywords": [
+      "fruits_including_mangoe",
+      "pineapple",
+      "coconut",
+      "watermelon",
+      "elote",
+      "cucumber",
+      "chips",
+      "water",
+      "burrito",
+      "soda",
+      "juice",
+      "ice_cream"
+    ]
+  },
+  "16MFF-0126": {
+    "raw": "Chicken Tikka Masala: Vegetarian Rice Plate: Burritos: Tacos: Mango Lassi",
+    "items": [
+      "chicken tikka masala",
+      "vegetarian rice plate",
+      "burrito",
+      "taco",
+      "mango lassi"
+    ],
+    "keywords": [
+      "chicken_tikka_masala",
+      "vegetarian_rice_plate",
+      "burrito",
+      "taco",
+      "mango_lassi"
+    ]
+  },
+  "16MFF-0128": {
+    "raw": "Tacos: burritos: quesadillas: combination plates: tortas: tostadas",
+    "items": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "combination plate",
+      "torta",
+      "tostada"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "combination_plate",
+      "torta",
+      "tostada"
+    ]
+  },
+  "16MFF-0135": {
+    "raw": "Mangoneadas: Fruit snacks: Chamoyadas: Bionicos",
+    "items": [
+      "mangoneada",
+      "fruit snack",
+      "chamoyada",
+      "bionico"
+    ],
+    "keywords": [
+      "mangoneada",
+      "fruit_snack",
+      "chamoyada",
+      "bionico"
+    ]
+  },
+  "16MFF-0136": {
+    "raw": "Gyro; Chicken over rice; Gyro over rice;",
+    "items": [
+      "gyro",
+      "chicken over rice",
+      "gyro over rice"
+    ],
+    "keywords": [
+      "middle_eastern",
+      "chicken_over_rice"
+    ]
+  },
+  "16MFF-0139": {
+    "raw": "Fried Chicken: Fried Fish: Greens: Mac & Cheese: Peach Cobbler: and String beans",
+    "items": [
+      "fried chicken",
+      "fried fish",
+      "green",
+      "mac",
+      "cheese",
+      "peach cobbler",
+      "string bean"
+    ],
+    "keywords": [
+      "fries",
+      "seafood_dish",
+      "green",
+      "mac",
+      "cheese",
+      "peach_cobbler",
+      "string_bean"
+    ]
+  },
+  "17MFF-0002": {
+    "raw": "Ice cream: coffee: pastries",
+    "items": [
+      "ice cream",
+      "coffee",
+      "pastry"
+    ],
+    "keywords": [
+      "ice_cream",
+      "coffee",
+      "dessert"
+    ]
+  },
+  "17MFF-0094": {
+    "raw": "Jerk chicken: curry chicken: curry goat: curry dhal: Burritos: Fish: Ox tails: rice: beans: veggies.",
+    "items": [
+      "jerk chicken",
+      "curry chicken",
+      "curry goat",
+      "curry dhal",
+      "burrito",
+      "fish",
+      "ox tail",
+      "rice",
+      "bean",
+      "veggy"
+    ],
+    "keywords": [
+      "jerk_chicken",
+      "asian_dish",
+      "burrito",
+      "seafood_dish",
+      "ox_tail",
+      "rice",
+      "bean",
+      "veggy"
+    ]
+  },
+  "17MFF-0104": {
+    "raw": "Artisan Pizzas (Margherita: Yukon Potato: Zoe's Pepperoni: Funghi: Brocolli Rabe: Bacon Kale:  Arugula) and Drinks.",
+    "items": [
+      "artisan pizzas margherita",
+      "yukon potato",
+      "zoe's pepperoni",
+      "funghi",
+      "brocolli rabe",
+      "bacon kale",
+      "arugula",
+      "drink"
+    ],
+    "keywords": [
+      "pizza",
+      "yukon_potato",
+      "zoe_s_pepperoni",
+      "funghi",
+      "brocolli_rabe",
+      "bacon_kale",
+      "arugula",
+      "drink"
+    ]
+  },
+  "17MFF-0122": {
+    "raw": "Tacos: Burritos: Tortas: Quesadillas: Mexican Drinks: Aguas Frescas",
+    "items": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "mexican drink",
+      "aguas fresca"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "juice"
+    ]
+  },
+  "17MFF-0139": {
+    "raw": "Hotdogs: chips: soda: nuts: crackers",
+    "items": [
+      "hotdog",
+      "chip",
+      "soda",
+      "nut",
+      "cracker"
+    ],
+    "keywords": [
+      "hot_dog",
+      "chips",
+      "soda",
+      "nut",
+      "cracker"
+    ]
+  },
+  "17MFF-0155": {
+    "raw": "various styles of hot dogs & sausages: chips: breakfast sandwiches: chili: soda: water:",
+    "items": [
+      "styles hot dog",
+      "sausage",
+      "chip",
+      "breakfast sandwich",
+      "chili",
+      "soda",
+      "water"
+    ],
+    "keywords": [
+      "hot_dog",
+      "chips",
+      "sandwich",
+      "chili",
+      "soda",
+      "water"
+    ]
+  },
+  "17MFF-0164": {
+    "raw": "Tacos: Burritos: Tortas: Quesadillas: Mexican Drinks: Aguas Frescas",
+    "items": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "mexican drink",
+      "aguas fresca"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "juice"
+    ]
+  },
+  "17MFF-0166": {
+    "raw": "Hot dogs: sausages: cheesesteaks: chips: drinks",
+    "items": [
+      "hot dog",
+      "sausage",
+      "cheesesteak",
+      "chip",
+      "drink"
+    ],
+    "keywords": [
+      "hot_dog",
+      "sandwich",
+      "chips",
+      "drink"
+    ]
+  },
+  "17MFF-0169": {
+    "raw": "Tacos: Burritos: Tortas: Quesadillas: Mexican Drinks: Aguas Frescas",
+    "items": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "mexican drink",
+      "aguas fresca"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "juice"
+    ]
+  },
+  "17MFF-0171": {
+    "raw": "tacos",
+    "items": [
+      "taco"
+    ],
+    "keywords": [
+      "taco"
+    ]
+  },
+  "17MFF-0177": {
+    "raw": "Gyros: Kebobs: refreshments and dessert",
+    "items": [
+      "gyro",
+      "kebob",
+      "refreshment",
+      "dessert"
+    ],
+    "keywords": [
+      "middle_eastern",
+      "kebob",
+      "refreshment",
+      "dessert"
+    ]
+  },
+  "17MFF-0181": {
+    "raw": "Meatloaf: Grilled Cheese: Chicken Sandwich: Caprese Salad: Kale Salad: Fries: Sweet Potato Fries: Mac and Cheese: Mashed Potatoes",
+    "items": [
+      "meatloaf",
+      "grilled cheese",
+      "chicken sandwich",
+      "caprese salad",
+      "kale salad",
+      "fry",
+      "sweet potato fry",
+      "mac",
+      "cheese",
+      "mashed potatoe"
+    ],
+    "keywords": [
+      "meatloaf",
+      "grilled_cheese",
+      "sandwich",
+      "salad",
+      "fry",
+      "sweet_potato_fry",
+      "mac",
+      "cheese",
+      "mashed_potatoe"
+    ]
+  },
+  "17MFF-0182": {
+    "raw": "Ice Cream: Pre-Packaged Chips: Candies: Bottled Water & Canned SODA",
+    "items": [
+      "ice cream",
+      "chip",
+      "candy",
+      "bottled water",
+      "canned soda"
+    ],
+    "keywords": [
+      "ice_cream",
+      "chips",
+      "dessert",
+      "water",
+      "soda"
+    ]
+  },
+  "17MFF-0187": {
+    "raw": "Daily rotating menus consisting of various local & organic vegetable: poultry: meat: seafood : rice & bread dishes.",
+    "items": [
+      "daily rotating menus consisting local",
+      "organic vegetable",
+      "poultry",
+      "meat",
+      "seafood",
+      "rice",
+      "bread dish"
+    ],
+    "keywords": [
+      "daily_rotating_menus_consisting_local",
+      "organic_vegetable",
+      "poultry",
+      "meat",
+      "seafood_dish",
+      "rice",
+      "bread_dish"
+    ]
+  },
+  "17MFF-0190": {
+    "raw": "Hot dogs: Bacon wrapped hot dogs: soda: water: sports drinks: energy drinks: chips",
+    "items": [
+      "hot dog",
+      "bacon wrapped hot dog",
+      "soda",
+      "water",
+      "sports drink",
+      "energy drink",
+      "chip"
+    ],
+    "keywords": [
+      "hot_dog",
+      "soda",
+      "water",
+      "sports_drink",
+      "energy_drink",
+      "chips"
+    ]
+  },
+  "17MFF-0196": {
+    "raw": "Hot dogs: bacon wrap hot dogs: chicken burgers: energy drinks: water & various drinks",
+    "items": [
+      "hot dog",
+      "bacon wrap hot dog",
+      "chicken burger",
+      "energy drink",
+      "water",
+      "drink"
+    ],
+    "keywords": [
+      "hot_dog",
+      "burger",
+      "energy_drink",
+      "water",
+      "drink"
+    ]
+  },
+  "17MFF-0198": {
+    "raw": "Smoothies: Juice: Salads: Fruit Bowls: Soup",
+    "items": [
+      "smoothy",
+      "juice",
+      "salad",
+      "fruit bowl",
+      "soup"
+    ],
+    "keywords": [
+      "smoothy",
+      "juice",
+      "salad",
+      "fruit_bowl",
+      "soup"
+    ]
+  },
+  "17MFF-0202": {
+    "raw": "South American Peruvian Food - Ceiches: hot wok dishes: hot pastas: rice dishes: and Tapas.",
+    "items": [
+      "south american peruvian food - ceich",
+      "hot wok dish",
+      "hot pasta",
+      "rice dish",
+      "tapa"
+    ],
+    "keywords": [
+      "south_american_peruvian_food_ceich",
+      "asian_dish",
+      "hot_pasta",
+      "rice_dish",
+      "tapa"
+    ]
+  },
+  "17MFF-0203": {
+    "raw": "South American/Peruvian food",
+    "items": [
+      "south american",
+      "peruvian food"
+    ],
+    "keywords": [
+      "south_american",
+      "peruvian_food"
+    ]
+  },
+  "18MFF-0003": {
+    "raw": "rice chicken beef hot dogs and sandwich's and coke and water",
+    "items": [
+      "rice chicken beef hot dog",
+      "sandwich'",
+      "coke",
+      "water"
+    ],
+    "keywords": [
+      "hot_dog",
+      "sandwich",
+      "coke",
+      "water"
+    ]
+  },
+  "18MFF-0004": {
+    "raw": "Tacos: Burritos: Tortas: Quesadillas: Drinks",
+    "items": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "drink"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "drink"
+    ]
+  },
+  "18MFF-0005": {
+    "raw": "Tacos: Burritos: Tortas: Quesadillas",
+    "items": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla"
+    ]
+  },
+  "18MFF-0006": {
+    "raw": "Mexican food: tacos: burritos: tortas: various meat and chicken and fish plate: chile relleno plate: fish plate: bread: flan: rice pudding: bread: fruit juice: vegetable juice: coffee: tea",
+    "items": [
+      "mexican food",
+      "taco",
+      "burrito",
+      "torta",
+      "meat",
+      "chicken",
+      "fish plate",
+      "chile relleno plate",
+      "bread",
+      "flan",
+      "rice pudding",
+      "fruit juice"
+    ],
+    "keywords": [
+      "burrito",
+      "taco",
+      "torta",
+      "meat",
+      "chicken",
+      "seafood_dish",
+      "chile_relleno_plate",
+      "bread",
+      "flan",
+      "rice_pudding",
+      "juice"
+    ]
+  },
+  "18MFF-0018": {
+    "raw": "chicken sandwich: chicken gyro: chicken biryani",
+    "items": [
+      "chicken sandwich",
+      "chicken gyro",
+      "chicken biryani"
+    ],
+    "keywords": [
+      "sandwich",
+      "middle_eastern",
+      "chicken_biryani"
+    ]
+  },
+  "18MFF-0021": {
+    "raw": "American classic slider:  fried chicken slider: fried chicken skin: wedge cut fries: regular cut fries: handcrafted sodas: spring salad",
+    "items": [
+      "american classic slider",
+      "fried chicken slider",
+      "fried chicken skin",
+      "wedge cut fry",
+      "regular cut fry",
+      "handcrafted soda",
+      "spring salad"
+    ],
+    "keywords": [
+      "burger",
+      "fries",
+      "wedge_cut_fry",
+      "regular_cut_fry",
+      "soda",
+      "salad"
+    ]
+  },
+  "18MFF-0028": {
+    "raw": "COLD TRUCK. Deli: bbq chicken skewer: Chinese spring roll: Chinese fried rice/noodle: fried chicken leg/wing: bbq chicken sandwich: chicken cheese burger: burrito: lumpia. Snack: sunflower seeds: muffins: chips: snickers: kit-kat: 10 types of chocolate. Drinks: Coke: 7-Up: Dr. Pepper: Pepsi: Redbull: Vitamin Water: Rockstar: Coconut Juice: Water. Hot drinks: coffee: tea.",
+    "items": [
+      "cold truck deli",
+      "bbq chicken skewer",
+      "chinese spring roll",
+      "chinese fried rice",
+      "noodle",
+      "fried chicken leg",
+      "wing",
+      "bbq chicken sandwich",
+      "chicken cheese burger",
+      "burrito",
+      "lumpia snack",
+      "sunflower seed"
+    ],
+    "keywords": [
+      "sandwich",
+      "bbq",
+      "chinese_spring_roll",
+      "asian_dish",
+      "fries",
+      "wing",
+      "burger",
+      "burrito",
+      "lumpia_snack",
+      "sunflower_seed"
+    ]
+  },
+  "18MFF-0033": {
+    "raw": "Indian Chai (Tea)",
+    "items": [
+      "indian chai tea"
+    ],
+    "keywords": [
+      "tea"
+    ]
+  },
+  "18MFF-0034": {
+    "raw": "Chai Tea",
+    "items": [
+      "chai tea"
+    ],
+    "keywords": [
+      "tea"
+    ]
+  },
+  "18MFF-0088": {
+    "raw": "Daily rotating menus consisting of various local & organic vegetable: poultry: meat: seafood : rice & bread dishes.",
+    "items": [
+      "daily rotating menus consisting local",
+      "organic vegetable",
+      "poultry",
+      "meat",
+      "seafood",
+      "rice",
+      "bread dish"
+    ],
+    "keywords": [
+      "daily_rotating_menus_consisting_local",
+      "organic_vegetable",
+      "poultry",
+      "meat",
+      "seafood_dish",
+      "rice",
+      "bread_dish"
+    ]
+  },
+  "18MFF-0094": {
+    "raw": "7 Multiple Trucks on rotation (1 on Mission Bay Blvd South & 6 on 4th St).   Serving everything but hot dogs",
+    "items": [
+      "7 multiple trucks on rotation 1 on mission bay blvd south",
+      "6 on 4th st serving everything but hot dog"
+    ],
+    "keywords": [
+      "7_multiple_trucks_on_rotation_1_on_mission_bay_blvd_south",
+      "hot_dog"
+    ]
+  },
+  "18MFF-0100": {
+    "raw": "Breakfast - egg: cheese: bacon: tomato: english muffin w/ butter: jam: or nutella: hard boiled eggs: fruit medley: water: coffee: milk: carrot juice: orange juice",
+    "items": [
+      "breakfast - egg",
+      "cheese",
+      "bacon",
+      "tomato",
+      "english muffin w",
+      "butter",
+      "jam",
+      "nutella",
+      "hard boiled egg",
+      "fruit medley",
+      "water",
+      "coffee"
+    ],
+    "keywords": [
+      "breakfast_egg",
+      "cheese",
+      "bacon",
+      "tomato",
+      "english_muffin_w",
+      "butter",
+      "jam",
+      "nutella",
+      "hard_boiled_egg",
+      "fruit_medley",
+      "water",
+      "coffee"
+    ]
+  },
+  "18MFF-0101": {
+    "raw": "Tortas: burritos: tacos: ensaladas: sodas",
+    "items": [
+      "torta",
+      "burrito",
+      "taco",
+      "ensalada",
+      "soda"
+    ],
+    "keywords": [
+      "torta",
+      "burrito",
+      "taco",
+      "ensalada",
+      "soda"
+    ]
+  },
+  "18MFF-0106": {
+    "raw": "Halal Gyro and Cheesesteaks",
+    "items": [
+      "halal gyro",
+      "cheesesteak"
+    ],
+    "keywords": [
+      "halal",
+      "sandwich"
+    ]
+  },
+  "19MFF-00001": {
+    "raw": "American Food: Hot dogs: pretzels: ice cream: salads: beverages: sandwiches: soup: coffee: pastries:etc.",
+    "items": [
+      "american food",
+      "hot dog",
+      "pretzel",
+      "ice cream",
+      "salad",
+      "beverage",
+      "sandwich",
+      "soup",
+      "coffee",
+      "pastry"
+    ],
+    "keywords": [
+      "american_food",
+      "hot_dog",
+      "pretzel",
+      "ice_cream",
+      "salad",
+      "beverage",
+      "sandwich",
+      "soup",
+      "coffee",
+      "dessert"
+    ]
+  },
+  "19MFF-00041": {
+    "raw": "Cold Truck: Corn Dogs: Noodle Soups: Candy: Pre-packaged Snacks: Sandwiches: Chips: Coffee: Tea: Various Beverages",
+    "items": [
+      "cold truck",
+      "corn dog",
+      "noodle soup",
+      "candy",
+      "snack",
+      "sandwich",
+      "chip",
+      "coffee",
+      "tea",
+      "beverage"
+    ],
+    "keywords": [
+      "cold_truck",
+      "hot_dog",
+      "asian_dish",
+      "dessert",
+      "snack",
+      "sandwich",
+      "chips",
+      "coffee",
+      "tea",
+      "beverage"
+    ]
+  },
+  "19MFF-00046": {
+    "raw": "Tacos: Burritos: Tortas: Quesadillas: Salads: Soup: Fruits: Juices: Soda: Water",
+    "items": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "salad",
+      "soup",
+      "fruit",
+      "juice",
+      "soda",
+      "water"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "salad",
+      "soup",
+      "fruit",
+      "juice",
+      "soda",
+      "water"
+    ]
+  },
+  "19MFF-00048": {
+    "raw": "",
+    "items": [],
+    "keywords": []
+  },
+  "19MFF-00055": {
+    "raw": "Cold Truck: Soft drinks: cup cakes: potato chips: cookies: gum: sandwiches (hot & cold): peanuts: muffins: coff (hot & cold): water: juice: yoplait: milk: orange juice: sunflower seeds: can foods: burritos: buscuits: chimichangas: rice krispies",
+    "items": [
+      "cold truck",
+      "soft drink",
+      "cup cake",
+      "potato chip",
+      "cooky",
+      "gum",
+      "sandwiches hot",
+      "cold",
+      "peanut",
+      "muffin",
+      "coff hot",
+      "water"
+    ],
+    "keywords": [
+      "cold_truck",
+      "soda",
+      "dessert",
+      "chips",
+      "cooky",
+      "gum",
+      "sandwich",
+      "cold",
+      "peanut",
+      "muffin",
+      "coff_hot",
+      "water"
+    ]
+  },
+  "19MFF-00059": {
+    "raw": "Kettle Corn: Funnel Cakes: Waffles: Lemonade",
+    "items": [
+      "kettle corn",
+      "funnel cake",
+      "waffle",
+      "lemonade"
+    ],
+    "keywords": [
+      "elote",
+      "dessert",
+      "juice"
+    ]
+  },
+  "19MFF-00075": {
+    "raw": "",
+    "items": [],
+    "keywords": []
+  },
+  "19MFF-00104": {
+    "raw": "Hot dogs and chili",
+    "items": [
+      "hot dog",
+      "chili"
+    ],
+    "keywords": [
+      "hot_dog",
+      "chili"
+    ]
+  },
+  "19MFF-00105": {
+    "raw": "Kettle Corn: Funnel Cakes: Lemonade: Beverages: Flan: Hot Dogs: Falafel: Hot and Cold Sandwiches: French Fries: Baklava and Pastries",
+    "items": [
+      "kettle corn",
+      "funnel cake",
+      "lemonade",
+      "beverage",
+      "flan",
+      "hot dog",
+      "falafel",
+      "hot",
+      "cold sandwich",
+      "french fry",
+      "baklava",
+      "pastry"
+    ],
+    "keywords": [
+      "elote",
+      "dessert",
+      "juice",
+      "beverage",
+      "flan",
+      "hot_dog",
+      "middle_eastern",
+      "hot",
+      "sandwich",
+      "fries",
+      "baklava"
+    ]
+  },
+  "19MFF-00110": {
+    "raw": "tacos: burritos: quesadilla: tortas sodas",
+    "items": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "tortas soda"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "soda"
+    ]
+  },
+  "19MFF-00112": {
+    "raw": "sunflower seeds: crackerjacks: bottled water: peanuts: candy",
+    "items": [
+      "sunflower seed",
+      "crackerjack",
+      "bottled water",
+      "peanut",
+      "candy"
+    ],
+    "keywords": [
+      "sunflower_seed",
+      "crackerjack",
+      "water",
+      "peanut",
+      "dessert"
+    ]
+  },
+  "19MFF-00116": {
+    "raw": "Hot dogs: condiments: soft pretzels: soft drinks: coffee:cold beverages: pastries: bakery goods: cookies: icecream: candy: soups: churros: chestnuts: nuts: fresh fruit: fruit juices: desserts: potato chips and popcorn.",
+    "items": [
+      "hot dog",
+      "condiment",
+      "soft pretzel",
+      "soft drink",
+      "coffee",
+      "cold beverage",
+      "pastry",
+      "bakery good",
+      "cooky",
+      "icecream",
+      "candy",
+      "soup"
+    ],
+    "keywords": [
+      "hot_dog",
+      "condiment",
+      "soft_pretzel",
+      "soda",
+      "coffee",
+      "cold_beverage",
+      "dessert",
+      "bakery_good",
+      "cooky",
+      "ice_cream",
+      "soup"
+    ]
+  },
+  "19MFF-00117": {
+    "raw": "Hot dogs: condiments: soft pretzels: soft drinks: coffee: cold beverages: pastries: bakery goods: cookies: ice cream: candy: soups: churros: chestnuts: nuts: fresh fruit: fruit juices: desserts: potato chips and popcorn.",
+    "items": [
+      "hot dog",
+      "condiment",
+      "soft pretzel",
+      "soft drink",
+      "coffee",
+      "cold beverage",
+      "pastry",
+      "bakery good",
+      "cooky",
+      "ice cream",
+      "candy",
+      "soup"
+    ],
+    "keywords": [
+      "hot_dog",
+      "condiment",
+      "soft_pretzel",
+      "soda",
+      "coffee",
+      "cold_beverage",
+      "dessert",
+      "bakery_good",
+      "cooky",
+      "ice_cream",
+      "soup"
+    ]
+  },
+  "19MFF-00125": {
+    "raw": "All types of food except for BBQ on site per fire safety. Partnership with Off the Grid and their fleet of MFF's",
+    "items": [
+      "all types food except for bbq on site per fire safety partnership",
+      "off grid",
+      "their fleet mff'"
+    ],
+    "keywords": [
+      "bbq",
+      "off_grid",
+      "their_fleet_mff"
+    ]
+  },
+  "19MFF-00128": {
+    "raw": "Mexican Food",
+    "items": [
+      "mexican food"
+    ],
+    "keywords": [
+      "burrito"
+    ]
+  },
+  "20MFF-00002": {
+    "raw": "Lomo Saltado: Jalea: Ceviche: Calamari Tilapia Plates: Chicken: Soda: Water.",
+    "items": [
+      "lomo saltado",
+      "jalea",
+      "ceviche",
+      "calamari tilapia plate",
+      "chicken",
+      "soda",
+      "water"
+    ],
+    "keywords": [
+      "lomo_saltado",
+      "jalea",
+      "seafood_dish",
+      "calamari_tilapia_plate",
+      "chicken",
+      "soda",
+      "water"
+    ]
+  },
+  "20MFF-00003": {
+    "raw": "",
+    "items": [],
+    "keywords": []
+  },
+  "20MFF-00007": {
+    "raw": "Tortas: Burritos: Tacos: Churros: Nachos: Asada Fries",
+    "items": [
+      "torta",
+      "burrito",
+      "taco",
+      "churro",
+      "nacho",
+      "asada fry"
+    ],
+    "keywords": [
+      "torta",
+      "burrito",
+      "taco",
+      "dessert",
+      "nachos",
+      "asada_fry"
+    ]
+  },
+  "21MFF-00009": {
+    "raw": "Acai Bowls: Poke Bowls: Smoothies: Juices",
+    "items": [
+      "acai bowl",
+      "poke bowl",
+      "smoothy",
+      "juice"
+    ],
+    "keywords": [
+      "acai_bowl",
+      "seafood_dish",
+      "smoothy",
+      "juice"
+    ]
+  },
+  "21MFF-00011": {
+    "raw": "Burritos: Giros: Tortas: Quesadillas: Tacos & Various Beverages",
+    "items": [
+      "burrito",
+      "giro",
+      "torta",
+      "quesadilla",
+      "taco",
+      "beverage"
+    ],
+    "keywords": [
+      "burrito",
+      "giro",
+      "torta",
+      "quesadilla",
+      "taco",
+      "beverage"
+    ]
+  },
+  "21MFF-00014": {
+    "raw": "Cheesesteaks: French Fries: and Drinks",
+    "items": [
+      "cheesesteak",
+      "french fry",
+      "drink"
+    ],
+    "keywords": [
+      "sandwich",
+      "fries",
+      "drink"
+    ]
+  },
+  "21MFF-00035": {
+    "raw": "Cold Truck: Hot/Cold Sandwiches: Water: Soda: Juice: Snacks: Milk: Candies: Canned Food: Soups: Cup of Noodles: Fruit: Salad",
+    "items": [
+      "cold truck",
+      "hot",
+      "cold sandwich",
+      "water",
+      "soda",
+      "juice",
+      "snack",
+      "milk",
+      "candy",
+      "canned food",
+      "soup",
+      "cup noodle"
+    ],
+    "keywords": [
+      "cold_truck",
+      "hot",
+      "sandwich",
+      "water",
+      "soda",
+      "juice",
+      "snack",
+      "milk",
+      "dessert",
+      "canned_food",
+      "soup",
+      "asian_dish"
+    ]
+  },
+  "21MFF-00048": {
+    "raw": "Ice Cream: Donuts",
+    "items": [
+      "ice cream",
+      "donut"
+    ],
+    "keywords": [
+      "ice_cream",
+      "dessert"
+    ]
+  },
+  "21MFF-00069": {
+    "raw": "Coffee: Pastries: Bagels: Sandwiches: Other Items",
+    "items": [
+      "coffee",
+      "pastry",
+      "bagel",
+      "sandwich",
+      "item"
+    ],
+    "keywords": [
+      "coffee",
+      "dessert",
+      "bagel",
+      "sandwich",
+      "item"
+    ]
+  },
+  "21MFF-00070": {
+    "raw": "Brazilian Hamburgers",
+    "items": [
+      "brazilian hamburger"
+    ],
+    "keywords": [
+      "burger"
+    ]
+  },
+  "21MFF-00073": {
+    "raw": "N/A",
+    "items": [
+      "n"
+    ],
+    "keywords": [
+      "n"
+    ]
+  },
+  "21MFF-00076": {
+    "raw": "Various types of meat: veggie: and seafood bowls.",
+    "items": [
+      "types meat",
+      "veggie",
+      "seafood bowl"
+    ],
+    "keywords": [
+      "types_meat",
+      "veggie",
+      "seafood_dish"
+    ]
+  },
+  "21MFF-00079": {
+    "raw": "Bread: Pastries: Coffee: Pizza",
+    "items": [
+      "bread",
+      "pastry",
+      "coffee",
+      "pizza"
+    ],
+    "keywords": [
+      "bread",
+      "dessert",
+      "coffee",
+      "pizza"
+    ]
+  },
+  "21MFF-00101": {
+    "raw": "Breakfast and lunch items with a nod to various cultures",
+    "items": [
+      "breakfast",
+      "lunch item",
+      "nod to culture"
+    ],
+    "keywords": [
+      "breakfast",
+      "lunch_item",
+      "nod_to_culture"
+    ]
+  },
+  "21MFF-00102": {
+    "raw": "Drip Coffee: Espresso Drinks: Matcha Green Tea: Black Teas: Herbal Teas: Crossaints: Savory and Sweet Breads",
+    "items": [
+      "drip coffee",
+      "espresso drink",
+      "matcha green tea",
+      "black tea",
+      "herbal tea",
+      "crossaint",
+      "savory",
+      "sweet bread"
+    ],
+    "keywords": [
+      "coffee",
+      "tea",
+      "crossaint",
+      "savory",
+      "sweet_bread"
+    ]
+  },
+  "21MFF-00106": {
+    "raw": "Asian Fusion - Japanese Sandwiches/Sliders/Misubi",
+    "items": [
+      "asian fusion - japanese sandwich",
+      "slider",
+      "misubi"
+    ],
+    "keywords": [
+      "sandwich",
+      "burger",
+      "misubi"
+    ]
+  },
+  "21MFF-00115": {
+    "raw": "Cold Truck: Hamburger: cheeseburgers: hot dogs: hot sandwiches: cold sandwiches: egg muffins: cup of noodles: corn dogs: canned soup: coffee: hot cocoa: hot tea: gatorade: juice: milk: soda: water: fruits: fruit salad: rice pudding: yogurt: candy bars: chips: cookies: donuts: granola bars: muffins",
+    "items": [
+      "cold truck",
+      "hamburger",
+      "cheeseburger",
+      "hot dog",
+      "hot sandwich",
+      "cold sandwich",
+      "egg muffin",
+      "cup noodle",
+      "corn dog",
+      "canned soup",
+      "coffee",
+      "hot cocoa"
+    ],
+    "keywords": [
+      "cold_truck",
+      "burger",
+      "hot_dog",
+      "sandwich",
+      "egg_muffin",
+      "asian_dish",
+      "canned_soup",
+      "coffee",
+      "hot_cocoa"
+    ]
+  },
+  "21MFF-00149": {
+    "raw": "Chicken Tiki Masala Burritos: Paneer Tiki Masala Burritos: Samosas: Mango Lassi",
+    "items": [
+      "chicken tiki masala burrito",
+      "paneer tiki masala burrito",
+      "samosa",
+      "mango lassi"
+    ],
+    "keywords": [
+      "burrito",
+      "samosa",
+      "mango_lassi"
+    ]
+  },
+  "21MFF-00150": {
+    "raw": "Indian Street Food: Tikka Masala Burritos; Samosas; Sexy Fries (Indian-inspired poutine); Naughty Naans; Deconstructed Samosas; Kathi Rolls; Lassis and Lemonades",
+    "items": [
+      "indian street food",
+      "tikka masala burrito",
+      "samosa",
+      "sexy fries indian-inspired poutine",
+      "naughty naan",
+      "deconstructed samosa",
+      "kathi roll",
+      "lassis",
+      "lemonade"
+    ],
+    "keywords": [
+      "indian_street_food",
+      "burrito",
+      "samosa",
+      "fries",
+      "naughty_naan",
+      "deconstructed_samosa",
+      "kathi_roll",
+      "lassis",
+      "juice"
+    ]
+  },
+  "21MFF-00151": {
+    "raw": "Latin Food: Tacos: Pupusas: Vegetables: Salad: Water: Sodas",
+    "items": [
+      "latin food",
+      "taco",
+      "pupusa",
+      "vegetable",
+      "salad",
+      "water",
+      "soda"
+    ],
+    "keywords": [
+      "latin_food",
+      "taco",
+      "pupusa",
+      "vegetable",
+      "salad",
+      "water",
+      "soda"
+    ]
+  },
+  "21MFF-00152": {
+    "raw": "Baos: bowls & drinks",
+    "items": [
+      "bao",
+      "bowl",
+      "drink"
+    ],
+    "keywords": [
+      "bao",
+      "bowl",
+      "drink"
+    ]
+  },
+  "21MFF-00153": {
+    "raw": "Baos: bowls & drinks",
+    "items": [
+      "bao",
+      "bowl",
+      "drink"
+    ],
+    "keywords": [
+      "bao",
+      "bowl",
+      "drink"
+    ]
+  },
+  "22MFF-00013": {
+    "raw": "BBQ PORK SANDWICHGRILL CHICKEN SANDWICHSHIRMP SPRING ROLLSBBQ PORK OVER RICEGRILL CHICKEN OVER RICEBBQ PORK VERMICELLIGRILL CHICKEN VERMICELLIBBQ PORK GARLIC NOODLEGRILL CHICKEN GARLIC NOODLENEW ITEMS:MASALA DOSAPANNER DOSACHICKEN CURRY & RICECHICKEN STEWRICE OR DOSAADD CHEESEADD GHEE",
+    "items": [
+      "bbq pork sandwichgrill chicken sandwichshirmp spring rollsbbq pork over ricegrill chicken over ricebbq pork vermicelligrill chicken vermicellibbq pork garlic noodlegrill chicken garlic noodlenew item",
+      "masala dosapanner dosachicken curry",
+      "ricechicken stewrice dosaadd cheeseadd ghee"
+    ],
+    "keywords": [
+      "sandwich",
+      "asian_dish",
+      "ricechicken_stewrice_dosaadd_cheeseadd_ghee"
+    ]
+  },
+  "22MFF-00014": {
+    "raw": "BBQ PORK SANDWICHGRILL CHICKEN SANDWICHSHIRMP SPRING ROLLSBBQ PORK OVER RICEGRILL CHICKEN OVER RICEBBQ PORK VERMICELLIGRILL CHICKEN VERMICELLIBBQ PORK GARLIC NOODLEGRILL CHICKEN GARLIC NOODLENEW ITEMS:MASALA DOSAPANNER DOSACHICKEN CURRY & RICECHICKEN STEWRICE OR DOSAADD CHEESEADD GHEE",
+    "items": [
+      "bbq pork sandwichgrill chicken sandwichshirmp spring rollsbbq pork over ricegrill chicken over ricebbq pork vermicelligrill chicken vermicellibbq pork garlic noodlegrill chicken garlic noodlenew item",
+      "masala dosapanner dosachicken curry",
+      "ricechicken stewrice dosaadd cheeseadd ghee"
+    ],
+    "keywords": [
+      "sandwich",
+      "asian_dish",
+      "ricechicken_stewrice_dosaadd_cheeseadd_ghee"
+    ]
+  },
+  "22MFF-00017": {
+    "raw": "Meat and vegi rice bowls: meat and vegi salad bowls: meat and vegi wraps: drinks and juices.",
+    "items": [
+      "meat",
+      "vegi rice bowl",
+      "vegi salad bowl",
+      "vegi wrap",
+      "drink",
+      "juice"
+    ],
+    "keywords": [
+      "meat",
+      "vegi_rice_bowl",
+      "salad",
+      "sandwich",
+      "drink",
+      "juice"
+    ]
+  },
+  "22MFF-00020": {
+    "raw": "Panushos: Salbutes: Salad: Rice: Beans: Cochinita: etc.",
+    "items": [
+      "panusho",
+      "salbute",
+      "salad",
+      "rice",
+      "bean",
+      "cochinita"
+    ],
+    "keywords": [
+      "panusho",
+      "salbute",
+      "salad",
+      "rice",
+      "bean",
+      "cochinita"
+    ]
+  },
+  "22MFF-00021": {
+    "raw": "Mexican Food: Yucatan Food: Street Food",
+    "items": [
+      "mexican food",
+      "yucatan food",
+      "street food"
+    ],
+    "keywords": [
+      "burrito",
+      "yucatan_food",
+      "street_food"
+    ]
+  },
+  "22MFF-00022": {
+    "raw": "Chicken Gyro: Lamb Gyro: Chiken Gyro Plate: Lamb Gyro Plate: Combination Gyro Plate.",
+    "items": [
+      "chicken gyro",
+      "lamb gyro",
+      "chiken gyro plate",
+      "lamb gyro plate",
+      "combination gyro plate"
+    ],
+    "keywords": [
+      "middle_eastern"
+    ]
+  },
+  "22MFF-00024": {
+    "raw": "Tacos: burritos: quesadillas: soda & water",
+    "items": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "soda",
+      "water"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "soda",
+      "water"
+    ]
+  },
+  "22MFF-00025": {
+    "raw": "Pulao Plates & Sandwiches: Various Drinks",
+    "items": [
+      "pulao plate",
+      "sandwich",
+      "drink"
+    ],
+    "keywords": [
+      "pulao_plate",
+      "sandwich",
+      "drink"
+    ]
+  },
+  "22MFF-00026": {
+    "raw": "Pernil Asado: Ropa Vieja: Arroz con Pollo: Cuban Sandwich: Croquetas Fritas: Tostones: Platanos Maduros: Yuca Frita",
+    "items": [
+      "pernil asado",
+      "ropa vieja",
+      "arroz con pollo",
+      "cuban sandwich",
+      "croquetas frita",
+      "tostone",
+      "platanos maduro",
+      "yuca frita"
+    ],
+    "keywords": [
+      "pernil_asado",
+      "ropa_vieja",
+      "arroz_con_pollo",
+      "sandwich",
+      "croquetas_frita",
+      "tostone",
+      "platanos_maduro",
+      "yuca_frita"
+    ]
+  },
+  "22MFF-00030": {
+    "raw": "Tacos: Tortas: Burritos",
+    "items": [
+      "taco",
+      "torta",
+      "burrito"
+    ],
+    "keywords": [
+      "taco",
+      "torta",
+      "burrito"
+    ]
+  },
+  "22MFF-00031": {
+    "raw": "Multiple Food Trucks & Food Types",
+    "items": [
+      "multiple food truck",
+      "food type"
+    ],
+    "keywords": [
+      "multiple_food_truck",
+      "food_type"
+    ]
+  },
+  "22MFF-00039": {
+    "raw": "Hot dogs: condiments: soft pretzels: soft drinks: coffee: cold beverages: pastries: bakery goods: cookies: ice cream: candy: soups: churros: chestnuts: nuts: fresh fruit: fruit juices: desserts: potato chips and popcorn.",
+    "items": [
+      "hot dog",
+      "condiment",
+      "soft pretzel",
+      "soft drink",
+      "coffee",
+      "cold beverage",
+      "pastry",
+      "bakery good",
+      "cooky",
+      "ice cream",
+      "candy",
+      "soup"
+    ],
+    "keywords": [
+      "hot_dog",
+      "condiment",
+      "soft_pretzel",
+      "soda",
+      "coffee",
+      "cold_beverage",
+      "dessert",
+      "bakery_good",
+      "cooky",
+      "ice_cream",
+      "soup"
+    ]
+  },
+  "22MFF-00040": {
+    "raw": "Hot dogs: condiments: soft pretzels: soft drinks: coffee: cold beverages: pastries: bakery goods: cookies: ice cream: candy: soups: churros: chestnuts: nuts: fresh fruit: fruit juices: desserts: potato chips and popcorn.",
+    "items": [
+      "hot dog",
+      "condiment",
+      "soft pretzel",
+      "soft drink",
+      "coffee",
+      "cold beverage",
+      "pastry",
+      "bakery good",
+      "cooky",
+      "ice cream",
+      "candy",
+      "soup"
+    ],
+    "keywords": [
+      "hot_dog",
+      "condiment",
+      "soft_pretzel",
+      "soda",
+      "coffee",
+      "cold_beverage",
+      "dessert",
+      "bakery_good",
+      "cooky",
+      "ice_cream",
+      "soup"
+    ]
+  },
+  "22MFF-00041": {
+    "raw": "Hot dogs: condiments: soft pretzels: soft drinks: coffee: cold beverages: pastries: bakery goods: cookies: ice cream: candy: soups: churros: chestnuts: nuts: fresh fruit: fruit juices: desserts: potato chips and popcorn.",
+    "items": [
+      "hot dog",
+      "condiment",
+      "soft pretzel",
+      "soft drink",
+      "coffee",
+      "cold beverage",
+      "pastry",
+      "bakery good",
+      "cooky",
+      "ice cream",
+      "candy",
+      "soup"
+    ],
+    "keywords": [
+      "hot_dog",
+      "condiment",
+      "soft_pretzel",
+      "soda",
+      "coffee",
+      "cold_beverage",
+      "dessert",
+      "bakery_good",
+      "cooky",
+      "ice_cream",
+      "soup"
+    ]
+  },
+  "22MFF-00042": {
+    "raw": "Hot dogs: condiments: soft pretzels: soft drinks: coffee: cold beverages: pastries: bakery goods: cookies: ice cream: candy: soups: churros: chestnuts: nuts: fresh fruit: fruit juices: desserts: potato chips and popcorn.",
+    "items": [
+      "hot dog",
+      "condiment",
+      "soft pretzel",
+      "soft drink",
+      "coffee",
+      "cold beverage",
+      "pastry",
+      "bakery good",
+      "cooky",
+      "ice cream",
+      "candy",
+      "soup"
+    ],
+    "keywords": [
+      "hot_dog",
+      "condiment",
+      "soft_pretzel",
+      "soda",
+      "coffee",
+      "cold_beverage",
+      "dessert",
+      "bakery_good",
+      "cooky",
+      "ice_cream",
+      "soup"
+    ]
+  },
+  "22MFF-00054": {
+    "raw": "Prepackaged Kettlecorn",
+    "items": [
+      "kettlecorn"
+    ],
+    "keywords": [
+      "kettlecorn"
+    ]
+  },
+  "22MFF-00055": {
+    "raw": "Prepackaged Kettlecorn",
+    "items": [
+      "kettlecorn"
+    ],
+    "keywords": [
+      "kettlecorn"
+    ]
+  },
+  "22MFF-00056": {
+    "raw": "Sandwich: Donuts: Coffee: Soft Serve Ice Cream: Drinks",
+    "items": [
+      "sandwich",
+      "donut",
+      "coffee",
+      "soft serve ice cream",
+      "drink"
+    ],
+    "keywords": [
+      "sandwich",
+      "dessert",
+      "coffee",
+      "ice_cream",
+      "drink"
+    ]
+  },
+  "22MFF-00059": {
+    "raw": "Cold Truck: Breakfast: Sandwiches: Salads: Pre-Packaged Snacks: Beverages",
+    "items": [
+      "cold truck",
+      "breakfast",
+      "sandwich",
+      "salad",
+      "snack",
+      "beverage"
+    ],
+    "keywords": [
+      "cold_truck",
+      "breakfast",
+      "sandwich",
+      "salad",
+      "snack",
+      "beverage"
+    ]
+  },
+  "22MFF-00071": {
+    "raw": "Bonito Poke Bowls & Various Drinks",
+    "items": [
+      "bonito poke bowl",
+      "drink"
+    ],
+    "keywords": [
+      "seafood_dish",
+      "drink"
+    ]
+  },
+  "23MFF-00004": {
+    "raw": "Lomo Saltado: Jalea: Ceviche: Calamar: Tilapia plate: chicken special. Soda: Water.",
+    "items": [
+      "lomo saltado",
+      "jalea",
+      "ceviche",
+      "calamar",
+      "tilapia plate",
+      "chicken special soda",
+      "water"
+    ],
+    "keywords": [
+      "lomo_saltado",
+      "jalea",
+      "seafood_dish",
+      "calamar",
+      "tilapia_plate",
+      "soda",
+      "water"
+    ]
+  },
+  "23MFF-00008": {
+    "raw": "Hot dogs and related toppings: non alcoholic beverages",
+    "items": [
+      "hot dog",
+      "related topping",
+      "non alcoholic beverage"
+    ],
+    "keywords": [
+      "hot_dog",
+      "related_topping",
+      "non_alcoholic_beverage"
+    ]
+  },
+  "23MFF-00015": {
+    "raw": "Cold truck: sandwiches: salads: beverages: chips: candy: cookies: coffee: tea: drinks",
+    "items": [
+      "cold truck",
+      "sandwich",
+      "salad",
+      "beverage",
+      "chip",
+      "candy",
+      "cooky",
+      "coffee",
+      "tea",
+      "drink"
+    ],
+    "keywords": [
+      "cold_truck",
+      "sandwich",
+      "salad",
+      "beverage",
+      "chips",
+      "dessert",
+      "cooky",
+      "coffee",
+      "tea",
+      "drink"
+    ]
+  },
+  "23MFF-00016": {
+    "raw": "Bonito Poke Bowls & Various Drinks",
+    "items": [
+      "bonito poke bowl",
+      "drink"
+    ],
+    "keywords": [
+      "seafood_dish",
+      "drink"
+    ]
+  },
+  "23MFF-00019": {
+    "raw": "Rotisserie chicken: pork loin: ribs: chicken salad wrap: potatoes: roasted seasonal vegetables kale salad: beverages.",
+    "items": [
+      "rotisserie chicken",
+      "pork loin",
+      "rib",
+      "chicken salad wrap",
+      "potatoe",
+      "roasted seasonal vegetables kale salad",
+      "beverage"
+    ],
+    "keywords": [
+      "rotisserie_chicken",
+      "pork_loin",
+      "bbq",
+      "sandwich",
+      "potatoe",
+      "salad",
+      "beverage"
+    ]
+  },
+  "23MFF-00020": {
+    "raw": "Rotisserie Chicken; Ribs; Pork Loin; Roasted Potatoes; Chicken Wrap; Kale Salad; Drinks",
+    "items": [
+      "rotisserie chicken",
+      "rib",
+      "pork loin",
+      "roasted potatoe",
+      "chicken wrap",
+      "kale salad",
+      "drink"
+    ],
+    "keywords": [
+      "rotisserie_chicken",
+      "bbq",
+      "pork_loin",
+      "roasted_potatoe",
+      "sandwich",
+      "salad",
+      "drink"
+    ]
+  },
+  "23MFF-00021": {
+    "raw": "Rotisserie Chicken: Ribs: Kickass Salad: Potatos w/fat dripping: chicken wrap.",
+    "items": [
+      "rotisserie chicken",
+      "rib",
+      "kickass salad",
+      "potatos w",
+      "fat dripping",
+      "chicken wrap"
+    ],
+    "keywords": [
+      "rotisserie_chicken",
+      "bbq",
+      "salad",
+      "potatos_w",
+      "fat_dripping",
+      "sandwich"
+    ]
+  },
+  "23MFF-00022": {
+    "raw": "Rotisserie Chicken: Ribs: Kickass Salad: Potatos w/fat dripping: chicken wrap.",
+    "items": [
+      "rotisserie chicken",
+      "rib",
+      "kickass salad",
+      "potatos w",
+      "fat dripping",
+      "chicken wrap"
+    ],
+    "keywords": [
+      "rotisserie_chicken",
+      "bbq",
+      "salad",
+      "potatos_w",
+      "fat_dripping",
+      "sandwich"
+    ]
+  },
+  "23MFF-00023": {
+    "raw": "Rotisserie Chicken; Ribs; Pork Loin; Roasted Potatoes; Chicken Wrap; Kale Salad; Drinks",
+    "items": [
+      "rotisserie chicken",
+      "rib",
+      "pork loin",
+      "roasted potatoe",
+      "chicken wrap",
+      "kale salad",
+      "drink"
+    ],
+    "keywords": [
+      "rotisserie_chicken",
+      "bbq",
+      "pork_loin",
+      "roasted_potatoe",
+      "sandwich",
+      "salad",
+      "drink"
+    ]
+  },
+  "23MFF-00030": {
+    "raw": "Noodles: Meat & Drinks",
+    "items": [
+      "noodle",
+      "meat",
+      "drink"
+    ],
+    "keywords": [
+      "asian_dish",
+      "meat",
+      "drink"
+    ]
+  },
+  "23MFF-00033": {
+    "raw": "Lobster rolls: crab rolls: lobster burritos: crab burritos: chicken burritos: fish burritos: chicken burritos: poke bowls: soups: chips & soda.",
+    "items": [
+      "lobster roll",
+      "crab roll",
+      "lobster burrito",
+      "crab burrito",
+      "chicken burrito",
+      "fish burrito",
+      "poke bowl",
+      "soup",
+      "chip",
+      "soda"
+    ],
+    "keywords": [
+      "seafood_dish",
+      "burrito",
+      "soup",
+      "chips",
+      "soda"
+    ]
+  },
+  "23MFF-00035": {
+    "raw": "Peruvian Food Served Hot",
+    "items": [
+      "peruvian food served hot"
+    ],
+    "keywords": [
+      "peruvian_food_served_hot"
+    ]
+  },
+  "23MFF-00036": {
+    "raw": "Peruvian Food Served Hot",
+    "items": [
+      "peruvian food served hot"
+    ],
+    "keywords": [
+      "peruvian_food_served_hot"
+    ]
+  },
+  "23MFF-00037": {
+    "raw": "Peruvian Food Served Hot",
+    "items": [
+      "peruvian food served hot"
+    ],
+    "keywords": [
+      "peruvian_food_served_hot"
+    ]
+  },
+  "23MFF-00048": {
+    "raw": "Acai Bowls: Smoothies: Juices",
+    "items": [
+      "acai bowl",
+      "smoothy",
+      "juice"
+    ],
+    "keywords": [
+      "acai_bowl",
+      "smoothy",
+      "juice"
+    ]
+  },
+  "23MFF-00049": {
+    "raw": "Acai Bowls: Smoothies: Juices",
+    "items": [
+      "acai bowl",
+      "smoothy",
+      "juice"
+    ],
+    "keywords": [
+      "acai_bowl",
+      "smoothy",
+      "juice"
+    ]
+  },
+  "23MFF-00050": {
+    "raw": "Acai Bowls: Poke Bowls: Smoothies: Juices",
+    "items": [
+      "acai bowl",
+      "poke bowl",
+      "smoothy",
+      "juice"
+    ],
+    "keywords": [
+      "acai_bowl",
+      "seafood_dish",
+      "smoothy",
+      "juice"
+    ]
+  },
+  "24MFF-00007": {
+    "raw": "Guatemalan and Mexican FoodMFF - Do not approve without review",
+    "items": [
+      "guatemalan",
+      "mexican foodmff - do not approve without review"
+    ],
+    "keywords": [
+      "guatemalan",
+      "burrito"
+    ]
+  },
+  "24MFF-00008": {
+    "raw": "",
+    "items": [],
+    "keywords": []
+  },
+  "24MFF-00010": {
+    "raw": "Tacos: Burritos: Tostadas: Flautas: Tostadas: Tortas: Pozole Menudo",
+    "items": [
+      "taco",
+      "burrito",
+      "tostada",
+      "flauta",
+      "torta",
+      "pozole menudo"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "tostada",
+      "flauta",
+      "torta",
+      "pozole_menudo"
+    ]
+  },
+  "24MFF-00011": {
+    "raw": "Mexican Food",
+    "items": [
+      "mexican food"
+    ],
+    "keywords": [
+      "burrito"
+    ]
+  },
+  "24MFF-00012": {
+    "raw": "MFF - Do not approve without review.",
+    "items": [
+      "mff - do not approve without review"
+    ],
+    "keywords": [
+      "mff_do_not_approve_without_review"
+    ]
+  },
+  "24MFF-00014": {
+    "raw": "",
+    "items": [],
+    "keywords": []
+  },
+  "24MFF-00015": {
+    "raw": "MFF - Do approve without review.",
+    "items": [
+      "mff - do approve without review"
+    ],
+    "keywords": [
+      "mff_do_approve_without_review"
+    ]
+  },
+  "24MFF-00016": {
+    "raw": "MFF - Do not approve without review.",
+    "items": [
+      "mff - do not approve without review"
+    ],
+    "keywords": [
+      "mff_do_not_approve_without_review"
+    ]
+  },
+  "24MFF-00018": {
+    "raw": "Breakfast Sandwiches (i.e. Bacon Egg and Cheese).",
+    "items": [
+      "breakfast sandwiches i e bacon egg",
+      "cheese"
+    ],
+    "keywords": [
+      "sandwich",
+      "cheese"
+    ]
+  },
+  "24MFF-00019": {
+    "raw": "Tacos and more",
+    "items": [
+      "taco"
+    ],
+    "keywords": [
+      "taco"
+    ]
+  },
+  "24MFF-00020": {
+    "raw": "Tacos",
+    "items": [
+      "taco"
+    ],
+    "keywords": [
+      "taco"
+    ]
+  },
+  "24MFF-00022": {
+    "raw": "",
+    "items": [],
+    "keywords": []
+  },
+  "24MFF-00023": {
+    "raw": "",
+    "items": [],
+    "keywords": []
+  },
+  "24MFF-00024": {
+    "raw": "MFF - Do not approve without review.",
+    "items": [
+      "mff - do not approve without review"
+    ],
+    "keywords": [
+      "mff_do_not_approve_without_review"
+    ]
+  },
+  "24MFF-00041": {
+    "raw": "MFF - Do not approve without review",
+    "items": [
+      "mff - do not approve without review"
+    ],
+    "keywords": [
+      "mff_do_not_approve_without_review"
+    ]
+  },
+  "24MFF-00045": {
+    "raw": "Cold Truck: Burrito: Corn Dog: Salads: Sandwiches: Quesadilla: Tacos: Fried Rice: Cow Mein: Chinese Rice: Noodle Plates: Soup: Bacon: Eggs: Ham: Avacado: Sausages: Beverages",
+    "items": [
+      "cold truck",
+      "burrito",
+      "corn dog",
+      "salad",
+      "sandwich",
+      "quesadilla",
+      "taco",
+      "fried rice",
+      "cow mein",
+      "chinese rice",
+      "noodle plate",
+      "soup"
+    ],
+    "keywords": [
+      "cold_truck",
+      "burrito",
+      "hot_dog",
+      "salad",
+      "sandwich",
+      "quesadilla",
+      "taco",
+      "asian_dish",
+      "cow_mein",
+      "chinese_rice",
+      "soup"
+    ]
+  },
+  "24MFF-00048": {
+    "raw": "Hot coffee: iced coffee: hot chocolate: tea: pastries",
+    "items": [
+      "hot coffee",
+      "iced coffee",
+      "hot chocolate",
+      "tea",
+      "pastry"
+    ],
+    "keywords": [
+      "coffee",
+      "soda",
+      "tea",
+      "dessert"
+    ]
+  },
+  "24MFF-00057": {
+    "raw": "MFF - Do not approve without review.",
+    "items": [
+      "mff - do not approve without review"
+    ],
+    "keywords": [
+      "mff_do_not_approve_without_review"
+    ]
+  },
+  "24MFF-00058": {
+    "raw": "Corndogs: fried burrito: rice placet: soda: water: sandwiches: soup: noodle plates",
+    "items": [
+      "corndog",
+      "fried burrito",
+      "rice placet",
+      "soda",
+      "water",
+      "sandwich",
+      "soup",
+      "noodle plate"
+    ],
+    "keywords": [
+      "hot_dog",
+      "burrito",
+      "rice_placet",
+      "soda",
+      "water",
+      "sandwich",
+      "soup",
+      "asian_dish"
+    ]
+  },
+  "25MFF-00005": {
+    "raw": "",
+    "items": [],
+    "keywords": []
+  },
+  "25MFF-00006": {
+    "raw": "Fruit Salads: Fruit Drinks: Can Soda: Water",
+    "items": [
+      "fruit salad",
+      "fruit drink",
+      "can soda",
+      "water"
+    ],
+    "keywords": [
+      "salad",
+      "fruit_drink",
+      "soda",
+      "water"
+    ]
+  },
+  "25MFF-00007": {
+    "raw": "Fruit Salads: Fruit Drinks: Can Soda: Water",
+    "items": [
+      "fruit salad",
+      "fruit drink",
+      "can soda",
+      "water"
+    ],
+    "keywords": [
+      "salad",
+      "fruit_drink",
+      "soda",
+      "water"
+    ]
+  },
+  "25MFF-00008": {
+    "raw": "MFF - Do not approve without review",
+    "items": [
+      "mff - do not approve without review"
+    ],
+    "keywords": [
+      "mff_do_not_approve_without_review"
+    ]
+  },
+  "25MFF-00014": {
+    "raw": "",
+    "items": [],
+    "keywords": []
+  },
+  "25MFF-00015": {
+    "raw": "Tacos: Burritos: Tortas: Quesadillas: Chips & Salsa & Various Beverages",
+    "items": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "chip",
+      "salsa",
+      "beverage"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "chips",
+      "salsa",
+      "beverage"
+    ]
+  },
+  "25MFF-00016": {
+    "raw": "everything except for hot dogs",
+    "items": [
+      "everything except for hot dog"
+    ],
+    "keywords": [
+      "hot_dog"
+    ]
+  },
+  "25MFF-00017": {
+    "raw": "everything except for hot dogs",
+    "items": [
+      "everything except for hot dog"
+    ],
+    "keywords": [
+      "hot_dog"
+    ]
+  },
+  "25MFF-00018": {
+    "raw": "everything except for hot dogs",
+    "items": [
+      "everything except for hot dog"
+    ],
+    "keywords": [
+      "hot_dog"
+    ]
+  },
+  "25MFF-00019": {
+    "raw": "Everything",
+    "items": [
+      "everything"
+    ],
+    "keywords": [
+      "everything"
+    ]
+  },
+  "25MFF-00020": {
+    "raw": "Multiple Food Trucks & Food Types",
+    "items": [
+      "multiple food truck",
+      "food type"
+    ],
+    "keywords": [
+      "multiple_food_truck",
+      "food_type"
+    ]
+  },
+  "25MFF-00021": {
+    "raw": "Latin Food: Tacos: Pupusas: Vegetables: Salad: Waters: Sodas",
+    "items": [
+      "latin food",
+      "taco",
+      "pupusa",
+      "vegetable",
+      "salad",
+      "water",
+      "soda"
+    ],
+    "keywords": [
+      "latin_food",
+      "taco",
+      "pupusa",
+      "vegetable",
+      "salad",
+      "water",
+      "soda"
+    ]
+  },
+  "25MFF-00022": {
+    "raw": "Tacos: burritos: quesadillas: tortas: nachos (refried beans: cheese sauce: salsa fresca): carnes (beef: chicken: marinated pork: fried pork): canned beans: rice: sodas: horchata drinks.",
+    "items": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "torta",
+      "nachos refried bean",
+      "cheese sauce",
+      "salsa fresca",
+      "carnes beef",
+      "chicken",
+      "marinated pork",
+      "fried pork",
+      "canned bean"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "torta",
+      "nachos",
+      "cheese_sauce",
+      "salsa_fresca",
+      "carnes_beef",
+      "chicken",
+      "marinated_pork",
+      "fries",
+      "canned_bean"
+    ]
+  },
+  "25MFF-00023": {
+    "raw": "Tacos: Burritos: Quesadillas: Various Drinks",
+    "items": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "drink"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "drink"
+    ]
+  },
+  "25MFF-00024": {
+    "raw": "Filipino Food",
+    "items": [
+      "filipino food"
+    ],
+    "keywords": [
+      "filipino_food"
+    ]
+  },
+  "25MFF-00025": {
+    "raw": "Cold Truck: Sandwiches: Noodles:  Pre-packaged Snacks: Candy: Desserts Various Beverages",
+    "items": [
+      "cold truck",
+      "sandwich",
+      "noodle",
+      "snack",
+      "candy",
+      "desserts beverage"
+    ],
+    "keywords": [
+      "cold_truck",
+      "sandwich",
+      "asian_dish",
+      "snack",
+      "dessert"
+    ]
+  },
+  "25MFF-00026": {
+    "raw": "Ice Cream & Waffle Cones",
+    "items": [
+      "ice cream",
+      "waffle cone"
+    ],
+    "keywords": [
+      "ice_cream",
+      "dessert"
+    ]
+  },
+  "25MFF-00027": {
+    "raw": "Ice Cream: Waffle Cones",
+    "items": [
+      "ice cream",
+      "waffle cone"
+    ],
+    "keywords": [
+      "ice_cream",
+      "dessert"
+    ]
+  },
+  "25MFF-00028": {
+    "raw": "Ice cream & Waffle cones",
+    "items": [
+      "ice cream",
+      "waffle cone"
+    ],
+    "keywords": [
+      "ice_cream",
+      "dessert"
+    ]
+  },
+  "25MFF-00029": {
+    "raw": "Ice Cream: Waffle Cones",
+    "items": [
+      "ice cream",
+      "waffle cone"
+    ],
+    "keywords": [
+      "ice_cream",
+      "dessert"
+    ]
+  },
+  "25MFF-00030": {
+    "raw": "Burritos: Tacos: Quesadillas: Tortas: Carne Asada Fries and various drinks",
+    "items": [
+      "burrito",
+      "taco",
+      "quesadilla",
+      "torta",
+      "carne asada fry",
+      "drink"
+    ],
+    "keywords": [
+      "burrito",
+      "taco",
+      "quesadilla",
+      "torta",
+      "carne_asada_fry",
+      "drink"
+    ]
+  },
+  "25MFF-00031": {
+    "raw": "Tacos: burritos: quesadillas: tortas: asada fries: nachos",
+    "items": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "torta",
+      "asada fry",
+      "nacho"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "torta",
+      "asada_fry",
+      "nachos"
+    ]
+  },
+  "25MFF-00032": {
+    "raw": "Burritos: Tacos: Tortas: Quesadillas & Various Drinks.",
+    "items": [
+      "burrito",
+      "taco",
+      "torta",
+      "quesadilla",
+      "drink"
+    ],
+    "keywords": [
+      "burrito",
+      "taco",
+      "torta",
+      "quesadilla",
+      "drink"
+    ]
+  },
+  "25MFF-00033": {
+    "raw": "Tacos: Burritos: Quesadillas: Nachos Alambres: Choice of Meat: Carne Asada: Carnitas: Pollo: Al Pastor Camarones",
+    "items": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "nachos alambre",
+      "choice meat",
+      "carne asada",
+      "carnita",
+      "pollo",
+      "al pastor camarone"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "nachos",
+      "choice_meat",
+      "carne_asada",
+      "carnita",
+      "pollo",
+      "al_pastor_camarone"
+    ]
+  },
+  "25MFF-00034": {
+    "raw": "Tacos: Burritos: Quesadillas: Tortas",
+    "items": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "torta"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "torta"
+    ]
+  },
+  "25MFF-00035": {
+    "raw": "Mexican; Burritos: Burrito Bowls: Salads",
+    "items": [
+      "mexican",
+      "burrito",
+      "burrito bowl",
+      "salad"
+    ],
+    "keywords": [
+      "burrito",
+      "salad"
+    ]
+  },
+  "25MFF-00036": {
+    "raw": "Tacos: burritos: quesadillas",
+    "items": [
+      "taco",
+      "burrito",
+      "quesadilla"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "quesadilla"
+    ]
+  },
+  "25MFF-00037": {
+    "raw": "Tacos: burritos: quesadillas",
+    "items": [
+      "taco",
+      "burrito",
+      "quesadilla"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "quesadilla"
+    ]
+  },
+  "25MFF-00038": {
+    "raw": "Soft pretzels: hot dogs: sausages: chips: popcorn: sodea: coffee: espresso: cappucino: pastries: ice cream: Italian sausages: shish-ka-bob: churros: juice: water: various drinks.",
+    "items": [
+      "soft pretzel",
+      "hot dog",
+      "sausage",
+      "chip",
+      "popcorn",
+      "sodea",
+      "coffee",
+      "espresso",
+      "cappucino",
+      "pastry",
+      "ice cream",
+      "italian sausage"
+    ],
+    "keywords": [
+      "soft_pretzel",
+      "hot_dog",
+      "chips",
+      "popcorn",
+      "sodea",
+      "coffee",
+      "cappucino",
+      "dessert",
+      "ice_cream"
+    ]
+  },
+  "25MFF-00039": {
+    "raw": "Soft pretzels: hot dogs: sausages: chips: popcorn: soda: espresso: cappucino: pastry: ica cream: ices: italian sausage: shish-ka-bob: churros: juice: water: various drinks",
+    "items": [
+      "soft pretzel",
+      "hot dog",
+      "sausage",
+      "chip",
+      "popcorn",
+      "soda",
+      "espresso",
+      "cappucino",
+      "pastry",
+      "ica cream",
+      "ice",
+      "italian sausage"
+    ],
+    "keywords": [
+      "soft_pretzel",
+      "hot_dog",
+      "chips",
+      "popcorn",
+      "soda",
+      "coffee",
+      "cappucino",
+      "dessert",
+      "ica_cream",
+      "ice"
+    ]
+  },
+  "25MFF-00040": {
+    "raw": "Soft Pretzels: hot dogs: sausage: chips: popcorn: soda: espresso: cappucino: pastries: ice cream: italian sausages: shish-ka-bob: churros: juice: water: various drinks",
+    "items": [
+      "soft pretzel",
+      "hot dog",
+      "sausage",
+      "chip",
+      "popcorn",
+      "soda",
+      "espresso",
+      "cappucino",
+      "pastry",
+      "ice cream",
+      "italian sausage",
+      "shish-ka-bob"
+    ],
+    "keywords": [
+      "soft_pretzel",
+      "hot_dog",
+      "chips",
+      "popcorn",
+      "soda",
+      "coffee",
+      "cappucino",
+      "dessert",
+      "ice_cream",
+      "shish_ka_bob"
+    ]
+  },
+  "25MFF-00041": {
+    "raw": "Tacos: Burritos: Tortas: Quesadillas: Sodas: Chips: Candy",
+    "items": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "soda",
+      "chip",
+      "candy"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "torta",
+      "quesadilla",
+      "soda",
+      "chips",
+      "dessert"
+    ]
+  },
+  "25MFF-00042": {
+    "raw": "Tacos: burritos: soda & juice",
+    "items": [
+      "taco",
+      "burrito",
+      "soda",
+      "juice"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "soda",
+      "juice"
+    ]
+  },
+  "25MFF-00043": {
+    "raw": "Tacos burritos quesadillas tortas pupusas flautas tamales",
+    "items": [
+      "tacos burritos quesadillas tortas pupusas flautas tamale"
+    ],
+    "keywords": [
+      "taco"
+    ]
+  },
+  "25MFF-00044": {
+    "raw": "Tacos: Burritos: Quesadillas: Tortas",
+    "items": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "torta"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "torta"
+    ]
+  },
+  "25MFF-00045": {
+    "raw": "Cold Truck: Pre-packaged sandwiches: snacks: fruit: various beverages",
+    "items": [
+      "cold truck",
+      "sandwich",
+      "snack",
+      "fruit",
+      "beverage"
+    ],
+    "keywords": [
+      "cold_truck",
+      "sandwich",
+      "snack",
+      "fruit",
+      "beverage"
+    ]
+  },
+  "25MFF-00046": {
+    "raw": "Do not approve - Under review",
+    "items": [
+      "do not approve - under review"
+    ],
+    "keywords": [
+      "do_not_approve_under_review"
+    ]
+  },
+  "25MFF-00047": {
+    "raw": "Do not approve - Under review.",
+    "items": [
+      "do not approve - under review"
+    ],
+    "keywords": [
+      "do_not_approve_under_review"
+    ]
+  },
+  "25MFF-00048": {
+    "raw": "kebabs: halal gyro: grilled halal meat: refreshments",
+    "items": [
+      "kebab",
+      "halal gyro",
+      "grilled halal meat",
+      "refreshment"
+    ],
+    "keywords": [
+      "middle_eastern",
+      "halal",
+      "refreshment"
+    ]
+  },
+  "25MFF-00049": {
+    "raw": "Halal Gyro over Rice: Halal Chicken over Rice: Halal Gyro: and Chicken Sandwich",
+    "items": [
+      "halal gyro over rice",
+      "halal chicken over rice",
+      "halal gyro",
+      "chicken sandwich"
+    ],
+    "keywords": [
+      "halal",
+      "sandwich"
+    ]
+  },
+  "25MFF-00050": {
+    "raw": "Gyros: Kebabs: soft drinks: and water",
+    "items": [
+      "gyro",
+      "kebab",
+      "soft drink",
+      "water"
+    ],
+    "keywords": [
+      "middle_eastern",
+      "soda",
+      "water"
+    ]
+  },
+  "26MFF-00001": {
+    "raw": "Coffee: Vegan Pastries: Vegan Hot Dogs: Vegan Tamales: Te: Vegan Shakes",
+    "items": [
+      "coffee",
+      "vegan pastry",
+      "vegan hot dog",
+      "vegan tamale",
+      "te",
+      "vegan shake"
+    ],
+    "keywords": [
+      "coffee",
+      "dessert",
+      "hot_dog",
+      "vegan_tamale",
+      "te",
+      "vegan_shake"
+    ]
+  },
+  "26MFF-00002": {
+    "raw": "Tacos: Burritos: Quesadillas: Tortas: Nachos: Hot Dogs:Soda: Water: Fruit Drinks",
+    "items": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "torta",
+      "nacho",
+      "hot dog",
+      "soda",
+      "water",
+      "fruit drink"
+    ],
+    "keywords": [
+      "taco",
+      "burrito",
+      "quesadilla",
+      "torta",
+      "nachos",
+      "hot_dog",
+      "soda",
+      "water",
+      "fruit_drink"
+    ]
+  },
+  "26MFF-00003": {
+    "raw": "Burgers: melts: hot dogs: burritos:sandwiches: fries: onion rings: drinks",
+    "items": [
+      "burger",
+      "melt",
+      "hot dog",
+      "burrito",
+      "sandwich",
+      "fry",
+      "onion ring",
+      "drink"
+    ],
+    "keywords": [
+      "burger",
+      "melt",
+      "hot_dog",
+      "burrito",
+      "sandwich",
+      "fry",
+      "onion_ring",
+      "drink"
+    ]
+  },
+  "26MFF-00004": {
+    "raw": "Senor Sisig: Filipino fusion food: tacos: burritos: nachos: rice plates. Various beverages.",
+    "items": [
+      "senor sisig",
+      "filipino fusion food",
+      "taco",
+      "burrito",
+      "nacho",
+      "rice plates beverage"
+    ],
+    "keywords": [
+      "senor_sisig",
+      "filipino_fusion_food",
+      "taco",
+      "burrito",
+      "nachos",
+      "rice_plates_beverage"
+    ]
+  },
+  "26MFF-00005": {
+    "raw": "Filipino fusion food: taco: burrito: nachos: rice plates",
+    "items": [
+      "filipino fusion food",
+      "taco",
+      "burrito",
+      "nacho",
+      "rice plate"
+    ],
+    "keywords": [
+      "filipino_fusion_food",
+      "taco",
+      "burrito",
+      "nachos",
+      "rice_plate"
+    ]
+  },
+  "26MFF-00006": {
+    "raw": "Various menu items & drinks",
+    "items": [
+      "menu item",
+      "drink"
+    ],
+    "keywords": [
+      "menu_item",
+      "drink"
+    ]
+  },
+  "26MFF-00007": {
+    "raw": "Senor Sisig: Filipino fusion food: tacos: burritos: nachos: rice plates. Various beverages.Chairman Bao: Vegetable and meat sandwiches filled with Asian-flavored meats and vegetables.",
+    "items": [
+      "senor sisig",
+      "filipino fusion food",
+      "taco",
+      "burrito",
+      "nacho",
+      "rice plates beverages chairman bao",
+      "vegetable",
+      "meat sandwiches filled",
+      "asian-flavored meat"
+    ],
+    "keywords": [
+      "senor_sisig",
+      "filipino_fusion_food",
+      "taco",
+      "burrito",
+      "nachos",
+      "tea",
+      "vegetable",
+      "sandwich",
+      "asian_flavored_meat"
+    ]
+  },
+  "26MFF-00008": {
+    "raw": "Filipino fusion food: tacos: burritos: nachos: rice plates. Various beverages.",
+    "items": [
+      "filipino fusion food",
+      "taco",
+      "burrito",
+      "nacho",
+      "rice plates beverage"
+    ],
+    "keywords": [
+      "filipino_fusion_food",
+      "taco",
+      "burrito",
+      "nachos",
+      "rice_plates_beverage"
+    ]
+  }
+}

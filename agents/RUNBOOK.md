@@ -41,6 +41,55 @@ So there are two ways to be "online", and we run the second today:
   Both paths emit the same §A envelope, so Person 1's integration doesn't change when you flip from
   the runtime to managed Agents.
 
+> **Map-first, single-turn flow (this build).** The runtime now exposes **direct** endpoints with
+> **no router turn**: `POST /spot_scout` (single-turn — `recommend_spots` pre-gathers every signal +
+> deterministic score and calls once), `POST /permit_copilot` (the Permits tab calls directly), and
+> `POST /menu_overlap` (Menu-RAG competition overlap over items + prices). This is the live path we
+> run today (managed Agents remain the production target once enabled). `GRADIENT_API_KEY` powers the
+> `why_one_line` / prose generation; with no key the endpoints still return valid §A via deterministic
+> templates. Start it with `GRADIENT_API_KEY=<key> node agents/runtime/server.mjs`.
+
+## 0c. Provision BOTH knowledge bases by script (permit KB + demo menu KB)
+
+KBs are provisioned by **script, not at runtime** (invariant §3). One command does both, idempotently:
+
+```bash
+DIGITALOCEAN_ACCESS_TOKEN=<rw token> node agents/scripts/provision-kbs.mjs
+#   -> permit KB  (agents/kb/*.md, including FORMS.md) attach to permit_copilot
+#   -> demo menu KB (menu_rag/menu.demo.json) returns a REAL menu_kb_id for recommend_spots
+node agents/scripts/provision-kbs.mjs --mock       # offline dry-run (local menu manifest)
+```
+
+The token is read from env only, never printed or written to a file. Re-running reuses existing
+KBs (matched by name) instead of duplicating them.
+
+`kb/FORMS.md` contains only verified agency-hosted PDFs keyed by frozen citation id. Verify every
+new URL returns a PDF before adding it. Use `SOURCE-NEEDED` when no current official PDF can be
+confirmed; deterministic runtime assembly converts that marker to `form_url: null` and applies the
+SF agency domain allowlist.
+
+### 0d. Menu KB ingest + query (Person 3's Menu RAG)
+
+```bash
+# Raw text -> guarded structured menu (every retained price must occur in the source)
+node agents/menu_rag/parse.mjs --text menu.txt --vendor-id el-sabor --vendor-type truck --mock
+node agents/menu_rag/parse.mjs --text menu.txt --vendor-id el-sabor --mock | node agents/menu_rag/ingest.mjs --mock
+node agents/menu_rag/parse_and_ingest.mjs --text menu.txt --vendor-id el-sabor --vendor-type truck --mock
+
+node agents/menu_rag/ingest.mjs --mock                        # offline: local KB manifest
+DIGITALOCEAN_ACCESS_TOKEN=... node agents/menu_rag/ingest.mjs  # live: real Gradient KB -> menu_kb_id
+node agents/menu_rag/query.mjs --demo                         # competition overlap (items+prices)
+```
+
+`parse.mjs` uses the Gradient-backed `instructions/menu_parser.md` extractor in live mode. Code then
+verifies each parsed numeric price occurs in the untrusted source text; an untraceable item is
+logged and dropped before `ingestMenu()` receives the menu.
+
+`recommend_spots` imports `competitionOverlap({ menu_kb_id, competitors })` from
+`menu_rag/query.mjs`. Menu ingestion into the KB may require a Spaces bucket on some account tiers;
+when it isn't available the script still creates the real KB (real `menu_kb_id`) and mirrors the
+menu locally so the overlap query stays live and item/price-based (see DECISIONS D19, §4b below).
+
 ## 1. Project
 
 Gradient console → create/join the **`rollaway`** project.
@@ -76,6 +125,20 @@ key** — early, even while the agents are still dumb. Person 1 puts the key in 
 4. Citation ids: the KB's `source` ids MUST equal `kb/SOURCES.md`. These are the same ids that
    appear in §A `citations[].source` and that **Person 3** returns as `cite` from the clearance
    check. Do not rename any id in the console.
+
+## 4b. Menu KB (per-user) — attach to the Menu-RAG query path
+
+The **demo menu KB** (`menu_rag/menu.demo.json` → `menu_kb_id`) is separate from the permit KB. On
+this account KB creation + inference work, but the standalone KB retrieval surface / Spaces-backed
+ingestion can vary by tier, so `menu_rag/query.mjs`:
+1. verifies the real KB exists (`GET /v2/gen-ai/knowledge_bases/{id}`),
+2. probes its semantic retrieval, and
+3. computes the item/price overlap — falling back to the deterministic core over the mirrored menu
+   when retrieval isn't exposed. Either way the overlap is item + price based, never a cuisine label.
+
+To fully ingest the menu into the KB for server-side retrieval, upload the rendered doc
+(`menu_rag/kb_docs/<vendor_id>-menu.md`) as a Spaces/file data source (needs Spaces keys), then
+re-run `ingest.mjs`. The `menu_kb_id` handed to `recommend_spots` does not change.
 
 ## 5. Function tools → register on `spot-scout` (schemas verbatim from §B)
 

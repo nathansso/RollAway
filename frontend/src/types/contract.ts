@@ -1,131 +1,179 @@
-/**
- * Rollaway interface contract — TypeScript mirror of docs/CONTRACTS.md (main branch).
- * contract_version: 1
- *
- * This file is the ONE source of truth for every shape the frontend renders.
- * Never invent fields; propose changes in docs/CONTRACTS.md first.
- */
+import type { CuisineId } from '../fixtures/sampleMenus'
 
 export interface LatLng {
   lat: number
   lng: number
 }
 
-/** Canonical vendor-type strings, shared across the whole product (§D). */
+export type AppPhase =
+  | 'profile'
+  | 'session'
+  | 'loading_recommendations'
+  | 'ready'
+  | 'loading_permits'
+
 export type VendorType =
   | 'truck'
   | 'trailer'
   | 'pushcart_cooking'
   | 'pushcart_nocook'
 
+export type DayCode = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+export type PriceTier = '$' | '$$' | '$$$'
 export type Verdict = 'good' | 'caution' | 'avoid'
 export type Saturation = 'low' | 'medium' | 'high'
-export type AgentName = 'spot_scout' | 'permit_copilot'
 
-/* ---------- §A request ---------- */
-
-export interface ChatContext {
-  vendor_type: VendorType | null
-  map_center: LatLng | null
-  pinned_point: LatLng | null
+export interface MenuItem {
+  name: string
+  price: number | null
 }
 
-export interface ChatRequest {
-  session_id: string
-  message: string
-  context: ChatContext
+export interface MenuProfile {
+  raw: string
+  items: MenuItem[]
+  price_tier: PriceTier
 }
 
-/* ---------- §A response ---------- */
+export interface OperatingWindow {
+  day: DayCode
+  time_from: string
+  time_to: string
+}
 
-export interface Citation {
+export interface AutofillProfile {
+  owner_name: string
+  business_name: string
+  email: string
+  phone: string
+  address: string
+  city: string
+  state: string
+  postal_code: string
+}
+
+export interface VendorProfile {
+  schema_version: 1
+  vendor_type: VendorType
+  cuisine: CuisineId
+  menu: MenuProfile
+  home_base: { label: string; point: LatLng | null }
+  max_travel: { value: number; unit: 'minutes' | 'miles' }
+  operating_windows: OperatingWindow[]
+  permit_status: 'not_started' | 'researching' | 'in_progress' | 'permitted'
+  autofill_profile: AutofillProfile
+}
+
+export type WhenPreset =
+  | 'today_lunch'
+  | 'tomorrow_dinner'
+  | 'saturday'
+  | 'custom'
+
+export interface SessionWhen {
+  preset: WhenPreset
+  date: string
+  day: DayCode
+  time_from: string
+  time_to: string
   label: string
-  source: string
-  quote: string
 }
 
-export interface ConstraintCheck {
+export interface RecommendSpotsRequest {
+  user_profile: VendorProfile
+  location: LatLng
+  when: SessionWhen
+}
+
+export interface LegalitySignal {
+  pass: boolean
+  status: 'pass' | 'fail' | 'conditional'
+  rule: string
+  detail: string
+  cite: string
+}
+
+export interface AreaPermitCheck {
   rule: string
   pass: boolean
-  detail: string
+  required_ft: number | null
+  actual_ft: number | null
+  cite: string | null
 }
 
-export interface DemandSignals {
-  /** 0–1. A PROXY built from bike-share activity, not a pedestrian count. */
-  foot_traffic_score: number
-  restaurant_saturation: Saturation
+export interface AreaInsights {
+  parking: {
+    point: LatLng
+    suitability: 'recommended' | 'verify' | 'avoid'
+    permit_checks: AreaPermitCheck[]
+    note: string
+  }
+  local_cuisine: {
+    nearby: { cuisine: string; count: number }[]
+    menu_overlap_count: number
+    opportunity: 'low_direct_overlap' | 'some_direct_overlap' | 'high_direct_overlap'
+  }
+  navigation: {
+    destination: LatLng
+    mode: 'driving' | 'walking' | 'cycling'
+    minutes: number | null
+    estimated: boolean
+  }
 }
 
-export interface NearbyVendor {
-  name: string
-  cuisine: string
-  scheduled_here: boolean
+export interface EventOpportunity {
+  event_name: string
+  venue: string
+  start: string
+  expected_attendance: number
+  event_url: string | null
+  promoter_name: string | null
 }
 
-export interface SpotBreakdown {
-  constraints: ConstraintCheck[]
-  demand: DemandSignals
-  nearby_vendors: NearbyVendor[]
+export interface OutreachDraft {
+  subject: string
+  body: string
 }
 
-export interface AddSpotAction {
-  type: 'add_spot'
+export interface RecommendationSpot {
   id: string
+  rank: number
   point: LatLng
-  verdict: Verdict
+  block_label: string
   score: number
-  reasons: string[]
-  breakdown: SpotBreakdown
+  verdict: Verdict
+  why_one_line: string
+  foot_traffic: {
+    level: 'low' | 'moderate' | 'high'
+    score: number
+    basis: 'bay_wheels' | 'estimated'
+    time_context: string
+    detail: string
+  }
+  competition: {
+    overlap_count: number
+    saturation: Saturation
+    menu_matches: string[]
+    price_tier: PriceTier
+    detail: string
+  }
+  legality: LegalitySignal
+  closure: {
+    active: boolean
+    detail: string
+    source: string | null
+  }
+  travel_minutes: number
+  travel_distance_miles: number
+  area_insights?: AreaInsights
+  event_opportunity?: EventOpportunity | null
+  outreach_draft?: OutreachDraft | null
 }
 
-export type MapAction = AddSpotAction
-
-/* ---------- §D permit checklist ---------- */
-
-export interface ChecklistStep {
-  order: number
-  agency: string
-  title: string
-  detail: string
-  deadline_days: number | null
-  deadline_label: string | null
-  cite: string
-  status: 'todo' | 'done'
+export interface RecommendSpotsResponse {
+  contract_version: 2
+  generated_for: SessionWhen
+  recommendations: RecommendationSpot[]
 }
-
-export interface Checklist {
-  vendor_type: VendorType
-  steps: ChecklistStep[]
-}
-
-/* ---------- §A envelope ---------- */
-
-export interface ChatResponse {
-  agent: AgentName
-  reply_markdown: string
-  citations: Citation[]
-  map_actions: MapAction[] | null
-  checklist: Checklist | null
-}
-
-/* ---------- common error envelope ---------- */
-
-export type ApiErrorCode = 'UPSTREAM_TIMEOUT' | 'BAD_INPUT' | 'RATE_LIMIT'
-
-export interface ApiError {
-  error: { code: ApiErrorCode; message: string }
-}
-
-export function isApiError(x: unknown): x is ApiError {
-  return (
-    typeof x === 'object' &&
-    x !== null &&
-    'error' in x &&
-    typeof (x as ApiError).error?.code === 'string'
-  )
-}
-
-/* ---------- vendor GeoJSON (seed map layer, from get_vendors) ---------- */
 
 export type VendorStatus =
   | 'APPROVED'
@@ -137,14 +185,10 @@ export type VendorStatus =
 export interface VendorProperties {
   permit_id: string
   name: string
-  /** Facility type from the permit data, e.g. "Truck" | "Push Cart". */
   type: string
-  /** Enriched cuisine from the shared §C enum. */
   cuisine: string
   status: VendorStatus
-  /** True when the permit schedule places the vendor at this point (§B.1). */
   scheduled_here?: boolean
-  /** Human-readable schedule window, e.g. "Mo-Fr 8am-3pm" (§B.1). */
   schedule_window?: string
 }
 
@@ -157,4 +201,91 @@ export interface VendorFeature {
 export interface VendorCollection {
   type: 'FeatureCollection'
   features: VendorFeature[]
+}
+
+export interface ClosureRecord {
+  id: string
+  reason: string
+  source: 'sfmta_event' | 'dpw_permit'
+  geometry:
+    | { type: 'LineString'; coordinates: [number, number][] }
+    | { type: 'Polygon'; coordinates: [number, number][][] }
+  active_from: string
+  active_to: string
+}
+
+export interface ClosuresResponse {
+  closures: ClosureRecord[]
+  count: number
+}
+
+export type PermitAgency = 'Public Works' | 'Public Health' | 'Fire' | 'Treasurer'
+export type EasyApplyFieldKey =
+  | keyof AutofillProfile
+  | 'vendor_type'
+  | 'menu'
+  | 'location'
+  | 'proposed_start_date'
+  | 'signature'
+
+export interface PermitChecklistItem {
+  id: string
+  order: number
+  title: string
+  detail: string
+  deadline_days: number | null
+  deadline_label: string | null
+  cite: string
+  form_url?: string | null
+  easy_apply: boolean
+  fields: {
+    key: EasyApplyFieldKey
+    label: string
+    requirement: 'auto_filled' | 'missing' | 'must_verify'
+  }[]
+}
+
+export interface PermitSection {
+  agency: PermitAgency
+  items: PermitChecklistItem[]
+}
+
+export interface PermitChecklist {
+  vendor_type: VendorType
+  generated_at: string
+  sections: PermitSection[]
+}
+
+export interface LegacyConstraintCheck {
+  rule: string
+  pass: boolean
+  detail: string
+}
+
+export interface LegacyAddSpotAction {
+  type: 'add_spot'
+  id: string
+  point: LatLng
+  verdict: Verdict
+  score: number
+  reasons: string[]
+  event_opportunity?: EventOpportunity | null
+  outreach_draft?: OutreachDraft | null
+  breakdown: {
+    constraints: LegacyConstraintCheck[]
+    demand: { foot_traffic_score: number; restaurant_saturation: Saturation }
+    nearby_vendors: { name: string; cuisine: string; scheduled_here: boolean }[]
+  }
+}
+
+export interface LegacyChatResponse {
+  agent: 'spot_scout' | 'permit_copilot'
+  reply_markdown: string
+  citations: { label: string; source: string; quote: string }[]
+  map_actions: LegacyAddSpotAction[] | null
+  checklist: unknown
+}
+
+export interface ApiError {
+  error: { code: string; message: string }
 }

@@ -1,0 +1,111 @@
+{
+  "menu_kb_id": "menu-kb-demo-el-sabor-local",
+  "kb_name": "rollaway-menu-demo-el-sabor",
+  "provider": "local",
+  "reused": false,
+  "created_at": "2026-07-11T10:53:44.786Z",
+  "vendor": {
+    "vendor_id": "demo-el-sabor",
+    "vendor_name": "El Sabor Taqueria (truck)",
+    "vendor_type": "truck"
+  },
+  "menu": {
+    "vendor_id": "demo-el-sabor",
+    "vendor_name": "El Sabor Taqueria (truck)",
+    "vendor_type": "truck",
+    "cuisine_hint": "tacos",
+    "_note": "The DEMO vendor's REAL menu — items + prices. cuisine_hint is metadata only; the competition-overlap query NEVER reasons over it, only over items + price points. This file is ingested into a Gradient KB by ingest.mjs (returns menu_kb_id).",
+    "currency": "USD",
+    "items": [
+      {
+        "name": "Carne Asada Taco",
+        "keywords": [
+          "taco",
+          "carne asada",
+          "beef"
+        ],
+        "price": 3.5
+      },
+      {
+        "name": "Al Pastor Taco",
+        "keywords": [
+          "taco",
+          "al pastor",
+          "pork"
+        ],
+        "price": 3.5
+      },
+      {
+        "name": "Carnitas Taco",
+        "keywords": [
+          "taco",
+          "carnitas",
+          "pork"
+        ],
+        "price": 3.5
+      },
+      {
+        "name": "Carne Asada Burrito",
+        "keywords": [
+          "burrito",
+          "carne asada",
+          "beef"
+        ],
+        "price": 9.5
+      },
+      {
+        "name": "Veggie Burrito",
+        "keywords": [
+          "burrito",
+          "veggie",
+          "vegetarian"
+        ],
+        "price": 8.5
+      },
+      {
+        "name": "Chicken Quesadilla",
+        "keywords": [
+          "quesadilla",
+          "chicken"
+        ],
+        "price": 8
+      },
+      {
+        "name": "Elote (Street Corn)",
+        "keywords": [
+          "elote",
+          "corn",
+          "street corn"
+        ],
+        "price": 4
+      },
+      {
+        "name": "Chips & Guacamole",
+        "keywords": [
+          "chips",
+          "guacamole"
+        ],
+        "price": 5
+      },
+      {
+        "name": "Horchata",
+        "keywords": [
+          "horchata",
+          "juice",
+          "drink"
+        ],
+        "price": 3
+      },
+      {
+        "name": "Jarritos",
+        "keywords": [
+          "jarritos",
+          "soda",
+          "drink"
+        ],
+        "price": 2.5
+      }
+    ]
+  },
+  "doc_preview": "# Menu — El Sabor Taqueria (truck)\nvendor_id: demo-el-sabor\nvendor_type: truck\ncurrency: USD\n\n## Items (name — keywords — price)\n- Carne Asada Taco — [taco, carne asada, beef] — $3.50\n- Al Pastor Taco — [taco, al pastor, pork] — $3.50\n- Carnitas Taco — [taco, carnitas, pork] — $3.50\n- Carne Asada Burrito — [burrito, carne asada, beef] — $9.50\n- Veggie Burrito — [burrito, veggie, vegetarian] — $8.5"
+}

@@ -91,7 +91,7 @@
         },
         "required": ["lat", "lng"]
       },
-      "output_shape": { "events": [{ "name": "", "venue": "", "point": { "lat": 0, "lng": 0 }, "start": "", "expected_attendance": 0, "source": "ticketmaster" }], "count": 0 }
+      "output_shape": { "events": [{ "name": "", "venue": "", "point": { "lat": 0, "lng": 0 }, "start": "", "expected_attendance": 0, "event_url": "string|null", "promoter_name": "string|null", "source": "ticketmaster" }], "count": 0 }
     },
     {
       "name": "check_clearance",

@@ -24,8 +24,8 @@ export default defineConfig({
         name: 'Rollaway',
         short_name: 'Rollaway',
         description:
-          'AI copilot for SF mobile food vendors — find the best spot, get your permits in order.',
-        theme_color: '#EA580C',
+          'Map-first spot recommendations and permit guidance for San Francisco mobile food vendors.',
+        theme_color: '#C2410C',
         background_color: '#FFF7ED',
         display: 'standalone',
         orientation: 'portrait',
@@ -55,15 +55,6 @@ export default defineConfig({
             options: {
               cacheName: 'mapbox-cache',
               expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 7 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'font-cache',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 30 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },

@@ -30,10 +30,19 @@ agents/
     ttx-cert.md             # Treasurer business registration (all vendors)
     ca-dmv.md               # DMV registration (trucks/trailers only)
     truck.md trailer.md pushcart_cooking.md pushcart_nocook.md   # authored §D checklists (md + json)
-  enrichment/               # cuisine classifier (serverless inference, prompt-cached)
-    classify.mjs            # live (GRADIENT_API_KEY) or deterministic --mock
+  enrichment/               # serverless-inference enrichment (prompt-cached)
+    classify.mjs            # cuisine classifier: live (GRADIENT_API_KEY) or deterministic --mock
+    normalize_fooditems.mjs # NEW: fooditems free text -> comparable {items,keywords} (prompt-cached, raw kept)
     cuisine_lookup.json     # { permit_id: cuisine } -> Person 3's get_vendors joins on it
-    permits.json            # pulled SF dataset (rqzj-sfat)
+    fooditems_normalized.json # { permit_id: {raw, items, keywords} } -> Menu RAG matches competitors
+    permits.json            # pulled SF dataset (rqzj-sfat) — gitignored, re-fetchable
+    README.md
+  menu_rag/                 # NEW: per-user Menu RAG — competition overlap over items + prices
+    menu.demo.json          # demo vendor's REAL menu (items + prices)
+    ingest.mjs              # ingest a menu -> real Gradient KB -> menu_kb_id (+ local manifest)
+    query.mjs               # competitionOverlap({menu_kb_id, competitors}) -> item/price overlap (recommend_spots calls this)
+    overlap.mjs             # pure deterministic item+price overlap core
+    gradient_kb.mjs         # DO Gradient Knowledge-Base REST client
     README.md
   fixtures/                 # local tool server returning §B examples verbatim (stub-first)
     serve.js payloads.mjs tool-schemas.json package.json README.md
@@ -44,8 +53,18 @@ agents/
     README.md
   scripts/
     provision.sh            # best-effort doctl provisioning (guarded) + console pointers
+    provision-genai.mjs     # managed-agent provisioner (blocked 403 until Agents enabled)
+    provision-kbs.mjs       # NEW: provision BOTH KBs (permit KB + demo menu KB) on the real account
     verify.sh               # runs all of §5 in one shot (fixtures + enrichment + evals + greps)
 ```
+
+## Map-first, single-turn, no-router flow (this build)
+
+Spot Scout and Permit Copilot are invoked **directly** — there is **no router turn** on the demo
+path. `runtime/server.mjs` exposes `POST /spot_scout` (single-turn: `recommend_spots` pre-gathers
+all signals + deterministic scores and calls once), `POST /permit_copilot` (the Permits tab calls
+directly), and `POST /menu_overlap` (Menu-RAG competition overlap). All three emit the identical §A
+envelope. The legacy `POST /chat` (deterministic keyword route) is kept only for back-compat.
 
 ## Fast path
 

@@ -63,3 +63,5 @@ cd functions/packages/rollaway/get_restaurants && npm test
 node functions/scripts/invoke_local.js get_restaurants '{"lat":37.78,"lng":-122.40,"radius_m":300}'
 node functions/scripts/invoke_local.js get_restaurants '{"lat":37.78,"lng":-122.40,"radius_m":300,"day":"fri","time_from":"18:00","time_to":"22:00"}'
 ```
+
+> **Demo reliability:** honors `DEMO_DATA_MODE` (reads a frozen snapshot from `demo_data/`); in live mode a transient upstream miss fail-fast-degrades to that snapshot in ~2.5s (`shared.js` `withData`/`demoFetchOpts`).

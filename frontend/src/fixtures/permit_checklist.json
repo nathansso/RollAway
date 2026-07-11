@@ -1,0 +1,134 @@
+{
+  "vendor_type": "truck",
+  "generated_at": "2026-07-11T10:00:00-07:00",
+  "sections": [
+    {
+      "agency": "Public Works",
+      "items": [
+        {
+          "id": "pw-location-application",
+          "order": 1,
+          "title": "Prepare the MFF location application",
+          "detail": "Include a site plan, operating schedule, health permit proof, commissary letter, and restroom agreement.",
+          "deadline_days": 90,
+          "deadline_label": "90-day tentative approval window",
+          "cite": "sfpw-mff",
+          "form_url": "https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf",
+          "easy_apply": true,
+          "fields": [
+            { "key": "owner_name", "label": "Owner name", "requirement": "auto_filled" },
+            { "key": "business_name", "label": "Business name", "requirement": "auto_filled" },
+            { "key": "vendor_type", "label": "Facility type", "requirement": "auto_filled" },
+            { "key": "menu", "label": "Menu", "requirement": "auto_filled" },
+            { "key": "location", "label": "Proposed location", "requirement": "must_verify" },
+            { "key": "proposed_start_date", "label": "Proposed start date", "requirement": "missing" },
+            { "key": "signature", "label": "Applicant signature", "requirement": "must_verify" }
+          ]
+        },
+        {
+          "id": "pw-public-notice",
+          "order": 2,
+          "title": "Complete public notice",
+          "detail": "Public Works posts the proposed location so neighbors can review and object.",
+          "deadline_days": 30,
+          "deadline_label": "30-day notice",
+          "cite": "dpw-182101",
+          "form_url": null,
+          "easy_apply": false,
+          "fields": []
+        },
+        {
+          "id": "pw-appeal",
+          "order": 3,
+          "title": "Track the decision and appeal period",
+          "detail": "After the decision, either side may appeal before the permit becomes final.",
+          "deadline_days": 15,
+          "deadline_label": "15-day appeal",
+          "cite": "dpw-182101",
+          "form_url": null,
+          "easy_apply": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "agency": "Public Health",
+      "items": [
+        {
+          "id": "ph-health-permit",
+          "order": 4,
+          "title": "Apply for the Mobile Food Facility health permit",
+          "detail": "Submit facility plans, food-safety documents, menu, and commissary agreement.",
+          "deadline_days": null,
+          "deadline_label": null,
+          "cite": "sfdph-mff",
+          "form_url": "https://www.sf.gov/sites/default/files/2024-06/MFF%20Unified%20Application.pdf",
+          "easy_apply": true,
+          "fields": [
+            { "key": "owner_name", "label": "Owner name", "requirement": "auto_filled" },
+            { "key": "business_name", "label": "Business name", "requirement": "auto_filled" },
+            { "key": "email", "label": "Email", "requirement": "auto_filled" },
+            { "key": "phone", "label": "Phone", "requirement": "auto_filled" },
+            { "key": "menu", "label": "Menu", "requirement": "must_verify" }
+          ]
+        },
+        {
+          "id": "ph-food-safety",
+          "order": 5,
+          "title": "Collect food-safety certificates",
+          "detail": "Keep the manager certificate and each worker's food-handler card with your records.",
+          "deadline_days": null,
+          "deadline_label": null,
+          "cite": "sfdph-mff",
+          "form_url": "https://www.sf.gov/sites/default/files/2024-06/MFF%20Unified%20Application.pdf",
+          "easy_apply": false,
+          "fields": []
+        }
+      ]
+    },
+    {
+      "agency": "Fire",
+      "items": [
+        {
+          "id": "fire-operational-permit",
+          "order": 6,
+          "title": "Verify fire permit and inspection needs",
+          "detail": "Cooking, propane, generators, or open flame can require an operational permit and inspection.",
+          "deadline_days": null,
+          "deadline_label": null,
+          "cite": "sffd-permit",
+          "form_url": "https://sf-fire.org/media/3681/download?inline",
+          "easy_apply": true,
+          "fields": [
+            { "key": "business_name", "label": "Business name", "requirement": "auto_filled" },
+            { "key": "vendor_type", "label": "Facility type", "requirement": "auto_filled" },
+            { "key": "location", "label": "Inspection location", "requirement": "must_verify" }
+          ]
+        }
+      ]
+    },
+    {
+      "agency": "Treasurer",
+      "items": [
+        {
+          "id": "ttx-business-registration",
+          "order": 7,
+          "title": "Register the business in San Francisco",
+          "detail": "Obtain a Business Account Number and keep the registration current.",
+          "deadline_days": null,
+          "deadline_label": null,
+          "cite": "ttx-cert",
+          "form_url": null,
+          "easy_apply": true,
+          "fields": [
+            { "key": "owner_name", "label": "Owner name", "requirement": "auto_filled" },
+            { "key": "business_name", "label": "Business name", "requirement": "auto_filled" },
+            { "key": "address", "label": "Mailing address", "requirement": "auto_filled" },
+            { "key": "email", "label": "Email", "requirement": "auto_filled" },
+            { "key": "signature", "label": "Applicant certification", "requirement": "must_verify" }
+          ]
+        }
+      ]
+    }
+  ]
+}

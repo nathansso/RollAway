@@ -46,3 +46,5 @@ See `functions/DEPLOY.md`. After deploy:
 doctl serverless functions invoke rollaway/get_vendors -p lat:37.78 -p lng:-122.40 -p radius_m:500 -p day:fri -p time:12:00
 doctl serverless functions get rollaway/get_vendors --url
 ```
+
+> **Demo reliability:** honors `DEMO_DATA_MODE` (reads a frozen snapshot from `demo_data/`); in live mode a transient upstream miss fail-fast-degrades to that snapshot in ~2.5s (`shared.js` `withData`/`demoFetchOpts`).

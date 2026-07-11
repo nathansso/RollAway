@@ -1,0 +1,310 @@
+{
+  "contract_version": 2,
+  "generated_for": {
+    "preset": "custom",
+    "date": "2026-07-10",
+    "day": "fri",
+    "time_from": "11:00",
+    "time_to": "14:00",
+    "label": "Friday lunch"
+  },
+  "recommendations": [
+    {
+      "id": "spot-2nd-howard",
+      "rank": 1,
+      "point": {
+        "lat": 37.7869,
+        "lng": -122.3982
+      },
+      "block_label": "2nd & Howard",
+      "score": 0.86,
+      "verdict": "good",
+      "why_one_line": "Strong office-lunch signal with low direct menu overlap.",
+      "foot_traffic": {
+        "level": "high",
+        "score": 0.82,
+        "basis": "bay_wheels",
+        "time_context": "Friday lunch",
+        "detail": "High activity relative to nearby SoMa stations."
+      },
+      "competition": {
+        "overlap_count": 1,
+        "saturation": "low",
+        "menu_matches": [
+          "tacos"
+        ],
+        "price_tier": "$",
+        "detail": "One nearby vendor overlaps your menu and value price point."
+      },
+      "legality": {
+        "pass": true,
+        "status": "pass",
+        "rule": "75 ft restaurant, 7 ft hydrant, and 500 ft school clearances",
+        "detail": "All measured placement checks pass at this point.",
+        "cite": "dpw-182101"
+      },
+      "closure": {
+        "active": false,
+        "detail": "No active closure intersects this block.",
+        "source": null
+      },
+      "travel_minutes": 8,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.7869,
+            "lng": -122.3982
+          },
+          "suitability": "recommended",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "Non-hydrant placement checks pass at this point. Verify posted curb and parking signs before stopping or operating."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "tacos",
+              "count": 4
+            },
+            {
+              "cuisine": "coffee",
+              "count": 3
+            },
+            {
+              "cuisine": "sandwiches",
+              "count": 2
+            }
+          ],
+          "menu_overlap_count": 1,
+          "opportunity": "some_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.7869,
+            "lng": -122.3982
+          },
+          "mode": "driving",
+          "minutes": 8,
+          "estimated": true
+        }
+      },
+      "event_opportunity": {
+        "event_name": "SF Giants vs Dodgers",
+        "venue": "Oracle Park",
+        "start": "2026-07-10T18:45:00",
+        "expected_attendance": 40000,
+        "event_url": "https://www.ticketmaster.com/event/123",
+        "promoter_name": null
+      },
+      "outreach_draft": {
+        "subject": "Food vendor inquiry for SF Giants vs Dodgers",
+        "body": "Hello event team,\n\nWe'd like to ask about bringing our food truck to SF Giants vs Dodgers at Oracle Park. Please share vendor requirements, availability, fees, and next steps.\n\nThank you,"
+      }
+    },
+    {
+      "id": "spot-folsom-1st",
+      "rank": 2,
+      "point": {
+        "lat": 37.7879,
+        "lng": -122.3953
+      },
+      "block_label": "Folsom & 1st",
+      "score": 0.68,
+      "verdict": "caution",
+      "why_one_line": "Low menu overlap, but activity is more moderate.",
+      "foot_traffic": {
+        "level": "moderate",
+        "score": 0.58,
+        "basis": "bay_wheels",
+        "time_context": "Friday lunch",
+        "detail": "Steady activity, below the strongest office blocks."
+      },
+      "competition": {
+        "overlap_count": 0,
+        "saturation": "medium",
+        "menu_matches": [],
+        "price_tier": "$",
+        "detail": "No direct menu match; nearby restaurant supply is moderate."
+      },
+      "legality": {
+        "pass": true,
+        "status": "conditional",
+        "rule": "Keep the loading zone and marked curb clear",
+        "detail": "Distance checks pass; verify curb signage before setup.",
+        "cite": "dpw-182101"
+      },
+      "closure": {
+        "active": false,
+        "detail": "No active closure intersects this block.",
+        "source": null
+      },
+      "travel_minutes": 11,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.7879,
+            "lng": -122.3953
+          },
+          "suitability": "verify",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "Non-hydrant placement checks pass at this point. Verify posted curb and parking signs before stopping or operating."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "tacos",
+              "count": 4
+            },
+            {
+              "cuisine": "coffee",
+              "count": 3
+            },
+            {
+              "cuisine": "sandwiches",
+              "count": 2
+            }
+          ],
+          "menu_overlap_count": 0,
+          "opportunity": "low_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.7879,
+            "lng": -122.3953
+          },
+          "mode": "driving",
+          "minutes": 11,
+          "estimated": true
+        }
+      },
+      "event_opportunity": null,
+      "outreach_draft": null
+    },
+    {
+      "id": "spot-mission-5th",
+      "rank": 3,
+      "point": {
+        "lat": 37.782,
+        "lng": -122.4058
+      },
+      "block_label": "Mission & 5th",
+      "score": 0.31,
+      "verdict": "avoid",
+      "why_one_line": "A street closure and two direct competitors weaken this setup.",
+      "foot_traffic": {
+        "level": "high",
+        "score": 0.74,
+        "basis": "bay_wheels",
+        "time_context": "Friday lunch",
+        "detail": "Strong surrounding activity, but access is disrupted."
+      },
+      "competition": {
+        "overlap_count": 2,
+        "saturation": "high",
+        "menu_matches": [
+          "tacos",
+          "burritos"
+        ],
+        "price_tier": "$",
+        "detail": "Two scheduled vendors overlap your menu and price point."
+      },
+      "legality": {
+        "pass": false,
+        "status": "fail",
+        "rule": "Do not operate inside an active street closure",
+        "detail": "The Friday street-fair closure covers the proposed point.",
+        "cite": "dpw-182101"
+      },
+      "closure": {
+        "active": true,
+        "detail": "5th Street fair closure, Friday 10:00\u00e2\u20ac\u201c18:00.",
+        "source": "sfmta_event"
+      },
+      "travel_minutes": 7,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.782,
+            "lng": -122.4058
+          },
+          "suitability": "avoid",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "An active closure or placement restriction affects this target."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "tacos",
+              "count": 4
+            },
+            {
+              "cuisine": "coffee",
+              "count": 3
+            },
+            {
+              "cuisine": "sandwiches",
+              "count": 2
+            }
+          ],
+          "menu_overlap_count": 2,
+          "opportunity": "some_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.782,
+            "lng": -122.4058
+          },
+          "mode": "driving",
+          "minutes": 7,
+          "estimated": true
+        }
+      },
+      "event_opportunity": null,
+      "outreach_draft": null
+    }
+  ]
+}

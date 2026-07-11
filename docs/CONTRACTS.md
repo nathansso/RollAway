@@ -45,6 +45,12 @@ Response (streamed or whole):
       "verdict": "good | caution | avoid",
       "score": 0.82,
       "reasons": ["High lunch foot traffic", "No taco trucks scheduled Fri"],
+      "event_opportunity": {
+        "event_name": "SF Giants vs Dodgers", "venue": "Oracle Park",
+        "start": "2026-07-11T18:45:00", "expected_attendance": 40000,
+        "event_url": "https://www.ticketmaster.com/event/123", "promoter_name": null
+      },
+      "outreach_draft": { "subject": "Food vendor inquiry", "body": "Hello event team, ..." },
       "breakdown": {
         "constraints": [
           { "rule": "75ft from restaurant entrance", "pass": true, "detail": "nearest 110ft" }
@@ -166,9 +172,12 @@ raw storefront count — **same field name, same enum**, so this is invisible to
     "name": "SF Giants vs Dodgers", "venue": "Oracle Park",
     "point": { "lat": 37.778, "lng": -122.389 },
     "start": "2026-07-11T18:45:00", "expected_attendance": 40000,
+    "event_url": "https://www.ticketmaster.com/event/123", "promoter_name": null,
     "source": "ticketmaster"
 } ], "count": 1 }
 ```
+`event_url` is copied from Ticketmaster's event page URL. `promoter_name` is copied only when the
+API supplies it; otherwise it is null. There are deliberately no email or phone fields.
 
 ### `check_clearance` — clearance geometry check (called by Spot Scout, implemented by P3)
 
@@ -219,9 +228,13 @@ halal, pizza, seafood, desserts, drinks, other`
   "steps": [ {
     "order": 1, "agency": "Public Works", "title": "Apply for MFF permit",
     "detail": "...", "deadline_days": 30, "deadline_label": "30-day public notice",
-    "cite": "dpw-182101", "status": "todo"
+    "cite": "dpw-182101", "form_url": null, "status": "todo"
   } ] }
 ```
+
+`form_url` is nullable and additive, like `autofill_field`. It is copied only from
+`agents/kb/FORMS.md` by the step's frozen `cite`; `SOURCE-NEEDED`, missing rows, invalid URLs, and
+non-allowlisted agency domains resolve to `null`. Agents never construct or guess this value.
 
 Vendor types (canonical strings, shared everywhere):
 `truck, trailer, pushcart_cooking, pushcart_nocook`.
@@ -250,3 +263,27 @@ checklist-pushcart-nocook`
   `check_clearance` row, on `pushcart_cooking`/`pushcart_nocook` only** (distinct legal basis
   from `dpw-182101`; the dataset `4g86-grxu` is the compute input, not the citation).
 - Full descriptions of every id: `agents/kb/SOURCES.md`.
+
+## Additive recommendation area insights
+
+`recommend_spots` may include an `area_insights` object on each spot. This is an
+additive field for parking/setup guidance and navigation:
+
+- `parking.point` is the exact suggested navigation target.
+- `parking.suitability` is `recommended`, `verify`, or `avoid`.
+- `parking.permit_checks` contains returned placement checks other than hydrants.
+- `local_cuisine.nearby` summarizes surrounding cuisine counts and
+  `menu_overlap_count` reports direct menu competition.
+- `navigation` carries destination, travel mode, minutes, and whether travel is estimated.
+
+Consumers must not describe `recommended` as guaranteed legal parking. Posted curb
+signs, temporary restrictions, and current street conditions still require on-site
+verification.
+
+## Additive raw-menu parsing contract
+
+`agents/menu_rag/parse.mjs` accepts untrusted raw menu text and produces the existing menu-ingest
+shape: `{ vendor_id, vendor_type, currency, items: [{ name, keywords, price }] }`. Gradient extracts
+the structure. Deterministic code then retains an item only when its numeric price can be traced to
+the source text, allowing currency-symbol and decimal-format variance. Untraceable items are logged
+and dropped before the unchanged `ingestMenu()` boundary.

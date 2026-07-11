@@ -10,6 +10,13 @@ packages:
       GOOGLE_PLACES_KEY: "${GOOGLE_PLACES_KEY}"
       TICKETMASTER_KEY: "${TICKETMASTER_KEY}"
       SFMTA_EVENTS_URL: "${SFMTA_EVENTS_URL}"
+      # Demo-reliability + orchestrator (recommend_spots) vars. All must EXIST in
+      # functions/.env (empty is fine — each has a documented fallback).
+      DEMO_DATA_MODE: "${DEMO_DATA_MODE}"
+      MAPBOX_TOKEN: "${MAPBOX_TOKEN}"
+      FUNCTIONS_BASE_URL: "${FUNCTIONS_BASE_URL}"
+      SPOT_SCOUT_URL: "${SPOT_SCOUT_URL}"
+      MENU_RAG_URL: "${MENU_RAG_URL}"
     functions:
       - name: get_vendors
         runtime: "nodejs:18"
@@ -47,3 +54,9 @@ packages:
         limits:
           timeout: 30000
           memory: 512    # turf + citywide sidewalk/hydrant/school snapshots
+      - name: recommend_spots
+        runtime: "nodejs:18"
+        web: true
+        limits:
+          timeout: 30000   # orchestrates the six base functions + Mapbox + Spot Scout
+          memory: 512

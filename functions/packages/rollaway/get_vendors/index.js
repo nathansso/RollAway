@@ -20,6 +20,7 @@ const {
   guard, ok, UpstreamError,
   validatePoint, validateDay, validateTime,
   fetchJSON, socrataHeaders, TTLCache, haversineMeters, DAY_FULL,
+  withData, demoFetchOpts,
 } = require('./shared');
 
 const PERMITS_URL = 'https://data.sfgov.org/resource/rqzj-sfat.json';
@@ -71,7 +72,7 @@ async function fetchPermits({ lat, lng, radius_m }) {
     where = `within_circle(location, ${lat}, ${lng}, ${radius_m})`;
   }
   const url = `${PERMITS_URL}?$where=${encodeURIComponent(where)}&$limit=2000`;
-  const rows = await fetchJSON(url, { headers: socrataHeaders(), timeoutMs: 8000, retries: 2 });
+  const rows = await fetchJSON(url, { headers: socrataHeaders(), timeoutMs: 8000, retries: 2, ...demoFetchOpts() });
   return rows.filter((r) => r.latitude && r.longitude && r.permit);
 }
 
@@ -90,7 +91,7 @@ async function fetchSchedules(permitIds, dayKey) {
     const where = `permit in(${list}) AND dayofweekstr='${DAY_FULL[dayKey]}'`;
     const url = `${SCHEDULE_URL}?$where=${encodeURIComponent(where)}&$limit=2000`;
     try {
-      all.push(...await fetchJSON(url, { headers: socrataHeaders(), timeoutMs: 8000, retries: 1 }));
+      all.push(...await fetchJSON(url, { headers: socrataHeaders(), timeoutMs: 8000, retries: 1, ...demoFetchOpts() }));
     } catch (err) {
       console.error('schedule fetch degraded:', err.message);
       return all; // partial (possibly empty) schedule info
@@ -131,6 +132,7 @@ function buildVendor(row, schedules, timeMin) {
     name: row.applicant || 'Unknown vendor',
     type: row.facilitytype || 'Unknown',
     cuisine: cuisineFor(row.permit),
+    fooditems_raw: row.fooditems || '',
     status: row.status || 'UNKNOWN',
     point: { lat, lng },
     scheduled_here,
@@ -175,7 +177,7 @@ exports.main = guard(async (args) => {
     ? `seed:${day}:${timeMin}`
     : `v:${point.lat.toFixed(4)}:${point.lng.toFixed(4)}:${point.radius_m}:${day}:${timeMin}`;
 
-  const vendors = await cache.getOrSet(cacheKey, SEED_TTL_MS, async () => {
+  const produceVendors = () => cache.getOrSet(cacheKey, SEED_TTL_MS, async () => {
     const permits = await fetchPermits(point);
     const schedules = await fetchSchedules(
       [...new Set(permits.map((r) => r.permit))],
@@ -185,8 +187,19 @@ exports.main = guard(async (args) => {
   });
 
   if (format === 'geojson') {
-    // Seed layer for the map: permitted (APPROVED) vendors only.
+    // Seed layer for the map (live-only path; not part of the demo snapshot set).
+    const vendors = await produceVendors();
     return ok(toGeoJSON(vendors.filter((v) => v.status === 'APPROVED')));
   }
-  return ok({ vendors, count: vendors.length });
+
+  // JSON tool mode: honors DEMO_DATA_MODE; a live miss degrades to snapshot.
+  const body = await withData(
+    'get_vendors',
+    { lat: point.lat, lng: point.lng, radius_m: point.radius_m, day, time: args.time },
+    async () => {
+      const vendors = await produceVendors();
+      return { vendors, count: vendors.length };
+    }
+  );
+  return ok(body);
 });

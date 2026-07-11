@@ -40,3 +40,5 @@ are short (~100 m), so vertex distance is accurate at these radii.
 ```
 node functions/scripts/invoke_local.js get_closures '{"lat":37.78,"lng":-122.40,"radius_m":800,"date_from":"2026-07-10","date_to":"2026-07-13"}'
 ```
+
+> **Demo reliability:** honors `DEMO_DATA_MODE` (reads a frozen snapshot from `demo_data/`); in live mode a transient upstream miss fail-fast-degrades to that snapshot in ~2.5s (`shared.js` `withData`/`demoFetchOpts`).

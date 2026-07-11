@@ -1,0 +1,21 @@
+{
+  "mode": "walking",
+  "origin": {
+    "lat": 37.78,
+    "lng": -122.4
+  },
+  "rows": [
+    {
+      "estimated": false,
+      "minutes": 0
+    },
+    {
+      "estimated": false,
+      "minutes": 2.1
+    },
+    {
+      "estimated": false,
+      "minutes": 4.7
+    }
+  ]
+}

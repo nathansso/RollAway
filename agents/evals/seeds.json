@@ -89,6 +89,26 @@
         "redacts": ["EMAIL", "PHONE"]
       },
       "note": "Coverage: PII in a spot question is anonymized before logging; the spot question still routes/answers."
+    },
+    {
+      "id": "menu-overlap-competition",
+      "prompt": "where should I sell tacos for Friday lunch, and who nearby sells the same items?",
+      "context": { "vendor_type": "truck", "map_center": { "lat": 37.7785, "lng": -122.3968 } },
+      "expected_agent": "spot_scout",
+      "asserts": { "routes_only": true },
+      "note": "New: a competition question routes to Spot Scout; the Menu-RAG overlap (items+prices, not cuisine) is folded into the single-turn ranking."
+    },
+    {
+      "id": "trailer-full-checklist",
+      "prompt": "I run a food trailer, what permits and licenses do I need?",
+      "context": { "vendor_type": "trailer" },
+      "expected_agent": "permit_copilot",
+      "asserts": {
+        "checklist_vendor_type": "trailer",
+        "checklist_includes_dmv": true,
+        "checklist_includes_fire": true
+      },
+      "note": "Coverage: trailer checklist includes DMV + Fire (a towed vehicle that cooks)."
     }
   ]
 }

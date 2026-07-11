@@ -1,97 +1,94 @@
-# Deploying Rollaway to DigitalOcean App Platform
+# Deploying the Rollaway map app
 
-The frontend is a static Vite build. All env vars are **build-time** — changing one
-means re-running the build (App Platform does this automatically when you save env
-changes). No API keys other than the public Mapbox token ever reach the browser.
+Rollaway is a Vite static site deployed by DigitalOcean App Platform. The checked-in
+`.do/app.yaml` tracks `main`, builds from `frontend`, and publishes
+`frontend/dist`.
 
-## 1. Create the app from GitHub
+## Create or update the app
 
-1. Log in at <https://cloud.digitalocean.com> → **Apps** → **Create App**.
-2. Source: **GitHub**. Authorize DigitalOcean for the `nathansso/RollAway` repo
-   if it isn't already connected.
-3. Pick repo **nathansso/RollAway**, branch **`feat/frontend`**
-   (switch to **`main`** after integration — see step 6).
-4. Leave **Autodeploy** checked (deploy on push).
-5. On the Resources step, DO may guess wrong. Click **Edit** on the detected
-   component and set:
-   - **Resource type:** Static Site
-   - **Source directory:** `frontend`
-   - **Build command:** `npm ci && npm run build`
-   - **Output directory:** `dist`
-6. Under the static site's **Settings → Custom Pages** (or "Catchall document"
-   in the spec editor), set **Catchall document:** `index.html` so client-side
-   routes don't 404.
+```bash
+doctl auth init
+doctl apps create --spec .do/app.yaml
+```
 
-Shortcut: instead of clicking through, choose **Edit Spec** during creation and
-paste `.do/app.yaml` from the repo root, or run
-`doctl apps create --spec .do/app.yaml`.
+For an existing app:
 
-## 2. Set environment variables
+```bash
+doctl apps update <APP_ID> --spec .do/app.yaml
+```
 
-In the app → your `rollaway-frontend` component → **Settings → Environment
-Variables** → **Edit**, add (all **Build Time** scope):
+The same spec can be imported in DigitalOcean Cloud → Apps → Create App → Edit Spec.
+Autodeploy is enabled for pushes to `main`.
 
-| Key | Value | Notes |
-| --- | --- | --- |
-| `VITE_MAPBOX_TOKEN` | your `pk.…` token | Check **Encrypt**. Get it from <https://account.mapbox.com/access-tokens/>. Paste the *public* (pk) token, never a secret (sk) one. |
-| `VITE_USE_FIXTURES` | `true` | Keeps the copilot on canned demo answers until the backend is live. |
-| `VITE_CHAT_ENDPOINT` | *(empty for now)* | Person 2's `POST /chat` URL when it's live. |
-| `VITE_VENDORS_URL` | *(empty for now)* | Person 3's `get_vendors?format=geojson` URL. Empty = bundled seed vendors. |
+## Build-time environment
 
-Click **Save** — this triggers a rebuild and deploy. The first build takes a few
-minutes; watch it under **Activity**.
+All variables are compiled into the browser bundle. Saving a value requires a rebuild.
+Never put server credentials or a Mapbox `sk.*` token in the frontend.
 
-### Flipping from fixtures to the real backend
+- `VITE_USE_FIXTURES=true`: deterministic recommendation, vendor, closure, and permit
+  data. No Rollaway business endpoint is called. If `VITE_MAPBOX_TOKEN` exists, the
+  browser may still request Mapbox styles, tiles, fonts, sprites, and telemetry.
+- `VITE_FIXTURE_DELAY_MS=1100`: optional demo latency for the rolling-truck loader.
+- `VITE_MAPBOX_TOKEN`: optional public `pk.*` token, enabled in both fixture and live
+  modes. Without it—or when Mapbox cannot load—the schematic map remains fully usable.
+- `VITE_RECOMMEND_SPOTS_URL`: native structured recommendation endpoint.
+- `VITE_VENDORS_URL`: `get_vendors` endpoint, accepting GeoJSON or the frozen
+  `{vendors: [...]}` contract.
+- `VITE_CLOSURES_URL`: `get_closures` endpoint.
+- `VITE_PERMIT_CHECKLIST_URL`: structured permit-checklist endpoint.
 
-When Person 2 says the endpoint is live:
+The recommendation boundary accepts the native contract first and adapts a legacy
+`map_actions` response only at that boundary. `VITE_CHAT_ENDPOINT` is obsolete and is
+not read.
 
-1. Set `VITE_CHAT_ENDPOINT` to the routed `/chat` URL.
-2. Set `VITE_USE_FIXTURES` to `false`.
-3. Save → auto-rebuild. No code changes needed.
-4. If Person 3's vendors endpoint is up, set `VITE_VENDORS_URL` too.
+Rollaway is scoped to the City and County of San Francisco. The app constrains Mapbox
+to SF bounds and replaces an outside-SF live location with the SoMa demo origin. A new
+user completes a business profile, configures each session, and explicitly starts
+recommendation generation. Opening **Permits** does not make a request; the user must
+select **Build my permit checklist** to generate the personalized checklist.
 
-## 3. Verify on a phone
+## Live mode
 
-1. Open the app URL (shown at the top of the app page, `*.ondigitalocean.app`)
-   on a real phone, not just desktop devtools.
-2. Map renders full-screen, SF-centered; vendor markers appear.
-3. Send a chat message ("What permits do I need?") and confirm a reply renders.
-4. **Add to Home Screen:**
-   - iOS Safari: Share → **Add to Home Screen** → launch from the icon; it
-     should open standalone (no browser chrome).
-   - Android Chrome: menu (⋮) → **Add to Home screen** / install prompt.
-5. Turn on Airplane Mode and relaunch: you should get the friendly offline
-   card, not a white screen. Turn it off and confirm the "Back online" flash.
+1. Configure all four live endpoint URLs as build-time variables.
+2. Set `VITE_USE_FIXTURES=false`.
+3. Save the App Platform settings and wait for the new deployment.
+4. Smoke-test profile → session → recommendation loading, outside-SF location fallback,
+   map details, explicit permit generation, permit progress, and EasyApply review.
 
-## 4. Restrict the Mapbox token
+If one endpoint is missing, live mode shows a recoverable UI error; it does not silently
+claim fixture data is live.
 
-Public tokens are visible in the bundle, so scope it to your URLs:
+## Verification
 
-1. Go to <https://account.mapbox.com/access-tokens/> and open the token you
-   used (or create a dedicated "rollaway-prod" token).
-2. Under **URL restrictions**, add:
-   - your DO URL, e.g. `https://rollaway-xxxxx.ondigitalocean.app`
-   - `http://localhost:5173` only on a separate dev token, not this one.
-3. Save. Requests from any other origin will now be rejected by Mapbox.
+```bash
+cd frontend
+npm ci
+npm test
+npm run lint
+npm run build
+npm run test:e2e
+npm run test:mapbox
+npm run test:pwa
+```
 
-Note: if you later add a custom domain, add it to the token's URL list too, or
-the map will silently fail to load tiles.
+The standard E2E and PWA commands force a blank Mapbox token and fixture-only
+Rollaway endpoints, independent of `.env.local`. `test:mapbox` runs on a separate
+server with a non-secret fake public token and fulfills all Mapbox style, vector-tile,
+and telemetry requests inside Playwright. It verifies the real Mapbox browser path
+without using a project token or external network.
 
-## 5. Troubleshooting
+On the deployed URL:
 
-- **Blank map, everything else works:** token missing/typo'd, or the URL
-  restriction doesn't match the deployed origin. Check the browser console for
-  401s from `api.mapbox.com`.
-- **404 on refresh of a deep link:** catchall document isn't set to
-  `index.html`.
-- **Chat says "No chat endpoint configured":** `VITE_USE_FIXTURES` was set to
-  `false` without a `VITE_CHAT_ENDPOINT`. Set the endpoint or flip back to
-  `true`.
-- **Env change didn't take effect:** env vars are baked in at build time —
-  confirm a new deploy actually ran under **Activity**.
+1. Complete the first-launch profile and session setup, then reload.
+2. Confirm the map is absent until **Find places to roll** is selected.
+3. Verify Mapbox in fixture mode with a token, plus schematic fallback without a token
+   or when Mapbox is unavailable.
+4. Open all ranked spots and confirm proxy/citation labels.
+5. Open **Permits**, confirm no checklist is generated automatically, select
+   **Build my permit checklist**, then complete and reload checklist items.
+6. Review an EasyApply item and confirm the end state says **Simulated packet ready**.
+7. Install the PWA, relaunch it, and verify fixture mode while offline.
 
-## 6. After integration
-
-Once `feat/frontend` merges, point the app at `main`: app → **Settings** →
-component → **Edit** source branch → `main` (or update `branch:` in
-`.do/app.yaml` and re-import the spec). Autodeploy then follows `main`.
+In the Mapbox dashboard, restrict the public token to the exact production origin and
+any intentional preview/local origins. Grant only the public scopes required to load
+the configured style; never expose a secret `sk.*` token. The checked-in spec already deploys from `main`; confirm App Platform uses the same source branch after importing it.

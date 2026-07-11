@@ -25,6 +25,7 @@ const distance = require('@turf/distance').default;
 const {
   guard, ok, UpstreamError,
   validatePoint, fetchJSON, TTLCache, VENDOR_TYPES,
+  withData, demoFetchOpts, isDemoMode,
 } = require('./shared');
 const { buildChecks } = require('./rules');
 const { RESTAURANT_SEARCH_RADIUS_M } = require('./constants');
@@ -59,7 +60,10 @@ const placesCache = new TTLCache();
  */
 async function getRestaurantEntrances(lat, lng) {
   const key = process.env.GOOGLE_PLACES_KEY;
-  if (!key) return fixtureRestaurants(lat, lng); // TODO(real-key)
+  // Demo mode is fully offline: the entrance lookup is the ONLY network call in
+  // this Function, so in DEMO_DATA_MODE we use the bundled fixture and never
+  // touch Places. Geometry math is unchanged either way.
+  if (isDemoMode() || !key) return fixtureRestaurants(lat, lng); // TODO(real-key)
 
   const cacheKey = `${lat.toFixed(3)},${lng.toFixed(3)}`;
   try {
@@ -68,6 +72,7 @@ async function getRestaurantEntrances(lat, lng) {
         method: 'POST',
         timeoutMs: 6000,
         retries: 1,
+        ...demoFetchOpts(),
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': key,
@@ -121,14 +126,19 @@ exports.main = guard(async (args) => {
     );
   }
 
-  const restaurantsFC = await getRestaurantEntrances(lat, lng);
-  const { allowed, checks } = buildChecks({
-    lat, lng, vendor_type,
-    restaurantsFC,
-    schoolsFC: SCHOOLS,
-    hydrantsFC: HYDRANTS,
-    sidewalksFC: SIDEWALKS,
-    now: new Date(),
+  // Honors DEMO_DATA_MODE (snapshot keyed by point + vendor_type). Geometry is
+  // deterministic and offline; only the restaurant-entrance lookup can be live.
+  const body = await withData('check_clearance', { lat, lng, vendor_type }, async () => {
+    const restaurantsFC = await getRestaurantEntrances(lat, lng);
+    const { allowed, checks } = buildChecks({
+      lat, lng, vendor_type,
+      restaurantsFC,
+      schoolsFC: SCHOOLS,
+      hydrantsFC: HYDRANTS,
+      sidewalksFC: SIDEWALKS,
+      now: new Date(),
+    });
+    return { allowed, checks };
   });
-  return ok({ allowed, checks });
+  return ok(body);
 });

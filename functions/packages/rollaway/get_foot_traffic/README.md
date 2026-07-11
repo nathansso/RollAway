@@ -41,3 +41,5 @@ node functions/scripts/aggregate_baywheels.js --synthetic
 ```
 node functions/scripts/invoke_local.js get_foot_traffic '{"lat":37.78,"lng":-122.40,"radius_m":400,"day":"fri","hour":12}'
 ```
+
+> **Demo reliability:** honors `DEMO_DATA_MODE` (reads a frozen snapshot from `demo_data/`); in live mode a transient upstream miss fail-fast-degrades to that snapshot in ~2.5s (`shared.js` `withData`/`demoFetchOpts`).

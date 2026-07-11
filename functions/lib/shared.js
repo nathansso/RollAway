@@ -18,6 +18,9 @@
 
 'use strict';
 
+const fsMod = require('fs');
+const pathMod = require('path');
+
 // ---------------------------------------------------------------------------
 // Geography constants
 // ---------------------------------------------------------------------------
@@ -279,6 +282,131 @@ function haversineMeters(lat1, lng1, lat2, lng2) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
+// ---------------------------------------------------------------------------
+// Demo-reliability spine: DEMO_DATA_MODE + snapshot layer + fail-fast fetch
+// (AGENT-BRIEF-functions-data.md §2). Every Function wraps its live data path
+// in withData(); on the demo build a snapshot is read, and in live mode a
+// transient upstream miss fail-fast-degrades to the frozen snapshot instead of
+// surfacing an error. Snapshots store the Function's OUTPUT BODY (the object
+// passed to ok()), and contain only public data — never secrets.
+// ---------------------------------------------------------------------------
+
+/** Loose truthiness for env flags: '1' | 'true' | 'on' | 'yes' (case-insensitive). */
+function truthy(v) {
+  if (v === true) return true;
+  if (v === undefined || v === null) return false;
+  return ['1', 'true', 'on', 'yes'].includes(String(v).trim().toLowerCase());
+}
+
+/** DEMO_DATA_MODE on ⇒ read frozen snapshots instead of hitting live APIs. */
+function isDemoMode() {
+  return truthy(process.env.DEMO_DATA_MODE);
+}
+
+// Resolve the demo_data directory once. The synced per-function copy lives at
+// <fnDir>/demo_data (created by sync_shared.js); when this module is the
+// canonical functions/lib/shared.js (scripts import it directly), __dirname is
+// functions/lib, so the sibling functions/demo_data is used instead.
+let _demoDir = null;
+function demoDataDir() {
+  if (_demoDir !== null) return _demoDir;
+  const candidates = [
+    pathMod.join(__dirname, 'demo_data'),        // per-function synced copy
+    pathMod.join(__dirname, '..', 'demo_data'),  // functions/lib -> functions/demo_data
+  ];
+  for (const dir of candidates) {
+    try { if (fsMod.existsSync(dir)) { _demoDir = dir; return _demoDir; } } catch { /* ignore */ }
+  }
+  _demoDir = candidates[0]; // default (may not exist yet; loadSnapshot handles absence)
+  return _demoDir;
+}
+
+/**
+ * Deterministic snapshot key from the significant args. A single canonical
+ * builder so freeze + read can never drift (freeze_snapshots.mjs imports THIS
+ * function). Shape: `<lat4>_<lng4>_<radius>_<day>_<time|hour>[_<vendor_type>]`.
+ * vendor_type is appended only when present (check_clearance), so keys for the
+ * point-only functions are unchanged.
+ */
+function snapshotKey(args = {}) {
+  const a = args || {};
+  const lat = Number(a.lat);
+  const lng = Number(a.lng);
+  const latS = Number.isFinite(lat) ? lat.toFixed(4) : 'na';
+  const lngS = Number.isFinite(lng) ? lng.toFixed(4) : 'na';
+  const radius = a.radius_m !== undefined && a.radius_m !== null && a.radius_m !== ''
+    ? String(a.radius_m) : '';
+  const day = a.day ? String(a.day).slice(0, 3).toLowerCase() : '';
+  let timePart = '';
+  if (a.time !== undefined && a.time !== null && a.time !== '') timePart = String(a.time);
+  else if (a.hour !== undefined && a.hour !== null && a.hour !== '') timePart = String(a.hour);
+  const base = `${latS}_${lngS}_${radius}_${day}_${timePart}`;
+  const vt = a.vendor_type ? String(a.vendor_type).toLowerCase() : '';
+  const key = vt ? `${base}_${vt}` : base;
+  // Filename-safe: the key becomes part of a filename, and ':' in a time like
+  // "12:00" is illegal on Windows (silently creates an NTFS alternate data
+  // stream). Strip anything outside [A-Za-z0-9._-] so keys are portable and
+  // read/write always agree.
+  return key.replace(/[^A-Za-z0-9._-]/g, '');
+}
+
+/**
+ * Read functions/demo_data/<fnName>.<key>.json and return the parsed OUTPUT
+ * BODY, or null when the snapshot is absent/unreadable.
+ */
+function loadSnapshot(fnName, key) {
+  const file = pathMod.join(demoDataDir(), `${fnName}.${key}.json`);
+  try {
+    if (!fsMod.existsSync(file)) return null;
+    return JSON.parse(fsMod.readFileSync(file, 'utf8'));
+  } catch (err) {
+    console.error(`loadSnapshot(${fnName}, ${key}) failed:`, err.message);
+    return null;
+  }
+}
+
+/**
+ * The wrapper every Function uses around its live data-gathering logic.
+ *  - DEMO_DATA_MODE on : return the frozen snapshot; if it is MISSING, fall
+ *    through to liveFn() (a freeze gap must never 404 the demo) and warn.
+ *  - live mode         : run liveFn(); on failure degrade to the snapshot when
+ *    one exists (the fail-fast degrade), else rethrow.
+ * `liveFn` returns the OUTPUT BODY (what you'd pass to ok()); withData returns
+ * a body too, so the caller does `return ok(await withData(...))`.
+ */
+async function withData(fnName, args, liveFn) {
+  const key = snapshotKey(args);
+  if (isDemoMode()) {
+    const snap = loadSnapshot(fnName, key);
+    if (snap !== null) return snap;
+    console.warn(`DEMO_DATA_MODE: no snapshot for ${fnName}.${key} — falling through to live`);
+    return await liveFn();
+  }
+  try {
+    return await liveFn();
+  } catch (err) {
+    const snap = loadSnapshot(fnName, key);
+    if (snap !== null) {
+      console.error('degraded to snapshot:', err && err.message ? err.message : err);
+      return snap;
+    }
+    throw err;
+  }
+}
+
+/**
+ * Fail-fast fetch profile. On the demo build (or when DEMO_FAILFAST is set) a
+ * live miss aborts in ~2.5s with no retries and degrades to snapshot, instead
+ * of ~20s of retry/backoff. Spread it LAST into fetchJSON opts so it overrides
+ * the live defaults only on the demo/fail-fast build; otherwise it is a no-op.
+ */
+function demoFetchOpts() {
+  if (isDemoMode() || truthy(process.env.DEMO_FAILFAST)) {
+    return { timeoutMs: 2500, retries: 0 };
+  }
+  return {};
+}
+
 module.exports = {
   SF_BOUNDS,
   METERS_PER_FOOT,
@@ -298,4 +426,12 @@ module.exports = {
   socrataHeaders,
   TTLCache,
   haversineMeters,
+  // demo-reliability spine (§2)
+  truthy,
+  isDemoMode,
+  loadSnapshot,
+  snapshotKey,
+  withData,
+  demoFetchOpts,
+  demoDataDir,
 };

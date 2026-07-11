@@ -1,141 +1,108 @@
-# Rollaway 🌮🚚
+# Rollaway
 
-### Get your business rolling.
+Rollaway is a map-first location intelligence and permit-planning PWA for mobile food vendors in San Francisco. It combines deterministic location scoring, DigitalOcean Functions, and Gradient AI explanations without putting legal or scoring calculations inside an LLM.
 
-Rollaway is an AI copilot that helps mobile food vendors in San Francisco survive and grow — answering the two questions that decide whether they make it: **where should I set up to find customers**, and **how do I get legal without losing months**.
+## Status
 
-Built for the DigitalOcean Hackathon on the **Gradient AI Platform**.
+All three feature layers are integrated on `main`:
 
-**Status:** all three tiers implemented and merged to `main`. Frontend build + lint clean (25/25 end-to-end browser checks); Person 3 clearance geometry 14/14 tests; Person 2 agent eval gate 18/18 GREEN.
+- `frontend/`: React 19, TypeScript, Mapbox, Zustand, installable PWA
+- `functions/`: seven DigitalOcean Functions, including `recommend_spots`
+- `agents/`: direct Spot Scout, Permit Copilot, and Menu RAG endpoints
 
----
+The merged contracts are covered by frontend adapter tests, Functions integration tests, 24 agent evaluations, browser flows, Mapbox tests, and an offline PWA test.
 
-## The three pillars
+The checked-in deployment remains demo-safe by default: `VITE_USE_FIXTURES=true` and the live endpoint values in `.do/app.yaml` are empty. This means the frontend is code-connected to the backend contracts but will not call deployed backend services until the URLs are configured and fixture mode is disabled.
 
-1. **Find the best spot** — score a location on hard constraints (closures, claimed spots, clearance rules) + demand signals (foot-traffic proxy, restaurant saturation).
-2. **Get permits in order** — a personalized, ordered checklist across all four SF agencies, grounded in city rules with citations.
-3. **Work events (growth)** — live event + closure listings so vendors position for crowds.
+## Architecture
 
----
-
-## Current infrastructure
-
-Everything runs on DigitalOcean with the **Gradient AI Platform** as the spine. The browser never calls an external API directly — it only speaks to one routed Gradient endpoint.
-
-```
-  ┌──────────────────────────────────────────────────────────────┐
-  │  FRONTEND  ·  /frontend                                        │
-  │  Vite + React 19 + TypeScript · Tailwind v4 · mapbox-gl        │
-  │  Installable PWA (service worker) · fixture-first, one API call│
-  │  Deploy: DigitalOcean App Platform (static site, .do/app.yaml) │
-  └───────────────────────────────┬──────────────────────────────┘
-                                  │  POST /chat   (single routed entry point)
-                                  ▼
-  ┌──────────────────────────────────────────────────────────────┐
-  │  GRADIENT PLATFORM  ·  /agents                                 │
-  │  Router ─► Spot Scout      (function calling → DO Functions)   │
-  │        └─► Permit Copilot  (RAG over the knowledge base)       │
-  │  Guardrails: PII anonymization + jailbreak detection           │
-  │  Serverless inference: cuisine-classification enrichment       │
-  │  Evaluations: 18-check offline acceptance gate                 │
-  └───────────────┬───────────────────────────────┬──────────────┘
-                  │ function calling              │ retrieval
-                  ▼                               ▼
-  ┌──────────────────────────────┐   ┌──────────────────────────────┐
-  │ DO FUNCTIONS · /functions    │   │ KNOWLEDGE BASE · /agents/kb   │
-  │  get_vendors                 │   │  DPW Order 182,101            │
-  │  get_closures                │   │  clearance + sidewalk rules   │
-  │  get_foot_traffic            │   │  4 agency docs (PW/DPH/Fire/  │
-  │  get_restaurants             │   │  Treasurer) + DMV             │
-  │  get_events                  │   │  4 vendor-type checklists     │
-  │  check_clearance (geometry)  │   │  (truck/trailer/2× pushcart)  │
-  └──────────────┬───────────────┘   └──────────────────────────────┘
-                 ▼
-   SF Open Data (Socrata) · Bay Wheels GBFS + trip history ·
-   Google Places · SFMTA event closures · Ticketmaster
+```text
+React PWA
+  |-- POST VITE_RECOMMEND_SPOTS_URL --> recommend_spots Function
+  |                                      |-- base signal Functions
+  |                                      |-- POST MENU_RAG_URL --> /menu_overlap
+  |                                      `-- POST SPOT_SCOUT_URL --> /spot_scout
+  |-- GET  VITE_VENDORS_URL ----------> get_vendors Function
+  |-- GET  VITE_CLOSURES_URL ---------> get_closures Function
+  `-- POST VITE_PERMIT_CHECKLIST_URL -> /permit_copilot
 ```
 
-**Design invariant:** the legality math never runs inside the LLM. Clearance distances (75 ft from restaurants, 500 ft from schools, 7 ft from hydrants, sidewalk width) are computed as real geodesic geometry in `check_clearance` (turf.js); the agent only decides *when* to call it and *explains* the result.
+`recommend_spots` computes ranking, hard constraints, travel, and legality deterministically. Spot Scout writes one-line explanations from precomputed signals. Permit Copilot returns a cited checklist. The frontend normalizes these backend envelopes at `frontend/src/lib/apiClient.ts`.
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full data flow and [`docs/CONTRACTS.md`](docs/CONTRACTS.md) for the frozen interface between tiers.
+## Run locally in fixture mode
 
----
+Fixture mode exercises the complete UI without backend credentials or Rollaway API calls.
 
-## Repo layout (as built)
-
-```
-/frontend    Person 1 — Vite/React PWA + Mapbox
-             src/components/{map,chat,spot,permits,shell}, zustand store,
-             fixture-first chatClient, contract types. .do/app.yaml + DEPLOY.md.
-
-/agents      Person 2 — Gradient config as reviewable text
-             instructions/  router, spot_scout, permit_copilot, guardrails, output envelope
-             kb/            13 grounding docs (DPW 182,101, agency docs, vendor checklists)
-             enrichment/    prompt-cached cuisine classifier + cuisine_lookup.json
-             evals/         18-check acceptance gate (offline + live replay)
-             fixtures/      Express stub server returning §B payloads verbatim
-             scripts/       provision.sh, verify.sh
-
-/functions   Person 3 — DigitalOcean serverless (nodejs:18), one dir per tool
-             packages/rollaway/{get_vendors,get_closures,get_foot_traffic,
-                                get_restaurants,get_events,check_clearance}
-             scripts/       aggregate_baywheels, fetch_static_data, invoke_local, sync_shared
-             project.yml    deploy spec
-
-/docs        shared contracts + architecture (the frozen inter-tier interface)
-```
-
----
-
-## Data sources
-
-| Source | ID / feed | Used by |
-|---|---|---|
-| SF Mobile Food Facility Permit | `rqzj-sfat` | get_vendors |
-| SF Mobile Food Schedule | `jjew-r69b` | get_vendors |
-| SF Temporary Street Closures | `8x25-yybr` | get_closures |
-| SFMTA event closure list | bundled/auto-fetched | get_closures |
-| Bay Wheels (Lyft) | live GBFS + trip history aggregate | get_foot_traffic |
-| Google Places | Places API | get_restaurants, check_clearance |
-| Ticketmaster Discovery | Discovery API | get_events |
-| SF schools / fire hydrants / sidewalks | bundled GeoJSON snapshots | check_clearance |
-| SF Public Works rules, DPW Order 182,101 | KB docs | Permit Copilot |
-
-Secrets (Google Places, Ticketmaster, Socrata token, DigitalOcean model access) live in **git-ignored** `.env` / DO Function config — never in the repo. Each tier's `SETUP-*.md` says exactly where.
-
----
-
-## Run it locally
-
-**Frontend** (works standalone in fixture mode — no backend or keys except a Mapbox token):
 ```bash
 cd frontend
-cp .env.example .env.local          # set VITE_MAPBOX_TOKEN
-npm ci && npm run dev               # http://localhost:5173
+cp .env.example .env.local
+npm ci
+npm run dev
 ```
 
-**Functions** (one clearance example; needs doctl serverless or node):
+`VITE_MAPBOX_TOKEN` is optional. Without it, the app uses the schematic SF map.
+
+## Connect the live backend
+
+1. Deploy the Functions using `functions/DEPLOY.md`.
+2. Run the agent runtime or deploy its direct endpoints using `agents/RUNBOOK.md`.
+3. Configure the `recommend_spots` Function:
+   - `FUNCTIONS_BASE_URL`: deployed Functions namespace base URL
+   - `SPOT_SCOUT_URL`: agent runtime `/spot_scout` URL
+   - `MENU_RAG_URL`: agent runtime `/menu_overlap` URL
+   - `MAPBOX_TOKEN`: Matrix API token for live travel times
+4. Configure the frontend build-time variables:
+   - `VITE_RECOMMEND_SPOTS_URL`: deployed `recommend_spots` URL
+   - `VITE_VENDORS_URL`: deployed `get_vendors` URL
+   - `VITE_CLOSURES_URL`: deployed `get_closures` URL
+   - `VITE_PERMIT_CHECKLIST_URL`: agent runtime `/permit_copilot` URL
+   - `VITE_USE_FIXTURES=false`
+5. Rebuild/redeploy the frontend. Vite embeds these values at build time.
+
+Do not disable fixture mode until all four frontend URLs are populated. Missing live endpoints produce recoverable configuration errors rather than silently presenting fixtures as live data.
+
+## Verification
+
 ```bash
-cd functions/packages/rollaway/check_clearance
-npm ci && npm test                  # 14/14 geodesic clearance tests
+# Frontend
+cd frontend
+npm ci
+npm test
+npm run lint
+npm run build
+npm run test:e2e
+npm run test:mapbox
+npm run test:pwa
+
+# Functions
+cd ../functions/packages/rollaway/check_clearance && npm test
+cd ../get_restaurants && npm test
+cd ../recommend_spots && npm test
+cd ../../../..
+node functions/scripts/prewarm.mjs
+
+# Agents
+node agents/evals/run.mjs
 ```
 
-**Agents** (offline acceptance gate — no cloud calls):
-```bash
-cd agents/evals
-npm ci && node run.mjs              # 18/18 checks GREEN
+Current verified totals:
+
+- Frontend unit tests: 63 passed
+- Frontend browser tests: 7 map flows, 1 Mapbox flow, 1 PWA flow passed
+- `recommend_spots`: 13 passed
+- Clearance geometry: 15 passed
+- Restaurant signals: 18 passed
+- Agent evaluation gate: 24/24 passed
+- Functions prewarm: 7/7 passed
+
+## Repository layout
+
+```text
+frontend/   Map-first PWA, fixtures, API adapters, and browser tests
+functions/  Data Functions, deterministic scoring, snapshots, and prewarm scripts
+agents/     Gradient runtime, Menu RAG, permit knowledge base, and evaluations
+docs/       Shared architecture and contract documentation
+.do/        DigitalOcean App Platform frontend specification
 ```
 
-To go live end-to-end: deploy the frontend per `frontend/DEPLOY.md`, deploy Functions with `doctl serverless deploy`, provision the Gradient agents with `agents/scripts/provision.sh`, then set `VITE_CHAT_ENDPOINT` + `VITE_USE_FIXTURES=false` in App Platform.
-
----
-
-## Team split (by layer)
-
-| Owner | Scope | Docs |
-|---|---|---|
-| **Person 1 — Frontend** | PWA, Mapbox map, chat UI, spot-detail + permit-checklist panels, App Platform deploy | `PERSON1_FRONTEND_TASKS.md`, `SETUP-frontend.md` |
-| **Person 2 — Agents & Platform** | Both Gradient agents, routing, knowledge base, guardrails, evals, cuisine enrichment | `PERSON2_AGENTS_TASKS.md`, `SETUP-agents-platform.md` |
-| **Person 3 — Functions & Data** | The 5 DO Functions + clearance geometry, all external data integrations | `PERSON3_FUNCTIONS_TASKS.md`, `SETUP-functions-data.md` |
-
-The three tiers integrate through the frozen JSON schemas in [`docs/CONTRACTS.md`](docs/CONTRACTS.md): every Function's I/O, the `/chat` request/response envelope, the cuisine enum, and the permit-checklist shape.
+See `frontend/DEPLOY.md`, `functions/DEPLOY.md`, and `agents/RUNBOOK.md` for deployment details. Secrets belong only in ignored local environment files or DigitalOcean environment settings.

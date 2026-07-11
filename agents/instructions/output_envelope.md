@@ -1,8 +1,10 @@
 <!--
-version: 1.0.0
-updated: 2026-07-10
+version: 1.2.0
+updated: 2026-07-11
 owner: Person 2 (Agents & Platform)
 changelog:
+  - 1.2.0 (2026-07-11): add nullable, table-backed form_url to Permit Copilot checklist steps.
+  - 1.1.0 (2026-07-11): add nullable event_opportunity and outreach_draft fields to Spot Scout map actions.
   - 1.0.0 (2026-07-10): initial shared envelope contract. Both agents import this verbatim.
 -->
 
@@ -51,6 +53,12 @@ and every `cite` in a checklist step must resolve in `kb/SOURCES.md`.
   "verdict": "good | caution | avoid",
   "score": 0.82,                              // 0..1
   "reasons": ["High lunch foot traffic", "No taco trucks scheduled Fri"],
+  "event_opportunity": {
+    "event_name": "SF Giants vs Dodgers", "venue": "Oracle Park",
+    "start": "2026-07-11T18:45:00", "expected_attendance": 40000,
+    "event_url": "https://www.ticketmaster.com/event/123", "promoter_name": null
+  },
+  "outreach_draft": { "subject": "Food vendor inquiry", "body": "Hello event team, ..." },
   "breakdown": {
     "constraints": [
       { "rule": "75ft from restaurant entrance", "pass": true, "detail": "nearest 110ft" }
@@ -64,6 +72,13 @@ and every `cite` in a checklist step must resolve in `kb/SOURCES.md`.
 > `constraints[]` rows come **verbatim from the clearance geometry tool** (`rule`, `pass`,
 > `detail` from its `checks[]`). The model never computes or edits `pass`/distances.
 
+`event_opportunity` is nullable/additive and is copied verbatim from deterministic
+`recommend_spots` output. `outreach_draft` is nullable/additive and may be populated only when
+`event_opportunity` is present. It contains `{ subject, body }` copy for the vendor to review and
+send. It never means a message was sent or contact was made. If `promoter_name` is null, the draft
+must use the supplied `event_url` as the public contact surface and must not invent a name, email,
+or phone number.
+
 ## `checklist` shape (Permit Copilot) — §D
 
 ```jsonc
@@ -72,13 +87,18 @@ and every `cite` in a checklist step must resolve in `kb/SOURCES.md`.
   "steps": [
     { "order": 1, "agency": "Public Works", "title": "Apply for MFF permit",
       "detail": "...", "deadline_days": 30, "deadline_label": "30-day public notice",
-      "cite": "dpw-182101", "status": "todo" }
+      "cite": "dpw-182101", "autofill_field": "pinned_point", "form_url": null, "status": "todo" }
   ]
 }
 ```
 
 `deadline_days` is an integer or `null`; `deadline_label` mirrors it or is `null`;
-`status` is one of `todo | in_progress | done`.
+`status` is one of `todo | in_progress | done`. **`autofill_field`** is OPTIONAL and additive: the
+name of a vendor-profile field the app can pre-fill on that agency's form (e.g. `business_name`,
+`pinned_point`, `vehicle_plate`). It is a UI hint, carries no factual claim, and needs no citation;
+omit it when nothing pre-fills. **`form_url`** is additive and always a string or `null`. Runtime
+copies it verbatim from `kb/FORMS.md` by `cite` and rejects domains outside the deterministic SF
+agency allowlist. The model never constructs a URL; missing or `SOURCE-NEEDED` forms are `null`.
 
 ---
 
@@ -130,11 +150,11 @@ and every `cite` in a checklist step must resolve in `kb/SOURCES.md`.
   "checklist": {
     "vendor_type": "pushcart_nocook",
     "steps": [
-      { "order": 1, "agency": "Treasurer", "title": "Register the business", "detail": "Obtain/renew the SF Business Registration Certificate; keep it current.", "deadline_days": 90, "deadline_label": "90-day document window", "cite": "ttx-cert", "status": "todo" },
-      { "order": 2, "agency": "Public Health", "title": "Health permit (no-cook tier) + commissary", "detail": "Lower-tier health permit for prepackaged/cold items; commissary/base agreement.", "deadline_days": 90, "deadline_label": "90-day document window", "cite": "sfdph-mff", "status": "todo" },
-      { "order": 3, "agency": "Public Works", "title": "Apply for the MFF permit (sidewalk location)", "detail": "Apply for your sidewalk location; triggers a 30-day public notice.", "deadline_days": 30, "deadline_label": "30-day public notice", "cite": "sfpw-mff", "status": "todo" },
-      { "order": 4, "agency": "Public Works", "title": "Appeal window", "detail": "Grant/deny decisions can be appealed within 15 days.", "deadline_days": 15, "deadline_label": "15-day appeal window", "cite": "sfpw-mff", "status": "todo" },
-      { "order": 5, "agency": "Public Works", "title": "Maintain wide sidewalk pedestrian clearance", "detail": "Leave the required unobstructed sidewalk path; stay 75 ft from restaurant entrances, 7 ft from hydrants, 500 ft from schools during school hours.", "deadline_days": null, "deadline_label": null, "cite": "dpw-182101", "status": "todo" }
+      { "order": 1, "agency": "Treasurer", "title": "Register the business", "detail": "Obtain/renew the SF Business Registration Certificate; keep it current.", "deadline_days": 90, "deadline_label": "90-day document window", "cite": "ttx-cert", "autofill_field": "business_name", "form_url": null, "status": "todo" },
+      { "order": 2, "agency": "Public Health", "title": "Health permit (no-cook tier) + commissary", "detail": "Lower-tier health permit for prepackaged/cold items; commissary/base agreement.", "deadline_days": 90, "deadline_label": "90-day document window", "cite": "sfdph-mff", "autofill_field": "business_name", "form_url": "https://www.sf.gov/sites/default/files/2024-06/MFF%20Unified%20Application.pdf", "status": "todo" },
+      { "order": 3, "agency": "Public Works", "title": "Apply for the MFF permit (sidewalk location)", "detail": "Apply for your sidewalk location; triggers a 30-day public notice.", "deadline_days": 30, "deadline_label": "30-day public notice", "cite": "sfpw-mff", "autofill_field": "pinned_point", "form_url": "https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf", "status": "todo" },
+      { "order": 4, "agency": "Public Works", "title": "Appeal window", "detail": "Grant/deny decisions can be appealed within 15 days.", "deadline_days": 15, "deadline_label": "15-day appeal window", "cite": "sfpw-mff", "form_url": "https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf", "status": "todo" },
+      { "order": 5, "agency": "Public Works", "title": "Maintain wide sidewalk pedestrian clearance", "detail": "Leave the required unobstructed sidewalk path; stay 75 ft from restaurant entrances, 7 ft from hydrants, 500 ft from schools during school hours.", "deadline_days": null, "deadline_label": null, "cite": "dpw-182101", "form_url": null, "status": "todo" }
     ]
   }
 }

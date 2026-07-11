@@ -1,0 +1,26 @@
+{
+  "allowed": true,
+  "checks": [
+    {
+      "actual_ft": 492.1,
+      "cite": "dpw-182101",
+      "pass": true,
+      "required_ft": 75,
+      "rule": "75ft from restaurant entrance"
+    },
+    {
+      "actual_ft": 339.8,
+      "cite": "dpw-182101",
+      "pass": true,
+      "required_ft": 7,
+      "rule": "7ft from hydrant"
+    },
+    {
+      "actual_ft": 1730.8,
+      "cite": "dpw-182101",
+      "pass": true,
+      "required_ft": 500,
+      "rule": "500ft from middle school (school hours)"
+    }
+  ]
+}

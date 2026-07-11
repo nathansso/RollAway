@@ -62,6 +62,8 @@ export const payloads = {
         point: { lat: 37.778, lng: -122.389 },
         start: "2026-07-11T18:45:00",
         expected_attendance: 40000,
+        event_url: "https://www.ticketmaster.com/event/123",
+        promoter_name: null,
         source: "ticketmaster"
       }
     ],

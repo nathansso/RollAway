@@ -20,7 +20,12 @@ export function buildEasyApplyValues(
     }
     if (field.key === 'vendor_type') values[field.key] = profile.vendor_type
     else if (field.key === 'menu') values[field.key] = profile.menu.raw
-    else if (field.key === 'location') values[field.key] = profile.home_base.label
+    else if (field.key === 'location')
+      // The neighborhood/home-base field was removed in #11; use the vendor's
+      // address + city as the draft operating location instead.
+      values[field.key] = [profile.autofill_profile.address, profile.autofill_profile.city]
+        .filter(Boolean)
+        .join(', ')
     else values[field.key] = ''
   }
   return values

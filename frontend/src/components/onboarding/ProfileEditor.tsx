@@ -8,7 +8,6 @@ import { useAppStore } from '../../store'
 import type { CuisineId } from '../../fixtures/sampleMenus'
 import type {
   AutofillProfile,
-  DayCode,
   OperatingWindow,
   VendorProfile,
   VendorType,
@@ -108,14 +107,6 @@ export default function ProfileEditor() {
     setDraft((current) => ({
       ...current,
       autofill_profile: { ...current.autofill_profile, [key]: value },
-    }))
-
-  const setWindow = (index: number, patch: Partial<OperatingWindow>) =>
-    setDraft((current) => ({
-      ...current,
-      operating_windows: current.operating_windows.map((window, windowIndex) =>
-        windowIndex === index ? { ...window, ...patch } : window,
-      ),
     }))
 
   const submit = (event: React.FormEvent) => {
@@ -294,19 +285,6 @@ export default function ProfileEditor() {
 
           <section className="form-section">
             <h2 className="section-title">Travel & schedule</h2>
-            <Field label="Home base or neighborhood" required>
-              <input
-                className={fieldClass}
-                value={draft.home_base.label}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    home_base: { ...current.home_base, label: event.target.value },
-                  }))
-                }
-                placeholder="Mission District"
-              />
-            </Field>
             <div className="grid grid-cols-[1fr_1.2fr] gap-3">
               <Field label="Maximum travel" required>
                 <input
@@ -342,27 +320,6 @@ export default function ProfileEditor() {
                 </select>
               </Field>
             </div>
-            <fieldset>
-              <legend className="text-sm font-semibold">Operating windows</legend>
-              <p className="mt-1 text-xs text-muted-foreground">
-                These align with restaurant competition day, time_from, and time_to.
-              </p>
-              <div className="mt-2 space-y-2">
-                {draft.operating_windows.map((window, index) => (
-                  <div key={index} className="grid grid-cols-3 gap-2 rounded-xl bg-muted p-2">
-                    <select className={fieldClass} aria-label={`Operating day ${index + 1}`} value={window.day} onChange={(e) => setWindow(index, { day: e.target.value as DayCode })}>
-                      {(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as DayCode[]).map((day) => <option key={day} value={day}>{day.toUpperCase()}</option>)}
-                    </select>
-                    <input className={fieldClass} aria-label={`Start time ${index + 1}`} type="time" value={window.time_from} onChange={(e) => setWindow(index, { time_from: e.target.value })} />
-                    <input className={fieldClass} aria-label={`End time ${index + 1}`} type="time" value={window.time_to} onChange={(e) => setWindow(index, { time_to: e.target.value })} />
-                  </div>
-                ))}
-              </div>
-              <div className="mt-2 flex gap-2">
-                <button type="button" className="secondary-button" onClick={() => setDraft((current) => ({ ...current, operating_windows: [...current.operating_windows, DEFAULT_WINDOW] }))}>Add window</button>
-                {draft.operating_windows.length > 1 && <button type="button" className="secondary-button" onClick={() => setDraft((current) => ({ ...current, operating_windows: current.operating_windows.slice(0, -1) }))}>Remove last</button>}
-              </div>
-            </fieldset>
             <Field label="Permit status" required>
               <select className={fieldClass} value={draft.permit_status} onChange={(event) => setDraft((current) => ({ ...current, permit_status: event.target.value as VendorProfile['permit_status'] }))}>
                 <option value="not_started">Not started</option>
@@ -374,12 +331,12 @@ export default function ProfileEditor() {
           </section>
 
           <section className="form-section">
-            <h2 className="section-title">EasyApply details</h2>
+            <h2 className="section-title">User info</h2>
             <p className="text-sm text-muted-foreground">We use these to pre-fill reviewable drafts. Rollaway never submits a binding application automatically.</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Owner / contact name" required><input className={fieldClass} autoComplete="name" value={draft.autofill_profile.owner_name} onChange={(e) => setContact('owner_name', e.target.value)} /></Field>
               <Field label="Business name" required><input className={fieldClass} autoComplete="organization" value={draft.autofill_profile.business_name} onChange={(e) => setContact('business_name', e.target.value)} /></Field>
-              <Field label="Email" required><input className={fieldClass} type="email" autoComplete="email" value={draft.autofill_profile.email} onChange={(e) => setContact('email', e.target.value)} /></Field>
+              <Field label="Email" required><input className={fieldClass} type="text" inputMode="email" autoComplete="email" value={draft.autofill_profile.email} onChange={(e) => setContact('email', e.target.value)} /></Field>
               <Field label="Phone" required>
                 <div className="mt-1 flex min-h-11 items-center rounded-md border border-border bg-white pl-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
                   <span className="select-none pr-1 text-base font-semibold text-muted-foreground" aria-hidden="true">

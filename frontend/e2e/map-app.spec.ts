@@ -62,7 +62,6 @@ async function completeProfile(page: import('@playwright/test').Page) {
   ).toBeVisible()
   await page.getByLabel('Cuisine').selectOption('mexican')
   await page.getByRole('button', { name: 'Use sample menu' }).click()
-  await page.getByLabel('Home base or neighborhood').fill('Mission District')
   await page.getByLabel('Owner / contact name').fill('Avery Rivera')
   await page.getByLabel('Business name').fill('Mission Tacos')
   await page.getByLabel('Email').fill('avery@example.com')

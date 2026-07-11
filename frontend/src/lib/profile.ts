@@ -73,6 +73,22 @@ export function formatUsPhone(value: string): string {
   return local ? `+1 ${local}` : ''
 }
 
+/** True when the value holds a complete 10-digit US number (ignoring a +1 country code). */
+export function isValidUsPhone(phone: string): boolean {
+  let digits = phone.replace(/\D/g, '')
+  if (digits.length === 11 && digits.startsWith('1')) digits = digits.slice(1)
+  return digits.length === 10
+}
+
+/**
+ * Permissive email check: only validates the *shape* (something@something.tld),
+ * not the domain. Deliberately accepts any TLD (.edu, .museum, etc.) — for the
+ * demo we never strongly reject real-looking addresses. See issue #12.
+ */
+export function isValidEmailShape(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+}
+
 export function derivePriceTier(items: MenuItem[]): PriceTier {
   const prices = items
     .map((item) => item.price)
@@ -102,8 +118,8 @@ export function validateProfile(value: unknown): value is VendorProfile {
   ) {
     return false
   }
+  // home_base.label may be empty: the neighborhood field was removed in #11.
   if (!isRecord(value.home_base) || typeof value.home_base.label !== 'string') return false
-  if (!value.home_base.label.trim()) return false
   if (
     !isRecord(value.max_travel) ||
     typeof value.max_travel.value !== 'number' ||
@@ -138,7 +154,7 @@ export function validateProfile(value: unknown): value is VendorProfile {
   ) {
     return false
   }
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(contact.email))
+  return isValidEmailShape(String(contact.email)) && isValidUsPhone(String(contact.phone))
 }
 
 export function parseStoredProfile(raw: string | null): VendorProfile | null {

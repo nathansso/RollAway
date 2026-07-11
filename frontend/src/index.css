@@ -1,0 +1,60 @@
+@import 'tailwindcss';
+@import 'mapbox-gl/dist/mapbox-gl.css';
+
+@theme {
+  /* Rollaway design tokens — warm street-food orange + map blue */
+  --color-primary: #c2410c;
+  --color-on-primary: #ffffff;
+  --color-secondary: #f97316;
+  --color-accent: #2563eb;
+  --color-background: #fff7ed;
+  --color-foreground: #0f172a;
+  --color-muted: #fdf4f0;
+  --color-muted-foreground: #64748b;
+  --color-border: #fceae1;
+  --color-destructive: #dc2626;
+  --color-ring: #c2410c;
+
+  /* verdict colors */
+  --color-good: #16a34a;
+  --color-caution: #d97706;
+  --color-avoid: #dc2626;
+
+  --font-display: 'Calistoga', ui-serif, Georgia, serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Respect users who prefer less motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Mapbox chrome fits the theme */
+.mapboxgl-ctrl-logo {
+  opacity: 0.6;
+}
+.mapboxgl-popup-content {
+  border-radius: 12px;
+  font-family: var(--font-sans);
+}

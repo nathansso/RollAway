@@ -34,6 +34,13 @@ RollAway will obtain and verify the newest applicable permit PDFs during impleme
 - Record the form version, checksum, mapped fields, unresolved fields, tool results, and user approval in an audit record.
 - Return typed errors for unsupported jurisdictions, missing snapshots, checksum mismatches, and PDF-processing failures.
 
+## Area recommendation integration
+
+- Consume the shared `area_insights` contract when a vendor selects a parking/setup target.
+- Preserve non-hydrant placement evidence, citations, selected coordinates, and the curb-sign verification warning in the permit audit context.
+- Reuse the selected block and coordinates when a permit form requests the proposed operating location, but require vendor confirmation before inserting them into a PDF.
+- Keep local cuisine metrics informational; they must not change permit applicability or legal attestations.
+
 ## Frontend
 
 - Add permit selection, requirements, source metadata, form preview, missing-field resolution, attachment checklist, and final-review screens.

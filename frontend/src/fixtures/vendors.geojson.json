@@ -1,0 +1,185 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.3982, 37.7864] },
+      "properties": {
+        "permit_id": "24MFF-0012",
+        "name": "Golden Gate Halal",
+        "type": "Truck",
+        "cuisine": "halal",
+        "status": "APPROVED",
+        "fooditems": "chicken over rice: gyro: falafel"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.4058, 37.7822] },
+      "properties": {
+        "permit_id": "24MFF-0027",
+        "name": "Tacos El Patron",
+        "type": "Truck",
+        "cuisine": "tacos",
+        "status": "APPROVED",
+        "fooditems": "tacos: burritos: quesadillas: aguas frescas"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.4041, 37.7815] },
+      "properties": {
+        "permit_id": "24MFF-0031",
+        "name": "La Esquina Taqueria Truck",
+        "type": "Truck",
+        "cuisine": "tacos",
+        "status": "APPROVED",
+        "fooditems": "tacos al pastor: carnitas: horchata"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.3953, 37.7883] },
+      "properties": {
+        "permit_id": "24MFF-0045",
+        "name": "Rincon Coffee Co.",
+        "type": "Push Cart",
+        "cuisine": "coffee",
+        "status": "APPROVED",
+        "fooditems": "espresso: cold brew: pastries"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.4103, 37.7791] },
+      "properties": {
+        "permit_id": "24MFF-0052",
+        "name": "SoMa StrEat Sweets",
+        "type": "Push Cart",
+        "cuisine": "desserts",
+        "status": "REQUESTED",
+        "fooditems": "churros: ice cream sandwiches"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.3921, 37.7936] },
+      "properties": {
+        "permit_id": "24MFF-0063",
+        "name": "Embarcadero Dogs",
+        "type": "Push Cart",
+        "cuisine": "hot_dogs",
+        "status": "APPROVED",
+        "fooditems": "hot dogs: chips: soda"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.4194, 37.765] },
+      "properties": {
+        "permit_id": "24MFF-0071",
+        "name": "Mission Al Pastor",
+        "type": "Truck",
+        "cuisine": "tacos",
+        "status": "APPROVED",
+        "fooditems": "tacos: tortas: quesadillas"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.4212, 37.7599] },
+      "properties": {
+        "permit_id": "24MFF-0078",
+        "name": "Paletas Doña Rosa",
+        "type": "Push Cart",
+        "cuisine": "ice_cream",
+        "status": "APPROVED",
+        "fooditems": "paletas: mangonadas"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.3892, 37.7786] },
+      "properties": {
+        "permit_id": "24MFF-0084",
+        "name": "Oracle Park Kettle Corn",
+        "type": "Push Cart",
+        "cuisine": "desserts",
+        "status": "SUSPEND",
+        "fooditems": "kettle corn: lemonade"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.4482, 37.7699] },
+      "properties": {
+        "permit_id": "24MFF-0090",
+        "name": "Panhandle Pho Wheels",
+        "type": "Truck",
+        "cuisine": "asian",
+        "status": "APPROVED",
+        "fooditems": "pho: banh mi: spring rolls"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.4335, 37.8015] },
+      "properties": {
+        "permit_id": "24MFF-0096",
+        "name": "Marina Melts",
+        "type": "Truck",
+        "cuisine": "sandwiches",
+        "status": "EXPIRED",
+        "fooditems": "grilled cheese: tomato soup"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.4079, 37.7852] },
+      "properties": {
+        "permit_id": "24MFF-0103",
+        "name": "Union Square Crepes",
+        "type": "Truck",
+        "cuisine": "desserts",
+        "status": "APPROVED",
+        "fooditems": "sweet crepes: savory crepes: coffee"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.3969, 37.7947] },
+      "properties": {
+        "permit_id": "24MFF-0110",
+        "name": "Ferry Point BBQ",
+        "type": "Truck",
+        "cuisine": "bbq",
+        "status": "APPROVED",
+        "fooditems": "brisket: pulled pork: cornbread"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.413, 37.7749] },
+      "properties": {
+        "permit_id": "24MFF-0117",
+        "name": "Civic Center Shawarma",
+        "type": "Truck",
+        "cuisine": "halal",
+        "status": "REQUESTED",
+        "fooditems": "shawarma wraps: hummus plates"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-122.3901, 37.7702] },
+      "properties": {
+        "permit_id": "24MFF-0124",
+        "name": "Dogpatch Poke Cart",
+        "type": "Push Cart",
+        "cuisine": "seafood",
+        "status": "APPROVED",
+        "fooditems": "poke bowls: seaweed salad"
+      }
+    }
+  ]
+}

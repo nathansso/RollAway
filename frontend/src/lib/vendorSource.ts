@@ -1,0 +1,25 @@
+/**
+ * Seed vendor layer for the map.
+ *
+ * VITE_VENDORS_URL set  -> fetch live GeoJSON from Person 3's get_vendors?format=geojson
+ * otherwise             -> bundled fixture (~15 plausible SF vendors)
+ *
+ * Same swap-to-real design as chatClient: env var flip, zero code changes.
+ */
+
+import type { VendorCollection } from '../types/contract'
+import vendorsFixture from '../fixtures/vendors.geojson.json'
+
+const VENDORS_URL: string = import.meta.env.VITE_VENDORS_URL ?? ''
+
+export async function loadVendors(): Promise<VendorCollection> {
+  if (VENDORS_URL) {
+    try {
+      const res = await fetch(VENDORS_URL)
+      if (res.ok) return (await res.json()) as VendorCollection
+    } catch {
+      // fall through to fixture — a map with seed vendors beats an empty map
+    }
+  }
+  return vendorsFixture as VendorCollection
+}

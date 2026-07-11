@@ -55,3 +55,5 @@ node functions/scripts/fetch_static_data.js
 ## Deploy
 See `functions/DEPLOY.md`. The DO remote build runs `npm install` from this
 package.json automatically.
+
+> **Demo reliability:** honors `DEMO_DATA_MODE` (reads a frozen snapshot from `demo_data/`); in live mode a transient upstream miss fail-fast-degrades to that snapshot in ~2.5s (`shared.js` `withData`/`demoFetchOpts`).

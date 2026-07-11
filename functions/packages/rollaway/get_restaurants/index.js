@@ -33,6 +33,7 @@ const {
   guard, ok, UpstreamError,
   validatePoint, validateDay, validateTime,
   fetchJSON, TTLCache, haversineMeters,
+  withData, demoFetchOpts,
 } = require('./shared');
 const { venueWeight, windowOverlap, saturationVerdict } = require('./popularity');
 
@@ -91,6 +92,7 @@ async function fetchPlaces(lat, lng, radius_m) {
       method: 'POST',
       timeoutMs: 6000,
       retries: 1,
+      ...demoFetchOpts(),
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': key,
@@ -154,8 +156,20 @@ function parseWindow(args) {
 
 exports.main = guard(async (args) => {
   const { lat, lng, radius_m } = validatePoint(args, { defaultRadius: 300, maxRadius: 2000 });
-  const win = parseWindow(args);
+  const win = parseWindow(args); // validates window args (throws BAD_INPUT) before snapshot read
 
+  // Honors DEMO_DATA_MODE; a live miss degrades to snapshot in ~2.5s. Key is
+  // point + day (matching recommend_spots' read key, which ignores the window
+  // times); a single setup window per point/day is the demo assumption.
+  const body = await withData(
+    'get_restaurants',
+    { lat, lng, radius_m, day: args.day },
+    () => computeRestaurants(lat, lng, radius_m, win)
+  );
+  return ok(body);
+});
+
+async function computeRestaurants(lat, lng, radius_m, win) {
   const placeKey = `${lat.toFixed(3)},${lng.toFixed(3)},${Math.round(radius_m / 50) * 50}`;
   const places = await cache.getOrSet(placeKey, PLACES_TTL_MS, () =>
     fetchPlaces(lat, lng, radius_m)
@@ -203,5 +217,5 @@ exports.main = guard(async (args) => {
       saturation_open: saturationVerdict(weightedOpen, radius_m),
     };
   }
-  return ok(body);
-});
+  return body;
+}

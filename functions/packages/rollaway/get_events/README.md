@@ -37,3 +37,5 @@ Upstream failures also degrade to the fixture — never a 500.
 ```
 node functions/scripts/invoke_local.js get_events '{"lat":37.78,"lng":-122.40,"radius_m":3000,"date_from":"2026-07-11","date_to":"2026-07-13"}'
 ```
+
+> **Demo reliability:** honors `DEMO_DATA_MODE` (reads a frozen snapshot from `demo_data/`); in live mode a transient upstream miss fail-fast-degrades to that snapshot in ~2.5s (`shared.js` `withData`/`demoFetchOpts`).

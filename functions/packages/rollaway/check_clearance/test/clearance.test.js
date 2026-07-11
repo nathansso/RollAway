@@ -154,6 +154,28 @@ test('buildChecks: allowed is the AND of every check, §B field names exact', ()
   }
 });
 
+test('KNOWN HARD FAIL: a spot <75ft from a restaurant entrance is allowed:false, geometry only', () => {
+  // Point a restaurant entrance 50ft east of the spot — a hard fail of the
+  // 75ft rule. buildChecks is pure geometry: it takes FeatureCollections, does
+  // NO network and NO LLM (that is the whole invariant). We assert the specific
+  // failing rule + cite so a regression can't silently pass the spot.
+  const { allowed, checks } = buildChecks({
+    lat: ORIGIN.lat, lng: ORIGIN.lng, vendor_type: 'truck',
+    restaurantsFC: featureCollection([pointEastFt(50, { name: 'Cafe Too Close' })]),
+    schoolsFC: featureCollection([]),
+    hydrantsFC: featureCollection([]),
+    sidewalksFC: featureCollection([]),
+    now: SCHOOL_TIME,
+  });
+  assert.equal(allowed, false, 'a spot 50ft from an entrance must be disallowed');
+  const entrance = checks.find((c) => c.rule === RULE_LABELS.RESTAURANT_ENTRANCE);
+  assert.ok(entrance, 'the restaurant-entrance row must be present');
+  assert.equal(entrance.pass, false);
+  assert.equal(entrance.required_ft, 75);
+  assert.ok(Math.abs(entrance.actual_ft - 50) < 1, `actual_ft ${entrance.actual_ft} should be ~50`);
+  assert.equal(entrance.cite, CITES.RESTAURANT_ENTRANCE);
+});
+
 test('main(): full function run offline (fixture restaurants), §B envelope on bad input', async () => {
   const { main } = require('../index');
   const good = await main({ lat: 37.78, lng: -122.40, vendor_type: 'truck' });

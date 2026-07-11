@@ -1,0 +1,29 @@
+{
+  "by_cuisine": {
+    "asian": 6,
+    "coffee": 3,
+    "drinks": 8,
+    "other": 2,
+    "sandwiches": 1
+  },
+  "by_price": {
+    "1": 2,
+    "2": 13
+  },
+  "saturation": "medium",
+  "total": 20,
+  "window": {
+    "day": "fri",
+    "open_by_cuisine": {
+      "asian": 4,
+      "coffee": 3,
+      "drinks": 5,
+      "other": 1,
+      "sandwiches": 1
+    },
+    "open_total": 14,
+    "saturation_open": "medium",
+    "time_from": "12:00",
+    "time_to": "14:00"
+  }
+}

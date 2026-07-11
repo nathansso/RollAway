@@ -1,0 +1,10 @@
+{
+  "name": "recommend_spots",
+  "version": "1.0.0",
+  "description": "RollAway orchestrator: gathers signals for 3 candidate spots, scores them deterministically, and returns ranked recommendations with one-line why prose.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}

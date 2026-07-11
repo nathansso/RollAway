@@ -1,0 +1,104 @@
+{
+  "count": 9,
+  "events": [
+    {
+      "expected_attendance": 600,
+      "name": "I Promised The World w/ A Static Lullaby",
+      "point": {
+        "lat": 37.793301,
+        "lng": -122.421204
+      },
+      "source": "ticketmaster",
+      "start": "2026-07-17T18:30:00",
+      "venue": "Great American Music Hall"
+    },
+    {
+      "expected_attendance": null,
+      "name": "DL Hughley",
+      "point": {
+        "lat": 37.802909,
+        "lng": -122.414217
+      },
+      "source": "ticketmaster",
+      "start": "2026-07-17T19:00:00",
+      "venue": "Cobb's Comedy Club"
+    },
+    {
+      "expected_attendance": null,
+      "name": "Beauty And The Beast (Touring) - Recommended ages 6 and Up. All guests require ticket, regardless of age",
+      "point": {
+        "lat": 37.779499,
+        "lng": -122.419502
+      },
+      "source": "ticketmaster",
+      "start": "2026-07-17T19:30:00",
+      "venue": "Orpheum Theatre-San Francisco"
+    },
+    {
+      "expected_attendance": null,
+      "name": "Joey Avery",
+      "point": {
+        "lat": 37.79550849,
+        "lng": -122.40013361
+      },
+      "source": "ticketmaster",
+      "start": "2026-07-17T19:30:00",
+      "venue": "Punch Line Comedy Club - San Francisco"
+    },
+    {
+      "expected_attendance": null,
+      "name": "Lil Shine - The Farewell Tour",
+      "point": {
+        "lat": 37.787571,
+        "lng": -122.409598
+      },
+      "source": "ticketmaster",
+      "start": "2026-07-17T20:00:00",
+      "venue": "August Hall"
+    },
+    {
+      "expected_attendance": null,
+      "name": "THE FEMCELS",
+      "point": {
+        "lat": 37.769739,
+        "lng": -122.420282
+      },
+      "source": "ticketmaster",
+      "start": "2026-07-17T20:00:00",
+      "venue": "Brick and Mortar Music Hall"
+    },
+    {
+      "expected_attendance": null,
+      "name": "DL Hughley",
+      "point": {
+        "lat": 37.802909,
+        "lng": -122.414217
+      },
+      "source": "ticketmaster",
+      "start": "2026-07-17T21:30:00",
+      "venue": "Cobb's Comedy Club"
+    },
+    {
+      "expected_attendance": null,
+      "name": "Joey Avery",
+      "point": {
+        "lat": 37.79550849,
+        "lng": -122.40013361
+      },
+      "source": "ticketmaster",
+      "start": "2026-07-17T21:45:00",
+      "venue": "Punch Line Comedy Club - San Francisco"
+    },
+    {
+      "expected_attendance": null,
+      "name": "Stephan Bodzin - 21+",
+      "point": {
+        "lat": 37.773102,
+        "lng": -122.411003
+      },
+      "source": "ticketmaster",
+      "start": "2026-07-17T22:00:00",
+      "venue": "1015 Folsom"
+    }
+  ]
+}

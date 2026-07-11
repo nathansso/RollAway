@@ -1,0 +1,33 @@
+{
+  "by_cuisine": {
+    "asian": 6,
+    "bbq": 1,
+    "burgers": 2,
+    "coffee": 2,
+    "drinks": 6,
+    "other": 2,
+    "pizza": 1
+  },
+  "by_price": {
+    "1": 2,
+    "2": 14,
+    "3": 1
+  },
+  "saturation": "medium",
+  "total": 20,
+  "window": {
+    "day": "fri",
+    "open_by_cuisine": {
+      "asian": 6,
+      "bbq": 1,
+      "burgers": 2,
+      "coffee": 2,
+      "drinks": 4,
+      "other": 1
+    },
+    "open_total": 16,
+    "saturation_open": "medium",
+    "time_from": "12:00",
+    "time_to": "14:00"
+  }
+}

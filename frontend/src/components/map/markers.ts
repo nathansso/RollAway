@@ -31,6 +31,28 @@ export function buildUserMarkerElement(): HTMLDivElement {
   return root
 }
 
+export function vendorMarkerLabel(props: VendorProperties): string {
+  const schedule = props.schedule_window
+    ? ` ${props.scheduled_here ? 'Scheduled' : 'Permit window'} ${props.schedule_window}.`
+    : ''
+  return `Vendor ${props.name}. Cuisine ${props.cuisine.replaceAll('_', ' ')}. ${props.type}. Permit status ${props.status}.${schedule}`
+}
+
+export function buildVendorMarkerElement(
+  props: VendorProperties,
+  onSelect: () => void,
+): HTMLButtonElement {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'vendor-marker'
+  button.setAttribute('aria-label', vendorMarkerLabel(props))
+  button.addEventListener('click', (event) => {
+    event.stopPropagation()
+    onSelect()
+  })
+  return button
+}
+
 export function buildVendorPopup(props: VendorProperties): HTMLDivElement {
   const root = document.createElement('div')
   root.className = 'min-w-44 p-1 font-sans'

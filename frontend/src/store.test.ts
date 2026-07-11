@@ -1,0 +1,363 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type {
+  ClosuresResponse,
+  PermitChecklist,
+  RecommendSpotsResponse,
+  VendorCollection,
+  VendorProfile,
+} from './types/contract'
+import { PROFILE_STORAGE_KEY } from './lib/profile'
+
+const api = vi.hoisted(() => ({
+  recommendSpots: vi.fn(),
+  getPermitChecklist: vi.fn(),
+  getVendors: vi.fn(),
+  getClosures: vi.fn(),
+}))
+
+vi.mock('./lib/apiClient', () => ({
+  ApiClientError: class ApiClientError extends Error {},
+  apiClient: api,
+}))
+
+const validProfile: VendorProfile = {
+  schema_version: 1,
+  vendor_type: 'truck',
+  cuisine: 'mexican',
+  menu: { raw: 'Tacos $5', items: [{ name: 'Tacos', price: 5 }], price_tier: '$' },
+  home_base: { label: 'SoMa', point: null },
+  max_travel: { value: 25, unit: 'minutes' },
+  operating_windows: [{ day: 'fri', time_from: '11:00', time_to: '14:00' }],
+  permit_status: 'researching',
+  autofill_profile: {
+    owner_name: 'Avery Rivera',
+    business_name: 'Mission Tacos',
+    email: 'avery@example.com',
+    phone: '415-555-0100',
+    address: '1 Mission St',
+    city: 'San Francisco',
+    state: 'CA',
+    postal_code: '94103',
+  },
+}
+
+const recommendations: RecommendSpotsResponse = {
+  contract_version: 2,
+  generated_for: {
+    preset: 'today_lunch',
+    date: '2026-07-11',
+    day: 'sat',
+    time_from: '11:00',
+    time_to: '14:00',
+    label: 'Today · lunch',
+  },
+  recommendations: [],
+}
+
+const permitChecklist: PermitChecklist = {
+  vendor_type: 'truck',
+  generated_at: '2026-07-11T00:00:00.000Z',
+  sections: [],
+}
+
+const vendors: VendorCollection = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [-122.4013, 37.7793] },
+      properties: {
+        permit_id: 'vendor-1',
+        name: 'Test Vendor',
+        type: 'truck',
+        cuisine: 'mexican',
+        status: 'APPROVED',
+      },
+    },
+  ],
+}
+
+const closures: ClosuresResponse = {
+  count: 1,
+  closures: [
+    {
+      id: 'closure-1',
+      reason: 'Test closure',
+      source: 'sfmta_event',
+      active_from: '2026-07-11T00:00:00.000Z',
+      active_to: '2026-07-11T23:59:59.000Z',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [-122.4013, 37.7793],
+          [-122.4003, 37.7803],
+        ],
+      },
+    },
+  ],
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (reason?: unknown) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise
+    reject = rejectPromise
+  })
+  return { promise, resolve, reject }
+}
+
+function createMemoryStorage(): Storage {
+  const values = new Map<string, string>()
+  return {
+    get length() {
+      return values.size
+    },
+    clear: () => values.clear(),
+    getItem: (key) => values.get(key) ?? null,
+    key: (index) => [...values.keys()][index] ?? null,
+    removeItem: (key) => {
+      values.delete(key)
+    },
+    setItem: (key, value) => {
+      values.set(key, value)
+    },
+  }
+}
+
+async function loadStore(storedProfile: VendorProfile | null = null) {
+  localStorage.clear()
+  if (storedProfile) {
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(storedProfile))
+  }
+  vi.resetModules()
+  return (await import('./store')).useAppStore
+}
+
+describe('guided app store phases', () => {
+  beforeEach(() => {
+    vi.unstubAllGlobals()
+    vi.stubGlobal('localStorage', createMemoryStorage())
+    api.recommendSpots.mockReset().mockResolvedValue(recommendations)
+    api.getPermitChecklist.mockReset().mockResolvedValue(permitChecklist)
+    api.getVendors.mockReset()
+    api.getClosures.mockReset()
+  })
+
+  it('advances through profile, recommendations, and explicit permit phases', async () => {
+    const recommendationRequest = deferred<RecommendSpotsResponse>()
+    const permitRequest = deferred<PermitChecklist>()
+    api.recommendSpots.mockReturnValueOnce(recommendationRequest.promise)
+    api.getPermitChecklist.mockReturnValueOnce(permitRequest.promise)
+    const store = await loadStore()
+
+    expect(store.getState().appPhase).toBe('profile')
+    expect(store.getState().saveProfile(validProfile)).toBe(true)
+    expect(store.getState().appPhase).toBe('session')
+
+    const recommendationRun = store.getState().startRecommendations()
+    expect(store.getState().appPhase).toBe('loading_recommendations')
+    recommendationRequest.resolve(recommendations)
+    await recommendationRun
+    expect(store.getState().appPhase).toBe('ready')
+
+    store.getState().setActiveTab('permits')
+    const permitRun = store.getState().startPermitChecklist()
+    expect(store.getState().appPhase).toBe('loading_permits')
+    permitRequest.resolve(permitChecklist)
+    await permitRun
+    expect(store.getState().appPhase).toBe('ready')
+    expect(store.getState().permitStatus).toBe('success')
+  })
+
+  it('initializes a stored valid profile at session setup', async () => {
+    const store = await loadStore(validProfile)
+
+    expect(store.getState().profile).toEqual(validProfile)
+    expect(store.getState().appPhase).toBe('session')
+  })
+
+  it('keeps ready phase when an existing profile is edited', async () => {
+    const store = await loadStore()
+    store.getState().saveProfile(validProfile)
+    await store.getState().startRecommendations()
+
+    store.getState().saveProfile({
+      ...validProfile,
+      autofill_profile: {
+        ...validProfile.autofill_profile,
+        business_name: 'Updated Mission Tacos',
+      },
+    })
+
+    expect(store.getState().appPhase).toBe('ready')
+  })
+
+  it('does not let a stale recommendation advance the phase', async () => {
+    const request = deferred<RecommendSpotsResponse>()
+    api.recommendSpots.mockReturnValueOnce(request.promise)
+    const store = await loadStore(validProfile)
+
+    const run = store.getState().startRecommendations()
+    store.getState().setWhen({
+      preset: 'custom',
+      date: '2026-07-12',
+      day: 'sun',
+      time_from: '10:00',
+      time_to: '13:00',
+      label: 'Sunday brunch',
+    })
+    request.resolve(recommendations)
+    await run
+
+    expect(store.getState().appPhase).toBe('session')
+    expect(store.getState().recommendations).toEqual([])
+  })
+
+  it('returns to session when a profile is saved during recommendation loading', async () => {
+    const request = deferred<RecommendSpotsResponse>()
+    api.recommendSpots.mockReturnValueOnce(request.promise)
+    const store = await loadStore(validProfile)
+
+    const run = store.getState().startRecommendations()
+    store.getState().saveProfile({
+      ...validProfile,
+      autofill_profile: {
+        ...validProfile.autofill_profile,
+        business_name: 'Updated Mission Tacos',
+      },
+    })
+    request.resolve(recommendations)
+    await run
+
+    expect(store.getState().appPhase).toBe('session')
+    expect(store.getState().recommendationStatus).toBe('idle')
+    expect(store.getState().recommendations).toEqual([])
+  })
+
+  it('returns to ready and ignores a stale permit response after a profile edit', async () => {
+    const request = deferred<PermitChecklist>()
+    api.getPermitChecklist.mockReturnValueOnce(request.promise)
+    const store = await loadStore(validProfile)
+    await store.getState().startRecommendations()
+
+    const run = store.getState().startPermitChecklist()
+    store.getState().saveProfile({
+      ...validProfile,
+      autofill_profile: {
+        ...validProfile.autofill_profile,
+        business_name: 'Updated Mission Tacos',
+      },
+    })
+    request.resolve(permitChecklist)
+    await run
+
+    expect(store.getState().appPhase).toBe('ready')
+    expect(store.getState().permitStatus).toBe('idle')
+    expect(store.getState().permitChecklist).toBeNull()
+  })
+
+  it('returns recommendation failures to session with a visible error', async () => {
+    api.recommendSpots.mockRejectedValueOnce(new Error('network down'))
+    const store = await loadStore(validProfile)
+
+    await store.getState().startRecommendations()
+
+    expect(store.getState().appPhase).toBe('session')
+    expect(store.getState().recommendationStatus).toBe('error')
+    expect(store.getState().recommendationError).toBe(
+      'Recommendations could not be loaded. Try again.',
+    )
+  })
+
+  it('falls back to SoMa and shows a notice for locations outside San Francisco', async () => {
+    const getCurrentPosition = vi.fn().mockImplementation((success) => {
+      success({ coords: { latitude: 37.8044, longitude: -122.2712 } })
+    })
+    vi.stubGlobal('navigator', { geolocation: { getCurrentPosition } })
+    const store = await loadStore(validProfile)
+
+    store.getState().requestLocation()
+
+    expect(store.getState()).toMatchObject({
+      locationStatus: 'outside_sf',
+      location: { lat: 37.7793, lng: -122.4013 },
+      locationNotice:
+        'Your location is outside San Francisco. Using the SoMa demo origin.',
+    })
+  })
+
+  it('clears stale vendors and closures immediately when the session time changes', async () => {
+    const store = await loadStore(validProfile)
+    store.setState({ vendors, closures })
+
+    store.getState().setWhen({
+      preset: 'custom',
+      date: '2026-07-12',
+      day: 'sun',
+      time_from: '10:00',
+      time_to: '13:00',
+      label: 'Sunday brunch',
+    })
+
+    expect(store.getState()).toMatchObject({
+      vendors: null,
+      closures: null,
+      baseDataError: null,
+    })
+  })
+
+  it('clears stale base data immediately when requesting a new location', async () => {
+    const getCurrentPosition = vi.fn()
+    vi.stubGlobal('navigator', { geolocation: { getCurrentPosition } })
+    const store = await loadStore(validProfile)
+    store.setState({ vendors, closures })
+
+    store.getState().requestLocation()
+
+    expect(store.getState()).toMatchObject({
+      locationStatus: 'requesting',
+      vendors: null,
+      closures: null,
+      baseDataError: null,
+    })
+  })
+
+  it('ignores a base-data response invalidated by a session change', async () => {
+    const vendorRequest = deferred<VendorCollection>()
+    const closureRequest = deferred<ClosuresResponse>()
+    api.getVendors.mockReturnValueOnce(vendorRequest.promise)
+    api.getClosures.mockReturnValueOnce(closureRequest.promise)
+    const store = await loadStore(validProfile)
+
+    const run = store.getState().loadBaseData()
+    store.getState().setWhen({
+      preset: 'custom',
+      date: '2026-07-12',
+      day: 'sun',
+      time_from: '10:00',
+      time_to: '13:00',
+      label: 'Sunday brunch',
+    })
+    vendorRequest.resolve(vendors)
+    closureRequest.resolve(closures)
+    await run
+
+    expect(store.getState()).toMatchObject({ vendors: null, closures: null })
+  })
+
+  it('keeps overlays empty when a base-data refresh fails', async () => {
+    api.getVendors.mockRejectedValueOnce(new Error('network down'))
+    api.getClosures.mockResolvedValueOnce(closures)
+    const store = await loadStore(validProfile)
+    store.setState({ vendors, closures })
+
+    await store.getState().loadBaseData()
+
+    expect(store.getState()).toMatchObject({
+      vendors: null,
+      closures: null,
+      baseDataError: 'Base map data is temporarily unavailable.',
+    })
+  })
+})

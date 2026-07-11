@@ -1,7 +1,16 @@
+import type { CuisineId } from '../fixtures/sampleMenus'
+
 export interface LatLng {
   lat: number
   lng: number
 }
+
+export type AppPhase =
+  | 'profile'
+  | 'session'
+  | 'loading_recommendations'
+  | 'ready'
+  | 'loading_permits'
 
 export type VendorType =
   | 'truck'
@@ -45,6 +54,7 @@ export interface AutofillProfile {
 export interface VendorProfile {
   schema_version: 1
   vendor_type: VendorType
+  cuisine: CuisineId
   menu: MenuProfile
   home_base: { label: string; point: LatLng | null }
   max_travel: { value: number; unit: 'minutes' | 'miles' }
@@ -111,6 +121,7 @@ export interface RecommendationSpot {
     source: string | null
   }
   travel_minutes: number
+  travel_distance_miles: number
 }
 
 export interface RecommendSpotsResponse {

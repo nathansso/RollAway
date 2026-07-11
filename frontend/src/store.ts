@@ -5,9 +5,11 @@ import {
   parseStoredProfile,
   validateProfile,
 } from './lib/profile'
-import { createPresetWhen } from './lib/when'
+import { isWithinSanFrancisco } from './lib/sfBounds'
+import { createPresetWhen, isValidCustomWindow } from './lib/when'
 import { loadStringArray, saveJson } from './lib/storage'
 import type {
+  AppPhase,
   ClosuresResponse,
   PermitChecklist,
   RecommendSpotsRequest,
@@ -19,11 +21,18 @@ import type {
 
 export type AppTab = 'map' | 'permits'
 export type AsyncStatus = 'idle' | 'loading' | 'success' | 'error'
-export type LocationStatus = 'idle' | 'requesting' | 'granted' | 'denied' | 'unavailable'
+export type LocationStatus =
+  | 'idle'
+  | 'requesting'
+  | 'granted'
+  | 'denied'
+  | 'unavailable'
+  | 'outside_sf'
 
 const SOMA_FALLBACK = { lat: 37.7793, lng: -122.4013 }
 const PERMIT_PROGRESS_KEY = 'rollaway.permit-progress.v1'
 let latestRecommendationRequest = 0
+let latestPermitRequest = 0
 let latestBaseRequest = 0
 
 function permitProgressKey(profile: VendorProfile | null): string {
@@ -43,6 +52,9 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 interface AppState {
+  appPhase: AppPhase
+  continueToSession: () => void
+
   activeTab: AppTab
   setActiveTab: (tab: AppTab) => void
 
@@ -56,6 +68,7 @@ interface AppState {
   setWhen: (when: SessionWhen) => void
   locationStatus: LocationStatus
   location: { lat: number; lng: number }
+  locationNotice: string | null
   requestLocation: () => void
 
   vendors: VendorCollection | null
@@ -66,6 +79,7 @@ interface AppState {
   recommendationStatus: AsyncStatus
   recommendationError: string | null
   recommendations: RecommendationSpot[]
+  startRecommendations: () => Promise<void>
   requestRecommendations: () => Promise<void>
   selectedSpotId: string | null
   selectSpot: (id: string | null) => void
@@ -74,13 +88,91 @@ interface AppState {
   permitError: string | null
   permitChecklist: PermitChecklist | null
   completedPermitItems: string[]
-  loadPermitChecklist: () => Promise<void>
+  startPermitChecklist: () => Promise<void>
   togglePermitItem: (id: string) => void
 }
 
 export const useAppStore = create<AppState>((set, get) => {
   const initialProfile = storedProfile()
+  const initialPhase: AppPhase = initialProfile ? 'session' : 'profile'
+
+  const startRecommendations = async () => {
+    const { profile, location, when, recommendationStatus, locationStatus } = get()
+    if (
+      !profile ||
+      !validateProfile(profile) ||
+      !isValidCustomWindow(when.date, when.time_from, when.time_to)
+    ) {
+      set({
+        appPhase: 'session',
+        recommendationStatus: 'error',
+        recommendationError: 'Complete your profile and session setup before finding spots.',
+      })
+      return
+    }
+    if (recommendationStatus === 'loading' || locationStatus === 'requesting') return
+
+    const requestId = ++latestRecommendationRequest
+    set({
+      appPhase: 'loading_recommendations',
+      recommendationStatus: 'loading',
+      recommendationError: null,
+      selectedSpotId: null,
+    })
+    const request: RecommendSpotsRequest = {
+      user_profile: profile,
+      location,
+      when,
+    }
+    try {
+      const response = await apiClient.recommendSpots(request)
+      if (requestId !== latestRecommendationRequest) return
+      set({
+        appPhase: 'ready',
+        recommendations: response.recommendations,
+        recommendationStatus: 'success',
+      })
+    } catch (error) {
+      if (requestId !== latestRecommendationRequest) return
+      set({
+        appPhase: 'session',
+        recommendationStatus: 'error',
+        recommendationError: errorMessage(
+          error,
+          'Recommendations could not be loaded. Try again.',
+        ),
+      })
+    }
+  }
+
+  const startPermitChecklist = async () => {
+    const { profile, permitStatus } = get()
+    if (!profile || !validateProfile(profile) || permitStatus === 'loading') return
+
+    const requestId = ++latestPermitRequest
+    set({ appPhase: 'loading_permits', permitStatus: 'loading', permitError: null })
+    try {
+      const permitChecklist = await apiClient.getPermitChecklist(profile.vendor_type)
+      if (requestId !== latestPermitRequest) return
+      set({ appPhase: 'ready', permitChecklist, permitStatus: 'success' })
+    } catch (error) {
+      if (requestId !== latestPermitRequest) return
+      set({
+        appPhase: 'ready',
+        permitStatus: 'error',
+        permitError: errorMessage(error, 'Permit guidance could not be loaded. Try again.'),
+      })
+    }
+  }
+
   return {
+    appPhase: initialPhase,
+    continueToSession: () => {
+      if (get().profile && validateProfile(get().profile)) {
+        set({ appPhase: 'session', profileEditorOpen: false })
+      }
+    },
+
     activeTab: 'map',
     setActiveTab: (activeTab) => set({ activeTab }),
 
@@ -92,7 +184,16 @@ export const useAppStore = create<AppState>((set, get) => {
     },
     saveProfile: (profile) => {
       if (!validateProfile(profile)) return false
+      const isFirstProfile = get().profile === null
+      const currentPhase = get().appPhase
+      const nextPhase =
+        currentPhase === 'loading_recommendations'
+          ? 'session'
+          : currentPhase === 'loading_permits'
+            ? 'ready'
+            : currentPhase
       set({
+        appPhase: isFirstProfile ? 'session' : nextPhase,
         profile,
         profileEditorOpen: false,
         permitChecklist: null,
@@ -103,6 +204,7 @@ export const useAppStore = create<AppState>((set, get) => {
         selectedSpotId: null,
       })
       latestRecommendationRequest += 1
+      latestPermitRequest += 1
       saveJson(PROFILE_STORAGE_KEY, profile)
       return true
     },
@@ -110,20 +212,32 @@ export const useAppStore = create<AppState>((set, get) => {
     when: createPresetWhen('today_lunch'),
     setWhen: (when) => {
       latestRecommendationRequest += 1
+      latestBaseRequest += 1
       set({
+        appPhase:
+          get().appPhase === 'loading_recommendations' ? 'session' : get().appPhase,
         when,
         recommendations: [],
         recommendationStatus: 'idle',
         recommendationError: null,
         selectedSpotId: null,
+        vendors: null,
         closures: null,
+        baseDataError: null,
       })
     },
     locationStatus: 'idle',
     location: SOMA_FALLBACK,
+    locationNotice: null,
     requestLocation: () => {
+      latestBaseRequest += 1
+      set({ vendors: null, closures: null, baseDataError: null })
       if (!navigator.geolocation) {
-        set({ locationStatus: 'unavailable', location: SOMA_FALLBACK })
+        set({
+          locationStatus: 'unavailable',
+          location: SOMA_FALLBACK,
+          locationNotice: null,
+        })
         return
       }
       latestRecommendationRequest += 1
@@ -133,13 +247,21 @@ export const useAppStore = create<AppState>((set, get) => {
         recommendationStatus: 'idle',
         recommendationError: null,
         selectedSpotId: null,
+        locationNotice: null,
       })
       navigator.geolocation.getCurrentPosition(
         ({ coords }) => {
           latestRecommendationRequest += 1
+          const location = { lat: coords.latitude, lng: coords.longitude }
+          const outsideSanFrancisco = !isWithinSanFrancisco(location)
           set({
-            locationStatus: 'granted',
-            location: { lat: coords.latitude, lng: coords.longitude },
+            appPhase:
+              get().appPhase === 'loading_recommendations' ? 'session' : get().appPhase,
+            locationStatus: outsideSanFrancisco ? 'outside_sf' : 'granted',
+            location: outsideSanFrancisco ? SOMA_FALLBACK : location,
+            locationNotice: outsideSanFrancisco
+              ? 'Your location is outside San Francisco. Using the SoMa demo origin.'
+              : null,
             recommendations: [],
             recommendationStatus: 'idle',
             selectedSpotId: null,
@@ -148,8 +270,11 @@ export const useAppStore = create<AppState>((set, get) => {
         (error) => {
           latestRecommendationRequest += 1
           set({
+            appPhase:
+              get().appPhase === 'loading_recommendations' ? 'session' : get().appPhase,
             locationStatus: error.code === error.PERMISSION_DENIED ? 'denied' : 'unavailable',
             location: SOMA_FALLBACK,
+            locationNotice: null,
             recommendations: [],
             recommendationStatus: 'idle',
             selectedSpotId: null,
@@ -165,6 +290,7 @@ export const useAppStore = create<AppState>((set, get) => {
     loadBaseData: async () => {
       const requestId = ++latestBaseRequest
       const { location, when } = get()
+      set({ vendors: null, closures: null, baseDataError: null })
       try {
         const [vendors, closures] = await Promise.all([
           apiClient.getVendors(location, when),
@@ -175,6 +301,8 @@ export const useAppStore = create<AppState>((set, get) => {
       } catch (error) {
         if (requestId !== latestBaseRequest) return
         set({
+          vendors: null,
+          closures: null,
           baseDataError: errorMessage(error, 'Base map data is temporarily unavailable.'),
         })
       }
@@ -183,38 +311,8 @@ export const useAppStore = create<AppState>((set, get) => {
     recommendationStatus: 'idle',
     recommendationError: null,
     recommendations: [],
-    requestRecommendations: async () => {
-      const { profile, location, when, recommendationStatus } = get()
-      if (
-        !profile ||
-        recommendationStatus === 'loading' ||
-        get().locationStatus === 'requesting'
-      ) return
-      const requestId = ++latestRecommendationRequest
-      set({ recommendationStatus: 'loading', recommendationError: null, selectedSpotId: null })
-      const request: RecommendSpotsRequest = {
-        user_profile: profile,
-        location,
-        when,
-      }
-      try {
-        const response = await apiClient.recommendSpots(request)
-        if (requestId !== latestRecommendationRequest) return
-        set({
-          recommendations: response.recommendations,
-          recommendationStatus: 'success',
-        })
-      } catch (error) {
-        if (requestId !== latestRecommendationRequest) return
-        set({
-          recommendationStatus: 'error',
-          recommendationError: errorMessage(
-            error,
-            'Recommendations could not be loaded. Try again.',
-          ),
-        })
-      }
-    },
+    startRecommendations,
+    requestRecommendations: startRecommendations,
     selectedSpotId: null,
     selectSpot: (selectedSpotId) => set({ selectedSpotId }),
 
@@ -222,20 +320,7 @@ export const useAppStore = create<AppState>((set, get) => {
     permitError: null,
     permitChecklist: null,
     completedPermitItems: loadStringArray(permitProgressKey(initialProfile)),
-    loadPermitChecklist: async () => {
-      const { profile, permitStatus } = get()
-      if (!profile || permitStatus === 'loading') return
-      set({ permitStatus: 'loading', permitError: null })
-      try {
-        const permitChecklist = await apiClient.getPermitChecklist(profile.vendor_type)
-        set({ permitChecklist, permitStatus: 'success' })
-      } catch (error) {
-        set({
-          permitStatus: 'error',
-          permitError: errorMessage(error, 'Permit guidance could not be loaded. Try again.'),
-        })
-      }
-    },
+    startPermitChecklist,
     togglePermitItem: (id) => {
       const completed = new Set(get().completedPermitItems)
       if (completed.has(id)) completed.delete(id)

@@ -1,3 +1,5 @@
+import { SAMPLE_MENUS } from '../fixtures/sampleMenus'
+import type { CuisineId } from '../fixtures/sampleMenus'
 import type {
   DayCode,
   MenuItem,
@@ -15,6 +17,7 @@ const VENDOR_TYPES = new Set<VendorType>([
   'pushcart_cooking',
   'pushcart_nocook',
 ])
+const CUISINES = new Set<CuisineId>(SAMPLE_MENUS.map((sample) => sample.id))
 const DAYS = new Set<DayCode>(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])
 const PERMIT_STATUSES = new Set([
   'not_started',
@@ -64,6 +67,7 @@ export function derivePriceTier(items: MenuItem[]): PriceTier {
 export function validateProfile(value: unknown): value is VendorProfile {
   if (!isRecord(value) || value.schema_version !== PROFILE_SCHEMA_VERSION) return false
   if (!VENDOR_TYPES.has(value.vendor_type as VendorType)) return false
+  if (!CUISINES.has(value.cuisine as CuisineId)) return false
   if (!isRecord(value.menu) || typeof value.menu.raw !== 'string' || !value.menu.raw.trim()) {
     return false
   }
@@ -116,7 +120,13 @@ export function parseStoredProfile(raw: string | null): VendorProfile | null {
   if (!raw) return null
   try {
     const parsed: unknown = JSON.parse(raw)
-    return validateProfile(parsed) ? parsed : null
+    const migrated =
+      isRecord(parsed) &&
+      parsed.schema_version === PROFILE_SCHEMA_VERSION &&
+      parsed.cuisine === undefined
+        ? { ...parsed, cuisine: 'american' }
+        : parsed
+    return validateProfile(migrated) ? migrated : null
   } catch {
     return null
   }

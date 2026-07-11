@@ -1,12 +1,35 @@
 import TruckLoader from '../common/TruckLoader'
 import { AlertIcon, CheckIcon, ClockIcon } from '../common/Icons'
 import { useAppStore } from '../../store'
+import type { KeyboardEvent } from 'react'
 
 const VERDICT_LABEL = {
   good: 'Good fit',
   caution: 'Check details',
   avoid: 'Avoid',
 } as const
+
+function moveCardFocus(event: KeyboardEvent<HTMLButtonElement>) {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+  const cards = Array.from(
+    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+      '.recommendation-card',
+    ) ?? [],
+  )
+  const currentIndex = cards.indexOf(event.currentTarget)
+  if (currentIndex < 0 || cards.length === 0) return
+  const nextIndex =
+    event.key === 'Home'
+      ? 0
+      : event.key === 'End'
+        ? cards.length - 1
+        : event.key === 'ArrowRight'
+          ? Math.min(cards.length - 1, currentIndex + 1)
+          : Math.max(0, currentIndex - 1)
+  event.preventDefault()
+  cards[nextIndex].focus()
+  cards[nextIndex].scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+}
 
 export default function RecommendationTray() {
   const status = useAppStore((state) => state.recommendationStatus)
@@ -61,6 +84,7 @@ export default function RecommendationTray() {
           type="button"
           key={spot.id}
           onClick={() => selectSpot(spot.id)}
+          onKeyDown={moveCardFocus}
           className="recommendation-card"
           aria-label={`Open details for rank ${spot.rank}, ${spot.block_label}`}
         >
@@ -74,7 +98,7 @@ export default function RecommendationTray() {
             <span className="mt-0.5 line-clamp-2 block text-xs leading-snug text-muted-foreground">
               {spot.why_one_line}
             </span>
-            <span className="mt-2 flex items-center gap-3 text-[11px] font-semibold text-foreground">
+            <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold text-foreground">
               <span className="inline-flex items-center gap-1">
                 {spot.verdict === 'good' ? <CheckIcon className="h-3.5 w-3.5" /> : <AlertIcon className="h-3.5 w-3.5" />}
                 {VERDICT_LABEL[spot.verdict]}
@@ -83,6 +107,8 @@ export default function RecommendationTray() {
                 <ClockIcon className="h-3.5 w-3.5" />
                 {spot.travel_minutes} min
               </span>
+              <span>{spot.travel_distance_miles.toFixed(1)} mi</span>
+              <span className="basis-full text-muted-foreground">Estimated city travel</span>
             </span>
           </span>
         </button>

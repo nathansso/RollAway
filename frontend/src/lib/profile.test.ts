@@ -39,6 +39,7 @@ describe('profile persistence boundary', () => {
   const validProfile = {
     schema_version: 1,
     vendor_type: 'pushcart_nocook',
+    cuisine: 'mexican',
     menu: {
       raw: 'Paleta $5',
       items: [{ name: 'Paleta', price: 5 }],
@@ -65,9 +66,19 @@ describe('profile persistence boundary', () => {
     expect(parseStoredProfile(JSON.stringify(validProfile))).toEqual(validProfile)
   })
 
+  it('migrates a persisted v1 profile without cuisine to American', () => {
+    const { cuisine: _cuisine, ...persistedV1Profile } = validProfile
+
+    expect(parseStoredProfile(JSON.stringify(persistedV1Profile))).toEqual({
+      ...persistedV1Profile,
+      cuisine: 'american',
+    })
+  })
+
   it('rejects corrupt, incomplete, and misspelled vendor profiles', () => {
     expect(parseStoredProfile('{broken')).toBeNull()
     expect(parseStoredProfile(JSON.stringify({ ...validProfile, vendor_type: 'pushcart_no_cook' }))).toBeNull()
+    expect(parseStoredProfile(JSON.stringify({ ...validProfile, cuisine: 'unknown' }))).toBeNull()
     expect(parseStoredProfile(JSON.stringify({ ...validProfile, menu: { raw: '' } }))).toBeNull()
   })
 })

@@ -5,6 +5,9 @@ import {
   adaptNativeRecommendations,
   apiClient,
   buildFunctionUrl,
+  estimateTravel,
+  normalizeRecommendationTravel,
+  normalizeVendors,
   validateClosuresResponse,
   validatePermitChecklist,
   validateRecommendationResponse,
@@ -14,6 +17,7 @@ const request: RecommendSpotsRequest = {
   user_profile: {
     schema_version: 1,
     vendor_type: 'truck',
+    cuisine: 'mexican',
     menu: { raw: 'Tacos $5', items: [{ name: 'Tacos', price: 5 }], price_tier: '$' },
     home_base: { label: 'SoMa', point: null },
     max_travel: { value: 25, unit: 'minutes' },
@@ -56,6 +60,14 @@ describe('fixture API client', () => {
       'Mission & 5th',
     ])
     expect(response.recommendations[0].foot_traffic.basis).toBe('bay_wheels')
+    expect(response.recommendations[0].travel_minutes).toBeGreaterThanOrEqual(3)
+    expect(response.recommendations[0].travel_distance_miles).toBeGreaterThanOrEqual(0)
+    for (const spot of response.recommendations) {
+      expect({
+        minutes: spot.travel_minutes,
+        miles: spot.travel_distance_miles,
+      }).toEqual(estimateTravel(spot.point, request.location))
+    }
   })
 
   it('returns vendors, closures, and permit guidance without fetch', async () => {
@@ -108,6 +120,19 @@ describe('fixture API client', () => {
 })
 
 describe('recommendation network boundary', () => {
+  it('produces deterministic straight-line miles and conservative city minutes', () => {
+    expect(estimateTravel(request.location, request.location)).toEqual({
+      minutes: 3,
+      miles: 0,
+    })
+    expect(
+      estimateTravel({ lat: 37.7869, lng: -122.3882 }, request.location),
+    ).toEqual({
+      minutes: 7,
+      miles: 0.55,
+    })
+  })
+
   it('converts the planned score_breakdown contract at the boundary', () => {
     const adapted = adaptNativeRecommendations(
       {
@@ -134,7 +159,21 @@ describe('recommendation network boundary', () => {
     expect(adapted?.recommendations[0]).toMatchObject({
       rank: 1,
       block_label: '2nd & Howard',
-      travel_minutes: 8,
+      travel_minutes: 3,
+      travel_distance_miles: 0,
+    })
+  })
+
+  it('replaces normalized travel fields with one coherent local estimate', async () => {
+    const response = await apiClient.recommendSpots(request, { delayMs: 0 })
+    const inconsistent = structuredClone(response)
+    inconsistent.recommendations[0].travel_minutes = 99
+    inconsistent.recommendations[0].travel_distance_miles = 0.01
+
+    const normalized = normalizeRecommendationTravel(inconsistent, request.location)
+    expect(normalized.recommendations[0]).toMatchObject({
+      travel_minutes: 3,
+      travel_distance_miles: 0,
     })
   })
 
@@ -167,7 +206,76 @@ describe('recommendation network boundary', () => {
       block_label: '2nd & Howard',
       verdict: 'good',
       travel_minutes: expect.any(Number),
+      travel_distance_miles: expect.any(Number),
     })
+  })
+
+  it('rejects malformed normalized travel values instead of leaking them to UI', async () => {
+    const valid = await apiClient.recommendSpots(request, { delayMs: 0 })
+    expect(validateRecommendationResponse(valid)).not.toBeNull()
+
+    const negative = structuredClone(valid)
+    negative.recommendations[0].travel_distance_miles = -1
+    expect(validateRecommendationResponse(negative)).toBeNull()
+
+    const nonFinite = structuredClone(valid)
+    nonFinite.recommendations[0].travel_distance_miles = Number.POSITIVE_INFINITY
+    expect(validateRecommendationResponse(nonFinite)).toBeNull()
+
+    const invalidMinutes = structuredClone(valid)
+    invalidMinutes.recommendations[0].travel_minutes = Number.NaN
+    expect(validateRecommendationResponse(invalidMinutes)).toBeNull()
+  })
+
+  it('rejects normalized and planned recommendations outside San Francisco', async () => {
+    const valid = await apiClient.recommendSpots(request, { delayMs: 0 })
+    const outside = structuredClone(valid)
+    outside.recommendations[0].point = { lat: 37.8044, lng: -122.2712 }
+    expect(validateRecommendationResponse(outside)).toBeNull()
+
+    expect(
+      adaptNativeRecommendations(
+        {
+          spots: [
+            {
+              rank: 1,
+              point: { lat: 37.8044, lng: -122.2712 },
+              block_label: 'Oakland',
+              why_one_line: 'Outside city',
+              score_breakdown: {
+                foot_traffic: 0.5,
+                competition: 0.5,
+                legality: { pass: true, rule: 'test' },
+                travel_minutes: 5,
+              },
+            },
+          ],
+        },
+        request,
+      ),
+    ).toBeNull()
+  })
+
+  it('filters legacy recommendations outside San Francisco', () => {
+    const legacy = {
+      agent: 'spot_scout',
+      reply_markdown: '',
+      citations: [],
+      checklist: null,
+      map_actions: [
+        {
+          type: 'add_spot',
+          id: 'outside',
+          point: { lat: 37.8044, lng: -122.2712 },
+          verdict: 'good',
+          score: 1,
+          reasons: [],
+          breakdown: { constraints: [], demand: {}, nearby_vendors: [] },
+        },
+      ],
+    } as unknown as LegacyChatResponse
+
+    expect(adaptLegacyRecommendations(legacy, request).recommendations).toEqual([])
   })
 
   it('rejects malformed native responses instead of leaking unsafe values to UI', () => {
@@ -192,6 +300,98 @@ describe('other live response boundaries', () => {
 
   it('rejects malformed closures before Mapbox receives geometry', () => {
     expect(validateClosuresResponse({ closures: [{ geometry: null }], count: 1 })).toBeNull()
+    expect(
+      validateClosuresResponse({
+        closures: [
+          {
+            id: 'bad-line',
+            reason: 'Malformed',
+            source: 'sfmta_event',
+            active_from: '2026-07-11T00:00:00.000Z',
+            active_to: '2026-07-11T23:59:59.000Z',
+            geometry: {
+              type: 'LineString',
+              coordinates: [[-122.4013, 37.7793]],
+            },
+          },
+        ],
+      }),
+    ).toBeNull()
+  })
+
+  it('filters GeoJSON and legacy vendors outside San Francisco', () => {
+    const sfVendor = {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [-122.4013, 37.7793] },
+      properties: {
+        permit_id: 'sf',
+        name: 'SF Vendor',
+        type: 'truck',
+        cuisine: 'mexican',
+        status: 'APPROVED',
+      },
+    }
+    const oaklandVendor = {
+      ...sfVendor,
+      geometry: { type: 'Point', coordinates: [-122.2712, 37.8044] },
+      properties: { ...sfVendor.properties, permit_id: 'oakland', name: 'Oakland Vendor' },
+    }
+
+    expect(
+      normalizeVendors({
+        type: 'FeatureCollection',
+        features: [sfVendor, oaklandVendor],
+      })?.features.map((vendor) => vendor.properties.permit_id),
+    ).toEqual(['sf'])
+    expect(
+      normalizeVendors({
+        vendors: [
+          { permit_id: 'sf', name: 'SF Vendor', point: { lat: 37.7793, lng: -122.4013 } },
+          {
+            permit_id: 'oakland',
+            name: 'Oakland Vendor',
+            point: { lat: 37.8044, lng: -122.2712 },
+          },
+        ],
+      })?.features.map((vendor) => vendor.properties.permit_id),
+    ).toEqual(['sf'])
+  })
+
+  it('filters closures whose geometry reaches outside San Francisco', () => {
+    const closure = {
+      id: 'sf',
+      reason: 'Street event',
+      source: 'sfmta_event',
+      active_from: '2026-07-11T00:00:00.000Z',
+      active_to: '2026-07-11T23:59:59.000Z',
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [-122.4013, 37.7793],
+          [-122.4003, 37.7803],
+        ],
+      },
+    }
+    const result = validateClosuresResponse({
+      count: 2,
+      closures: [
+        closure,
+        {
+          ...closure,
+          id: 'crosses-city-line',
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [-122.4013, 37.7793],
+              [-122.2712, 37.8044],
+            ],
+          },
+        },
+      ],
+    })
+
+    expect(result?.closures.map((item) => item.id)).toEqual(['sf'])
+    expect(result?.count).toBe(1)
   })
 
   it('rejects malformed permit sections before React renders them', () => {

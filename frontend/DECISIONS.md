@@ -33,5 +33,5 @@
     “Simulated packet ready.” No binding endpoint is implied.
 11. **No remote fonts are loaded.** System UI and Georgia fallbacks preserve the warm
     visual hierarchy while keeping fixture/PWA startup independent of font CDNs.
-12. **Warm RollAway tokens stay in use.** Orange remains the brand action color, blue is
+12. **Warm Rollaway tokens stay in use.** Orange remains the brand action color, blue is
     location/data emphasis, and status labels always combine text/icon with color.

@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CloseIcon } from '../common/Icons'
+import BrandMark from '../common/BrandMark'
+import { SAMPLE_MENUS, sampleMenuText } from '../../fixtures/sampleMenus'
 import { derivePriceTier, parseMenu } from '../../lib/profile'
 import { useDialogFocus } from '../../lib/useDialogFocus'
 import { useAppStore } from '../../store'
+import type { CuisineId } from '../../fixtures/sampleMenus'
 import type {
   AutofillProfile,
   DayCode,
@@ -32,6 +35,7 @@ function emptyProfile(): VendorProfile {
   return {
     schema_version: 1,
     vendor_type: 'truck',
+    cuisine: 'american',
     menu: { raw: '', items: [], price_tier: '$' },
     home_base: { label: '', point: null },
     max_travel: { value: 25, unit: 'minutes' },
@@ -72,6 +76,7 @@ export default function ProfileEditor() {
   const [draft, setDraft] = useState<VendorProfile>(() => existing ?? emptyProfile())
   const [error, setError] = useState('')
   const dialogRef = useRef<HTMLDivElement>(null)
+  const firstLaunch = existing === null
 
   useEffect(() => {
     if (!open) return
@@ -127,20 +132,34 @@ export default function ProfileEditor() {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-950/55 p-0 backdrop-blur-sm sm:p-5">
+    <div
+      className={
+        firstLaunch
+          ? 'onboarding-page pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]'
+          : 'fixed inset-0 z-[100] bg-slate-950/55 pb-0 pl-[max(1.25rem,env(safe-area-inset-left))] pr-[max(1.25rem,env(safe-area-inset-right))] pt-0 backdrop-blur-sm sm:pb-5 sm:pt-5'
+      }
+    >
       <div
         ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
+        role={firstLaunch ? 'main' : 'dialog'}
+        aria-modal={firstLaunch ? undefined : 'true'}
         aria-labelledby="profile-title"
         tabIndex={-1}
-        className="mx-auto flex h-full w-full max-w-2xl flex-col overflow-hidden bg-background outline-none sm:h-[min(900px,100%)] sm:rounded-3xl sm:shadow-2xl"
+        className={
+          firstLaunch
+            ? 'mx-auto flex min-h-dvh w-full max-w-3xl flex-col bg-background outline-none'
+            : 'mx-auto flex h-full w-full max-w-2xl flex-col overflow-hidden bg-background outline-none sm:h-[min(900px,100%)] sm:rounded-3xl sm:shadow-2xl'
+        }
       >
         <header className="flex items-start justify-between gap-4 border-b border-border bg-white px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-              {existing ? 'Vendor profile' : 'Welcome to RollAway'}
-            </p>
+            {existing ? (
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                Vendor profile
+              </p>
+            ) : (
+              <BrandMark compact />
+            )}
             <h1 id="profile-title" className="mt-1 font-display text-2xl text-foreground">
               {existing ? 'Update your setup' : 'Tell us about your business'}
             </h1>
@@ -181,6 +200,24 @@ export default function ProfileEditor() {
                 <option value="pushcart_nocook">Pushcart · no cooking</option>
               </select>
             </Field>
+            <Field label="Cuisine" required>
+              <select
+                className={fieldClass}
+                value={draft.cuisine}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    cuisine: event.target.value as CuisineId,
+                  }))
+                }
+              >
+                {SAMPLE_MENUS.map((sample) => (
+                  <option key={sample.id} value={sample.id}>
+                    {sample.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
             <Field label="Menu" required hint="Paste text or upload a plain-text-compatible file. Raw text stays on this device.">
               <textarea
                 className={`${fieldClass} min-h-32 resize-y`}
@@ -195,6 +232,18 @@ export default function ProfileEditor() {
               />
             </Field>
             <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() =>
+                  setDraft((current) => ({
+                    ...current,
+                    menu: { ...current.menu, raw: sampleMenuText(current.cuisine) },
+                  }))
+                }
+              >
+                Use sample menu
+              </button>
               <label className="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-border bg-white px-4 text-sm font-semibold text-foreground hover:bg-muted focus-within:ring-2 focus-within:ring-ring">
                 Upload menu file
                 <input
@@ -204,7 +253,7 @@ export default function ProfileEditor() {
                   onChange={(event) => void uploadMenu(event.target.files?.[0])}
                 />
               </label>
-              <span className="rounded-full bg-muted px-3 py-1.5 text-sm text-foreground">
+              <span className="rounded-md bg-muted px-3 py-1.5 text-sm text-foreground">
                 Estimated price tier: <strong>{priceTier}</strong>
               </span>
             </div>
@@ -298,7 +347,7 @@ export default function ProfileEditor() {
 
           <section className="form-section">
             <h2 className="section-title">EasyApply details</h2>
-            <p className="text-sm text-muted-foreground">We use these to pre-fill reviewable drafts. RollAway never submits a binding application automatically.</p>
+            <p className="text-sm text-muted-foreground">We use these to pre-fill reviewable drafts. Rollaway never submits a binding application automatically.</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Owner / contact name" required><input className={fieldClass} autoComplete="name" value={draft.autofill_profile.owner_name} onChange={(e) => setContact('owner_name', e.target.value)} /></Field>
               <Field label="Business name" required><input className={fieldClass} autoComplete="organization" value={draft.autofill_profile.business_name} onChange={(e) => setContact('business_name', e.target.value)} /></Field>
@@ -315,7 +364,7 @@ export default function ProfileEditor() {
 
           <div className="sticky bottom-0 -mx-5 mt-6 border-t border-border bg-background/95 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur">
             <button type="submit" className="primary-button w-full">
-              {existing ? 'Save profile changes' : 'Save profile & open map'}
+              {existing ? 'Save profile changes' : 'Continue to session setup'}
             </button>
           </div>
         </form>

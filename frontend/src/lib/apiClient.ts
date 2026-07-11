@@ -16,6 +16,7 @@ import recommendationFixture from '../fixtures/recommend_spots.json'
 import vendorFixture from '../fixtures/vendors.geojson.json'
 import closureFixture from '../fixtures/get_closures.json'
 import permitFixture from '../fixtures/permit_checklist.json'
+import { isWithinSanFrancisco } from './sfBounds'
 
 const USE_FIXTURES =
   String(import.meta.env.VITE_USE_FIXTURES ?? 'true').toLowerCase() !== 'false'
@@ -63,6 +64,10 @@ function isPoint(value: unknown): boolean {
   )
 }
 
+function isNonNegativeFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+}
+
 const VERDICTS = new Set<Verdict>(['good', 'caution', 'avoid'])
 const VENDOR_TYPES = new Set<VendorType>([
   'truck',
@@ -80,6 +85,7 @@ function isRecommendation(value: unknown): value is RecommendationSpot {
     typeof value.rank === 'number' &&
     value.rank > 0 &&
     isPoint(value.point) &&
+    isWithinSanFrancisco(value.point as LatLng) &&
     typeof value.block_label === 'string' &&
     typeof value.score === 'number' &&
     VERDICTS.has(value.verdict as Verdict) &&
@@ -107,23 +113,52 @@ function isRecommendation(value: unknown): value is RecommendationSpot {
     typeof value.closure.active === 'boolean' &&
     typeof value.closure.detail === 'string' &&
     (value.closure.source === null || typeof value.closure.source === 'string') &&
-    typeof value.travel_minutes === 'number'
+    isNonNegativeFiniteNumber(value.travel_minutes) &&
+    isNonNegativeFiniteNumber(value.travel_distance_miles)
   )
 }
 
-function hasNumericCoordinates(value: unknown): boolean {
+function isCoordinatePosition(value: unknown): value is number[] {
+  return (
+    Array.isArray(value) &&
+    value.length >= 2 &&
+    value.every((coordinate) => typeof coordinate === 'number' && Number.isFinite(coordinate)) &&
+    value[0] >= -180 &&
+    value[0] <= 180 &&
+    value[1] >= -90 &&
+    value[1] <= 90
+  )
+}
+
+function isValidClosureCoordinates(type: string, value: unknown): boolean {
+  if (!Array.isArray(value)) return false
+  if (type === 'LineString') {
+    return value.length >= 2 && value.every(isCoordinatePosition)
+  }
+  return (
+    type === 'Polygon' &&
+    value.length > 0 &&
+    value.every(
+      (ring) =>
+        Array.isArray(ring) &&
+        ring.length >= 4 &&
+        ring.every(isCoordinatePosition) &&
+        ring[0][0] === ring[ring.length - 1][0] &&
+        ring[0][1] === ring[ring.length - 1][1],
+    )
+  )
+}
+
+function coordinatesWithinSanFrancisco(value: unknown): boolean {
   if (!Array.isArray(value) || value.length === 0) return false
   if (value.every((coordinate) => typeof coordinate === 'number')) {
     return (
       value.length >= 2 &&
       value.every(Number.isFinite) &&
-      value[0] >= -180 &&
-      value[0] <= 180 &&
-      value[1] >= -90 &&
-      value[1] <= 90
+      isWithinSanFrancisco({ lng: value[0], lat: value[1] })
     )
   }
-  return value.every(hasNumericCoordinates)
+  return value.every(coordinatesWithinSanFrancisco)
 }
 
 export function validateRecommendationResponse(
@@ -158,12 +193,15 @@ export function validateClosuresResponse(value: unknown): ClosuresResponse | nul
     ) {
       return false
     }
-    return hasNumericCoordinates(closure.geometry.coordinates)
+    return isValidClosureCoordinates(String(closure.geometry.type), closure.geometry.coordinates)
   })
   if (!valid) return null
+  const closures = (value.closures as ClosuresResponse['closures']).filter((closure) =>
+    coordinatesWithinSanFrancisco(closure.geometry.coordinates),
+  )
   return {
-    closures: value.closures as ClosuresResponse['closures'],
-    count: value.closures.length,
+    closures,
+    count: closures.length,
   }
 }
 
@@ -245,6 +283,7 @@ export function adaptNativeRecommendations(
       !isRecord(candidate) ||
       typeof candidate.rank !== 'number' ||
       !isPoint(candidate.point) ||
+      !isWithinSanFrancisco(candidate.point as LatLng) ||
       typeof candidate.block_label !== 'string' ||
       typeof candidate.why_one_line !== 'string' ||
       !isRecord(candidate.score_breakdown)
@@ -258,7 +297,7 @@ export function adaptNativeRecommendations(
       !isRecord(breakdown.legality) ||
       typeof breakdown.legality.pass !== 'boolean' ||
       typeof breakdown.legality.rule !== 'string' ||
-      typeof breakdown.travel_minutes !== 'number'
+      !isNonNegativeFiniteNumber(breakdown.travel_minutes)
     ) {
       return null
     }
@@ -270,6 +309,7 @@ export function adaptNativeRecommendations(
     const competition = Math.min(1, Math.max(0, breakdown.competition))
     const hasClosure = Boolean(breakdown.closures)
     const legal = breakdown.legality.pass && !hasClosure
+    const travel = estimateTravel(candidate.point as LatLng, request.location)
     recommendations.push({
       id:
         typeof candidate.id === 'string'
@@ -334,19 +374,50 @@ export function adaptNativeRecommendations(
               : 'No active closure reported for this point.',
         source: hasClosure ? 'sfmta_event' : null,
       },
-      travel_minutes: Math.max(0, breakdown.travel_minutes),
+      travel_minutes: travel.minutes,
+      travel_distance_miles: travel.miles,
     })
   }
   return { contract_version: 2, generated_for: request.when, recommendations }
 }
 
-function travelEstimate(point: LatLng, request: RecommendSpotsRequest): number {
-  const latMiles = (point.lat - request.location.lat) * 69
-  const lngMiles =
-    (point.lng - request.location.lng) *
-    69 *
-    Math.cos((request.location.lat * Math.PI) / 180)
-  return Math.max(3, Math.round(Math.hypot(latMiles, lngMiles) * 5 + 3))
+export function estimateTravel(
+  point: LatLng,
+  origin: LatLng,
+): { minutes: number; miles: number } {
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180
+  const latDelta = toRadians(point.lat - origin.lat)
+  const lngDelta = toRadians(point.lng - origin.lng)
+  const originLat = toRadians(origin.lat)
+  const pointLat = toRadians(point.lat)
+  const haversine =
+    Math.sin(latDelta / 2) ** 2 +
+    Math.cos(originLat) * Math.cos(pointLat) * Math.sin(lngDelta / 2) ** 2
+  const straightLineMiles =
+    2 * 3958.8 * Math.asin(Math.min(1, Math.sqrt(haversine)))
+  const miles = Math.round(straightLineMiles * 100) / 100
+
+  return {
+    miles,
+    minutes: Math.max(3, Math.ceil(straightLineMiles * 6 + 3)),
+  }
+}
+
+export function normalizeRecommendationTravel(
+  response: RecommendSpotsResponse,
+  origin: LatLng,
+): RecommendSpotsResponse {
+  return {
+    ...response,
+    recommendations: response.recommendations.map((spot) => {
+      const travel = estimateTravel(spot.point, origin)
+      return {
+        ...spot,
+        travel_minutes: travel.minutes,
+        travel_distance_miles: travel.miles,
+      }
+    }),
+  }
 }
 
 export function adaptLegacyRecommendations(
@@ -355,7 +426,12 @@ export function adaptLegacyRecommendations(
 ): RecommendSpotsResponse {
   const actions = Array.isArray(legacy.map_actions) ? legacy.map_actions : []
   const recommendations = actions
-    .filter((action) => action?.type === 'add_spot' && isPoint(action.point))
+    .filter(
+      (action) =>
+        action?.type === 'add_spot' &&
+        isPoint(action.point) &&
+        isWithinSanFrancisco(action.point),
+    )
     .slice(0, 5)
     .map((action, index): RecommendationSpot => {
       const constraints = Array.isArray(action.breakdown?.constraints)
@@ -369,6 +445,7 @@ export function adaptLegacyRecommendations(
       const overlap = (action.breakdown?.nearby_vendors ?? []).filter(
         (vendor) => vendor.scheduled_here,
       )
+      const travel = estimateTravel(action.point, request.location)
       return {
         id: action.id,
         rank: index + 1,
@@ -409,7 +486,8 @@ export function adaptLegacyRecommendations(
               : 'No active closure reported for this point.',
           source: failed && /closure/i.test(failed.rule) ? 'sfmta_event' : null,
         },
-        travel_minutes: travelEstimate(action.point, request),
+        travel_minutes: travel.minutes,
+        travel_distance_miles: travel.miles,
       }
     })
   return {
@@ -434,19 +512,22 @@ function fixtureRecommendations(request: RecommendSpotsRequest): RecommendSpotsR
   const response = structuredClone(recommendationFixture) as RecommendSpotsResponse
   response.generated_for = request.when
   const hasFridayClosure = request.when.date === '2026-07-10'
-  response.recommendations = response.recommendations.map((spot) => ({
-    ...spot,
-    foot_traffic: {
-      ...spot.foot_traffic,
-      time_context: request.when.label,
-    },
-    competition: {
-      ...spot.competition,
-      price_tier: request.user_profile.menu.price_tier,
-    },
-    travel_minutes: travelEstimate(spot.point, request),
-    ...(spot.id === 'spot-mission-5th' && !hasFridayClosure
-      ? {
+  response.recommendations = response.recommendations.map((spot) => {
+    const travel = estimateTravel(spot.point, request.location)
+    return {
+      ...spot,
+      foot_traffic: {
+        ...spot.foot_traffic,
+        time_context: request.when.label,
+      },
+      competition: {
+        ...spot.competition,
+        price_tier: request.user_profile.menu.price_tier,
+      },
+      travel_minutes: travel.minutes,
+      travel_distance_miles: travel.miles,
+      ...(spot.id === 'spot-mission-5th' && !hasFridayClosure
+        ? {
           score: 0.56,
           verdict: 'caution' as const,
           why_one_line: 'Strong activity, with direct menu competition worth checking.',
@@ -463,8 +544,9 @@ function fixtureRecommendations(request: RecommendSpotsRequest): RecommendSpotsR
             source: null,
           },
         }
-      : {}),
-  }))
+        : {}),
+    }
+  })
   return response
 }
 
@@ -483,16 +565,16 @@ async function requestJson(url: string, init?: RequestInit): Promise<unknown> {
   try {
     response = await fetch(url, init)
   } catch {
-    throw new ApiClientError('NETWORK', 'Could not reach the RollAway service.')
+    throw new ApiClientError('NETWORK', 'Could not reach the Rollaway service.')
   }
   const body: unknown = await response.json().catch(() => null)
   if (!response.ok || body === null) {
-    throw new ApiClientError('NETWORK', 'The RollAway service returned an error.')
+    throw new ApiClientError('NETWORK', 'The Rollaway service returned an error.')
   }
   return body
 }
 
-function normalizeVendors(value: unknown): VendorCollection | null {
+export function normalizeVendors(value: unknown): VendorCollection | null {
   if (!isRecord(value)) return null
   if (value.type === 'FeatureCollection' && Array.isArray(value.features)) {
     const valid = value.features.every(
@@ -504,9 +586,11 @@ function normalizeVendors(value: unknown): VendorCollection | null {
         Array.isArray(feature.geometry.coordinates) &&
         feature.geometry.coordinates.length === 2 &&
         typeof feature.geometry.coordinates[0] === 'number' &&
+        Number.isFinite(feature.geometry.coordinates[0]) &&
         feature.geometry.coordinates[0] >= -180 &&
         feature.geometry.coordinates[0] <= 180 &&
         typeof feature.geometry.coordinates[1] === 'number' &&
+        Number.isFinite(feature.geometry.coordinates[1]) &&
         feature.geometry.coordinates[1] >= -90 &&
         feature.geometry.coordinates[1] <= 90 &&
         isRecord(feature.properties) &&
@@ -516,7 +600,15 @@ function normalizeVendors(value: unknown): VendorCollection | null {
         typeof feature.properties.cuisine === 'string' &&
         typeof feature.properties.status === 'string',
     )
-    return valid ? (value as unknown as VendorCollection) : null
+    if (!valid) return null
+    const collection = value as unknown as VendorCollection
+    return {
+      type: 'FeatureCollection',
+      features: collection.features.filter((vendor) => {
+        const [lng, lat] = vendor.geometry.coordinates
+        return isWithinSanFrancisco({ lat, lng })
+      }),
+    }
   }
   if (!Array.isArray(value.vendors)) return null
   const features = value.vendors
@@ -524,6 +616,7 @@ function normalizeVendors(value: unknown): VendorCollection | null {
       (vendor) =>
         isRecord(vendor) &&
         isPoint(vendor.point) &&
+        isWithinSanFrancisco(vendor.point as LatLng) &&
         typeof vendor.permit_id === 'string' &&
         typeof vendor.name === 'string',
     )
@@ -586,7 +679,7 @@ export const apiClient = {
       }),
     })
     const native = validateRecommendationResponse(body)
-    if (native) return native
+    if (native) return normalizeRecommendationTravel(native, request.location)
     const planned = adaptNativeRecommendations(body, request)
     if (planned) return planned
     if (isRecord(body) && Array.isArray(body.map_actions)) {

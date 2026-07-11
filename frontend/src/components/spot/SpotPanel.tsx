@@ -56,7 +56,7 @@ function Details({ spot }: { spot: RecommendationSpot }) {
         : 'caution'
 
   return (
-    <ul className="mt-3 rounded-2xl border border-border bg-white px-4 shadow-sm">
+    <ul className="mt-3 rounded-2xl border border-border bg-white px-4">
       <FactRow
         icon={<FootTrafficIcon className="h-5 w-5" />}
         title="Estimated foot traffic"
@@ -86,9 +86,9 @@ function Details({ spot }: { spot: RecommendationSpot }) {
       />
       <FactRow
         icon={<RouteIcon className="h-5 w-5" />}
-        title="Travel time"
-        value={`About ${spot.travel_minutes} min`}
-        detail="Estimated from your selected or fallback starting location."
+        title="Estimated city travel"
+        value={`${spot.travel_minutes} min · ${spot.travel_distance_miles.toFixed(1)} mi`}
+        detail="Straight-line distance with a conservative city travel-time estimate from your selected or fallback origin."
       />
     </ul>
   )
@@ -122,7 +122,7 @@ export default function SpotPanel() {
         aria-labelledby="spot-title"
         className="spot-sheet"
       >
-        <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-slate-300" aria-hidden="true" />
+        <div className="mx-auto mt-2 h-1 w-10 rounded-md bg-slate-300" aria-hidden="true" />
         <header className="flex items-start justify-between gap-3 px-5 pb-2 pt-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
@@ -136,7 +136,7 @@ export default function SpotPanel() {
                 {spot.verdict === 'good' ? <CheckIcon className="h-4 w-4" /> : <AlertIcon className="h-4 w-4" />}
                 {verdictLabel}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold">
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-xs font-semibold">
                 <ClockIcon className="h-3.5 w-3.5" />
                 {Math.round(spot.score * 100)}/100
               </span>
@@ -147,7 +147,7 @@ export default function SpotPanel() {
           </button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-          <p className="rounded-xl bg-muted px-4 py-3 text-sm font-medium leading-snug text-foreground">
+          <p className="rounded-xl border border-border bg-white px-4 py-3 text-sm font-medium leading-snug text-foreground">
             {spot.why_one_line}
           </p>
           <Details spot={spot} />

@@ -5,6 +5,7 @@ import { buildEasyApplyValues } from './easyApply'
 const profile: VendorProfile = {
   schema_version: 1,
   vendor_type: 'truck',
+  cuisine: 'mexican',
   menu: { raw: 'Tacos $5', items: [{ name: 'Tacos', price: 5 }], price_tier: '$' },
   home_base: { label: 'Mission District', point: null },
   max_travel: { value: 20, unit: 'minutes' },

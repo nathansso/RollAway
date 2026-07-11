@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react'
-import TruckLoader from '../common/TruckLoader'
+import { useState } from 'react'
 import {
   CheckIcon,
   ChevronIcon,
@@ -24,18 +23,61 @@ export default function PermitChecklist() {
   const error = useAppStore((state) => state.permitError)
   const checklist = useAppStore((state) => state.permitChecklist)
   const completed = useAppStore((state) => state.completedPermitItems)
-  const load = useAppStore((state) => state.loadPermitChecklist)
+  const startPermitChecklist = useAppStore((state) => state.startPermitChecklist)
   const toggle = useAppStore((state) => state.togglePermitItem)
   const openProfile = useAppStore((state) => state.openProfileEditor)
   const [easyApplyItem, setEasyApplyItem] = useState<PermitChecklistItem | null>(null)
 
-  useEffect(() => {
-    if (profile && status === 'idle') void load()
-  }, [profile, status, load])
-
   const items = checklist?.sections.flatMap((section) => section.items) ?? []
   const completeCount = items.filter((item) => completed.includes(item.id)).length
   const progress = items.length ? Math.round((completeCount / items.length) * 100) : 0
+
+  if (status === 'idle' || status === 'error') {
+    return (
+      <main id="permits-content" className="permits-screen" tabIndex={-1}>
+        <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pb-32 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6">
+          <header className="flex justify-end">
+            <button type="button" className="touch-button bg-white shadow-sm" onClick={openProfile} aria-label="Edit vendor profile">
+              <UserIcon className="h-5 w-5" />
+            </button>
+          </header>
+
+          <section className="my-auto flex flex-col items-center py-10 text-center" aria-labelledby="permit-landing-title">
+            <span className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary text-white" aria-hidden="true">
+              <PermitIcon className="h-10 w-10" />
+            </span>
+            <p className="mt-7 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+              San Francisco permits
+            </p>
+            <h1 id="permit-landing-title" className="mt-2 max-w-md font-display text-3xl text-foreground">
+              Build your San Francisco permit path
+            </h1>
+            <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
+              Get a personalized checklist ordered across the San Francisco agencies that shape your launch, with key deadlines and application guidance.
+            </p>
+
+            {status === 'error' && (
+              <div role="alert" className="mt-6 w-full max-w-lg rounded-2xl border border-destructive/30 bg-white p-4">
+                <p className="font-semibold text-destructive">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              className="primary-button mt-7"
+              onClick={() => void startPermitChecklist()}
+            >
+              {status === 'error' ? 'Try building again' : 'Build my permit checklist'}
+            </button>
+          </section>
+
+          <aside className="rounded-2xl border border-caution/30 bg-caution/10 p-4 text-sm leading-relaxed text-foreground">
+            <strong>Guidance, not legal advice.</strong> Requirements and fees can change. Verify your path, deadlines, and official submissions with the SF Permit Center.
+          </aside>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main id="permits-content" className="permits-screen" tabIndex={-1}>
@@ -54,7 +96,7 @@ export default function PermitChecklist() {
             <button type="button" className="touch-button bg-white shadow-sm" onClick={openProfile} aria-label="Edit vendor profile">
               <UserIcon className="h-5 w-5" />
             </button>
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-md" aria-hidden="true">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white" aria-hidden="true">
               <PermitIcon className="h-6 w-6" />
             </span>
           </div>
@@ -70,32 +112,17 @@ export default function PermitChecklist() {
           ))}
         </section>
 
-        {status === 'loading' && (
-          <div className="mt-8 rounded-3xl border border-border bg-white p-6 shadow-sm">
-            <TruckLoader label="Building your personalized permit checklist…" />
-          </div>
-        )}
-
-        {status === 'error' && (
-          <div role="alert" className="mt-6 rounded-2xl border border-destructive/30 bg-white p-5">
-            <p className="font-semibold text-destructive">{error}</p>
-            <button type="button" className="secondary-button mt-3" onClick={() => void load()}>
-              Try again
-            </button>
-          </div>
-        )}
-
         {status === 'success' && checklist && (
           <>
-            <section className="mt-6 rounded-2xl border border-border bg-white p-4 shadow-sm">
+            <section className="mt-6 rounded-2xl border border-border bg-white p-4">
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="font-semibold text-foreground">
                   {completeCount} of {items.length} complete
                 </span>
                 <span className="font-mono text-muted-foreground">{progress}%</span>
               </div>
-              <div role="progressbar" aria-label="Permit checklist progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="mt-2 h-2 overflow-hidden rounded-full bg-border">
-                <div className="h-full origin-left rounded-full bg-primary transition-transform" style={{ transform: `scaleX(${progress / 100})` }} />
+              <div role="progressbar" aria-label="Permit checklist progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="mt-2 h-2 overflow-hidden rounded-md bg-border">
+                <div className="h-full origin-left rounded-md bg-primary transition-transform" style={{ transform: `scaleX(${progress / 100})` }} />
               </div>
             </section>
 

@@ -1,23 +1,33 @@
 import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
-import type { GeoJSONSource } from 'mapbox-gl'
 import { useAppStore } from '../../store'
-import { apiClient } from '../../lib/apiClient'
+import { isWithinSanFrancisco } from '../../lib/sfBounds'
 import {
   buildSpotMarkerElement,
   buildUserMarkerElement,
   buildVendorPopup,
+  vendorMarkerLabel,
 } from './markers'
+import {
+  attachMapFailureFallback,
+  getFitCoordinates,
+  initializeMapbox,
+  shouldShowRecenter,
+} from './mapBounds'
+import { syncClosureOverlay, syncVendorOverlay } from './mapOverlays'
 
 const MAPBOX_TOKEN = String(import.meta.env.VITE_MAPBOX_TOKEN ?? '')
-const MAP_ENABLED = Boolean(MAPBOX_TOKEN) && !apiClient.useFixtures
-const MAP_STYLE = 'mapbox://styles/mapbox/streets-v12'
+const MAP_ENABLED = Boolean(MAPBOX_TOKEN)
 
-function FallbackMap() {
+export function FallbackMap() {
   const vendors = useAppStore((state) => state.vendors)
   const closures = useAppStore((state) => state.closures)
   const recommendations = useAppStore((state) => state.recommendations)
   const selectSpot = useAppStore((state) => state.selectSpot)
+  const [selectedVendor, setSelectedVendor] = useState<string | null>(null)
+  const selectedVendorFeature = vendors?.features.find(
+    (vendor) => vendor.properties.permit_id === selectedVendor,
+  )
 
   return (
     <div className="fallback-map" role="region" aria-label="Schematic map of SoMa">
@@ -31,16 +41,25 @@ function FallbackMap() {
       <div className="fallback-map__label fallback-map__label--two">Mission St</div>
       <div className="fallback-map__user" aria-label="Approximate location" />
       {(vendors?.features ?? []).slice(0, 9).map((vendor, index) => (
-        <span
+        <button
           key={vendor.properties.permit_id}
+          type="button"
           className="fallback-map__vendor"
           title={vendor.properties.name}
+          aria-label={vendorMarkerLabel(vendor.properties)}
+          aria-pressed={selectedVendor === vendor.properties.permit_id}
+          onClick={() => setSelectedVendor(vendor.properties.permit_id)}
           style={{
             left: `${18 + ((index * 17) % 68)}%`,
             top: `${25 + ((index * 23) % 48)}%`,
           }}
         />
       ))}
+      {selectedVendorFeature && (
+        <div className="fallback-map__vendor-detail" role="status">
+          {vendorMarkerLabel(selectedVendorFeature.properties)}
+        </div>
+      )}
       {recommendations.map((spot, index) => (
         <button
           key={spot.id}
@@ -57,9 +76,7 @@ function FallbackMap() {
         <strong>Map preview</strong>
         <span>
           {MAPBOX_TOKEN
-            ? apiClient.useFixtures
-              ? 'Offline-safe fixture map. No tile requests are made in demo mode.'
-              : 'Map tiles are unavailable. RollAway data remains usable.'
+            ? 'Map tiles are unavailable. Rollaway data remains usable.'
             : 'Add a public Mapbox token for live streets and pan controls.'}
         </span>
         <span className="mt-1 text-[11px]">
@@ -70,10 +87,28 @@ function FallbackMap() {
   )
 }
 
-export default function MapView() {
+export function RecenterControl({ onRecenter }: { onRecenter: () => void }) {
+  return (
+    <button
+      type="button"
+      className="map-recenter"
+      aria-label="Recenter map on your origin"
+      onClick={onRecenter}
+    >
+      <span aria-hidden="true">◎</span>
+    </button>
+  )
+}
+
+interface MapViewProps {
+  onViewReadyChange?: (ready: boolean) => void
+}
+
+export default function MapView({ onViewReadyChange }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const spotMarkers = useRef<mapboxgl.Marker[]>([])
+  const vendorPopup = useRef<mapboxgl.Popup | null>(null)
   const userMarker = useRef<mapboxgl.Marker | null>(null)
   const [mapReady, setMapReady] = useState(false)
   const [failed, setFailed] = useState(!MAP_ENABLED)
@@ -83,48 +118,37 @@ export default function MapView() {
   const recommendations = useAppStore((state) => state.recommendations)
   const location = useAppStore((state) => state.location)
   const locationStatus = useAppStore((state) => state.locationStatus)
+  const selectedSpotId = useAppStore((state) => state.selectedSpotId)
   const baseDataError = useAppStore((state) => state.baseDataError)
 
   useEffect(() => {
     if (!MAP_ENABLED || !containerRef.current) return
-    mapboxgl.accessToken = MAPBOX_TOKEN
     let map: mapboxgl.Map
     try {
-      map = new mapboxgl.Map({
-        container: containerRef.current,
-        style: MAP_STYLE,
-        center: [-122.4013, 37.7835],
-        zoom: 14,
-        attributionControl: true,
-      })
+      map = initializeMapbox(mapboxgl, containerRef.current, MAPBOX_TOKEN)
     } catch {
       setFailed(true)
       return
     }
     mapRef.current = map
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-right')
     const observer = new ResizeObserver(() => map.resize())
     observer.observe(containerRef.current)
-    const failTimer = window.setTimeout(() => {
-      if (!map.loaded()) setFailed(true)
-    }, 10000)
-    map.on('load', () => {
-      window.clearTimeout(failTimer)
-      setFailed(false)
-      setMapReady(true)
-      map.resize()
-    })
-    map.on('error', (event) => {
-      if (!map.loaded() && /token|401|403|style/i.test(event.error?.message ?? '')) {
-        setFailed(true)
-      }
+    const clearFailureHandlers = attachMapFailureFallback(map, {
+      onReady: () => {
+        setFailed(false)
+        setMapReady(true)
+        map.resize()
+      },
+      onFailure: () => setFailed(true),
     })
     return () => {
-      window.clearTimeout(failTimer)
+      clearFailureHandlers()
       observer.disconnect()
       spotMarkers.current.forEach((marker) => marker.remove())
+      vendorPopup.current?.remove()
       userMarker.current?.remove()
       spotMarkers.current = []
+      vendorPopup.current = null
       userMarker.current = null
       mapRef.current = null
       map.remove()
@@ -133,83 +157,49 @@ export default function MapView() {
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !mapReady || !vendors) return
-    const source = map.getSource('vendors') as GeoJSONSource | undefined
-    if (source) {
-      source.setData(vendors)
-      return
-    }
-    map.addSource('vendors', { type: 'geojson', data: vendors })
-    map.addLayer({
-      id: 'vendors-hit',
-      type: 'circle',
-      source: 'vendors',
-      paint: { 'circle-radius': 22, 'circle-opacity': 0 },
-    })
-    map.addLayer({
-      id: 'vendors-muted',
-      type: 'circle',
-      source: 'vendors',
-      paint: {
-        'circle-radius': 6,
-        'circle-color': '#64748B',
-        'circle-opacity': 0.62,
-        'circle-stroke-color': '#FFFFFF',
-        'circle-stroke-width': 1.5,
-      },
-    })
-    map.on('click', 'vendors-hit', (event) => {
-      const feature = event.features?.[0]
-      if (!feature || feature.geometry.type !== 'Point') return
-      const [lng, lat] = feature.geometry.coordinates
-      new mapboxgl.Popup({ offset: 14, maxWidth: '260px' })
-        .setLngLat([lng, lat])
-        .setDOMContent(buildVendorPopup(feature.properties as never))
-        .addTo(map)
-    })
-    map.on('mouseenter', 'vendors-hit', () => {
-      map.getCanvas().style.cursor = 'pointer'
-    })
-    map.on('mouseleave', 'vendors-hit', () => {
-      map.getCanvas().style.cursor = ''
-    })
+    if (!map || !mapReady) return
+    vendorPopup.current?.remove()
+    vendorPopup.current = null
+    syncVendorOverlay(map, vendors)
   }, [vendors, mapReady])
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !mapReady || !closures) return
-    const data = {
-      type: 'FeatureCollection' as const,
-      features: closures.closures.map((closure) => ({
-        type: 'Feature' as const,
-        properties: { id: closure.id, reason: closure.reason, source: closure.source },
-        geometry: closure.geometry,
-      })),
+    if (!map || !mapReady) return
+    const onVendorClick = (event: mapboxgl.MapLayerMouseEvent) => {
+      const feature = event.features?.[0]
+      if (!feature?.geometry || feature.geometry.type !== 'Point') return
+      const [lng, lat] = feature.geometry.coordinates as [number, number]
+      map.easeTo({
+        center: [lng, lat],
+        duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 350,
+      })
+      vendorPopup.current?.remove()
+      vendorPopup.current = new mapboxgl.Popup({ offset: 14, maxWidth: '260px' })
+        .setLngLat([lng, lat])
+        .setDOMContent(buildVendorPopup(feature.properties as never))
+        .addTo(map)
     }
-    const source = map.getSource('closures') as GeoJSONSource | undefined
-    if (source) {
-      source.setData(data)
-      return
+    const onVendorEnter = () => {
+      map.getCanvas().style.cursor = 'pointer'
     }
-    map.addSource('closures', { type: 'geojson', data })
-    map.addLayer({
-      id: 'closure-fill',
-      type: 'fill',
-      source: 'closures',
-      filter: ['==', ['geometry-type'], 'Polygon'],
-      paint: { 'fill-color': '#DC2626', 'fill-opacity': 0.2 },
-    })
-    map.addLayer({
-      id: 'closure-lines',
-      type: 'line',
-      source: 'closures',
-      paint: {
-        'line-color': '#DC2626',
-        'line-width': 5,
-        'line-opacity': 0.75,
-        'line-dasharray': [1.2, 1],
-      },
-    })
+    const onVendorLeave = () => {
+      map.getCanvas().style.cursor = ''
+    }
+    map.on('click', 'vendor-dots', onVendorClick)
+    map.on('mouseenter', 'vendor-dots', onVendorEnter)
+    map.on('mouseleave', 'vendor-dots', onVendorLeave)
+    return () => {
+      map.off('click', 'vendor-dots', onVendorClick)
+      map.off('mouseenter', 'vendor-dots', onVendorEnter)
+      map.off('mouseleave', 'vendor-dots', onVendorLeave)
+    }
+  }, [mapReady])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !mapReady) return
+    syncClosureOverlay(map, closures)
   }, [closures, mapReady])
 
   useEffect(() => {
@@ -226,14 +216,16 @@ export default function MapView() {
     })
     if (recommendations.length > 0) {
       const bounds = new mapboxgl.LngLatBounds()
-      recommendations.forEach((spot) => bounds.extend([spot.point.lng, spot.point.lat]))
+      getFitCoordinates(recommendations, location).forEach((coordinate) =>
+        bounds.extend(coordinate),
+      )
       map.fitBounds(bounds, {
         padding: { top: 190, right: 55, bottom: 230, left: 55 },
         maxZoom: 15.5,
         duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 700,
       })
     }
-  }, [recommendations, mapReady])
+  }, [location, recommendations, mapReady])
 
   useEffect(() => {
     const map = mapRef.current
@@ -241,6 +233,7 @@ export default function MapView() {
     if (!userMarker.current) {
       userMarker.current = new mapboxgl.Marker({
         element: buildUserMarkerElement(),
+        anchor: 'center',
       })
         .setLngLat([location.lng, location.lat])
         .addTo(map)
@@ -254,8 +247,34 @@ export default function MapView() {
     }
   }, [location, locationStatus, mapReady])
 
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !mapReady || !selectedSpotId) return
+    const selected = recommendations.find((spot) => spot.id === selectedSpotId)
+    if (!selected || !isWithinSanFrancisco(selected.point)) return
+    map.easeTo({
+      center: [selected.point.lng, selected.point.lat],
+      zoom: Math.max(map.getZoom(), 15),
+      duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 450,
+    })
+  }, [mapReady, recommendations, selectedSpotId])
+
+  const recenter = () => {
+    mapRef.current?.easeTo({
+      center: [location.lng, location.lat],
+      zoom: Math.max(mapRef.current.getZoom(), 14),
+      duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 450,
+    })
+  }
+
+  useEffect(() => {
+    const baseLayersReady =
+      (vendors !== null && closures !== null) || Boolean(baseDataError)
+    onViewReadyChange?.((failed || mapReady) && baseLayersReady)
+  }, [baseDataError, closures, failed, mapReady, onViewReadyChange, vendors])
+
   return (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0 bg-background">
       <div
         ref={containerRef}
         className={`absolute inset-0 h-full w-full ${failed || !mapReady ? 'invisible' : ''}`}
@@ -263,6 +282,7 @@ export default function MapView() {
         aria-label="Interactive map of recommendations, permitted vendors, closures, and your location"
       />
       {(failed || !mapReady) && <FallbackMap />}
+      {shouldShowRecenter(mapReady, failed) && <RecenterControl onRecenter={recenter} />}
       {baseDataError && (
         <div
           role="alert"

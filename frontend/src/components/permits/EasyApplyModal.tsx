@@ -54,7 +54,7 @@ export default function EasyApplyModal({
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
           {ready ? (
             <div className="flex min-h-72 flex-col items-center justify-center text-center">
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-good/15 text-good">
+              <span className="flex h-16 w-16 items-center justify-center rounded-md bg-good/15 text-good">
                 <CheckIcon className="h-8 w-8" />
               </span>
               <h3 className="mt-4 font-display text-2xl text-foreground">
@@ -68,7 +68,7 @@ export default function EasyApplyModal({
           ) : (
             <>
               <div className="rounded-xl border border-caution/30 bg-caution/10 px-4 py-3 text-sm leading-relaxed text-foreground">
-                RollAway prepares a reviewable draft. It does not submit, sign, pay, or make a binding certification.
+                Rollaway prepares a reviewable draft. It does not submit, sign, pay, or make a binding certification.
               </div>
               <div className="mt-4 space-y-4">
                 {item.fields.map((field) => (

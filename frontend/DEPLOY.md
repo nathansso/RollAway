@@ -1,6 +1,6 @@
-# Deploying the RollAway map app
+# Deploying the Rollaway map app
 
-RollAway is a Vite static site deployed by DigitalOcean App Platform. The checked-in
+Rollaway is a Vite static site deployed by DigitalOcean App Platform. The checked-in
 `.do/app.yaml` tracks `feat/frontend-mapapp`, builds from `frontend`, and publishes
 `frontend/dist`.
 
@@ -26,11 +26,11 @@ All variables are compiled into the browser bundle. Saving a value requires a re
 Never put server credentials or a Mapbox `sk.*` token in the frontend.
 
 - `VITE_USE_FIXTURES=true`: deterministic recommendation, vendor, closure, and permit
-  data. The app uses the schematic map and performs zero network requests in this mode,
-  even when a Mapbox token is configured.
+  data. No Rollaway business endpoint is called. If `VITE_MAPBOX_TOKEN` exists, the
+  browser may still request Mapbox styles, tiles, fonts, sprites, and telemetry.
 - `VITE_FIXTURE_DELAY_MS=1100`: optional demo latency for the rolling-truck loader.
-- `VITE_MAPBOX_TOKEN`: optional public `pk.*` token. Without it, the schematic map
-  fallback remains fully usable.
+- `VITE_MAPBOX_TOKEN`: optional public `pk.*` token, enabled in both fixture and live
+  modes. Without it—or when Mapbox cannot load—the schematic map remains fully usable.
 - `VITE_RECOMMEND_SPOTS_URL`: native structured recommendation endpoint.
 - `VITE_VENDORS_URL`: `get_vendors` endpoint, accepting GeoJSON or the frozen
   `{vendors: [...]}` contract.
@@ -41,13 +41,19 @@ The recommendation boundary accepts the native contract first and adapts a legac
 `map_actions` response only at that boundary. `VITE_CHAT_ENDPOINT` is obsolete and is
 not read.
 
+Rollaway is scoped to the City and County of San Francisco. The app constrains Mapbox
+to SF bounds and replaces an outside-SF live location with the SoMa demo origin. A new
+user completes a business profile, configures each session, and explicitly starts
+recommendation generation. Opening **Permits** does not make a request; the user must
+select **Build my permit checklist** to generate the personalized checklist.
+
 ## Live mode
 
 1. Configure all four live endpoint URLs as build-time variables.
 2. Set `VITE_USE_FIXTURES=false`.
 3. Save the App Platform settings and wait for the new deployment.
-4. Smoke-test onboarding, location fallback, recommendations, Good to Know details,
-   permit progress, and EasyApply review.
+4. Smoke-test profile → session → recommendation loading, outside-SF location fallback,
+   map details, explicit permit generation, permit progress, and EasyApply review.
 
 If one endpoint is missing, live mode shows a recoverable UI error; it does not silently
 claim fixture data is live.
@@ -61,18 +67,29 @@ npm test
 npm run lint
 npm run build
 npm run test:e2e
+npm run test:mapbox
 npm run test:pwa
 ```
 
+The standard E2E and PWA commands force a blank Mapbox token and fixture-only
+Rollaway endpoints, independent of `.env.local`. `test:mapbox` runs on a separate
+server with a non-secret fake public token and fulfills all Mapbox style, vector-tile,
+and telemetry requests inside Playwright. It verifies the real Mapbox browser path
+without using a project token or external network.
+
 On the deployed URL:
 
-1. Complete first-launch onboarding and reload.
-2. Confirm the full base experience appears before recommendations.
-3. Verify map fallback behavior without a token or network.
+1. Complete the first-launch profile and session setup, then reload.
+2. Confirm the map is absent until **Find places to roll** is selected.
+3. Verify Mapbox in fixture mode with a token, plus schematic fallback without a token
+   or when Mapbox is unavailable.
 4. Open all ranked spots and confirm proxy/citation labels.
-5. Complete and reload permit checklist items.
+5. Open **Permits**, confirm no checklist is generated automatically, select
+   **Build my permit checklist**, then complete and reload checklist items.
 6. Review an EasyApply item and confirm the end state says **Simulated packet ready**.
 7. Install the PWA, relaunch it, and verify fixture mode while offline.
 
-Restrict the public Mapbox token to the deployed origin. After merge, update the source
-branch in `.do/app.yaml` and App Platform from `feat/frontend-mapapp` to `main`.
+In the Mapbox dashboard, restrict the public token to the exact production origin and
+any intentional preview/local origins. Grant only the public scopes required to load
+the configured style; never expose a secret `sk.*` token. After merge, update the
+source branch in `.do/app.yaml` and App Platform from `feat/frontend-mapapp` to `main`.

@@ -14,7 +14,16 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev -- --host 127.0.0.1 --port 4173',
     url: 'http://127.0.0.1:4173',
-    reuseExistingServer: true,
+    env: {
+      VITE_FIXTURE_DELAY_MS: '1100',
+      VITE_MAPBOX_TOKEN: '',
+      VITE_USE_FIXTURES: 'true',
+      VITE_RECOMMEND_SPOTS_URL: 'https://rollaway-business.invalid/recommendations',
+      VITE_VENDORS_URL: 'https://rollaway-business.invalid/vendors',
+      VITE_CLOSURES_URL: 'https://rollaway-business.invalid/closures',
+      VITE_PERMIT_CHECKLIST_URL: 'https://rollaway-business.invalid/permits',
+    },
+    reuseExistingServer: false,
   },
   projects: [
     {

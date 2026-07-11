@@ -48,6 +48,31 @@ export function parseMenu(raw: string): MenuItem[] {
     .filter((item) => item.name.length > 0)
 }
 
+/**
+ * Format the local part of a US phone as `(AAA) BBB-CCCC`, ignoring any typed
+ * `+1` country code. Progressive so it formats as the user types. Returns ''
+ * when no digits are present.
+ */
+export function formatUsPhoneLocal(value: string): string {
+  let digits = value.replace(/\D/g, '')
+  if (digits.length === 11 && digits.startsWith('1')) digits = digits.slice(1)
+  digits = digits.slice(0, 10)
+  if (digits.length === 0) return ''
+  if (digits.length <= 3) return `(${digits}`
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
+/**
+ * Full phone display with the fixed `+1` country code, e.g.
+ * `+1 (415) 555-0132`. Returns '' when no digits are present so a blank field
+ * stays blank for the required-field check.
+ */
+export function formatUsPhone(value: string): string {
+  const local = formatUsPhoneLocal(value)
+  return local ? `+1 ${local}` : ''
+}
+
 export function derivePriceTier(items: MenuItem[]): PriceTier {
   const prices = items
     .map((item) => item.price)

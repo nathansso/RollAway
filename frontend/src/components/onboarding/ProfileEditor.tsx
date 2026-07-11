@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { CloseIcon } from '../common/Icons'
 import BrandMark from '../common/BrandMark'
 import { SAMPLE_MENUS, sampleMenuText } from '../../fixtures/sampleMenus'
-import { derivePriceTier, parseMenu } from '../../lib/profile'
+import { derivePriceTier, formatUsPhone, formatUsPhoneLocal, parseMenu } from '../../lib/profile'
 import { useDialogFocus } from '../../lib/useDialogFocus'
 import { useAppStore } from '../../store'
 import type { CuisineId } from '../../fixtures/sampleMenus'
@@ -76,7 +76,18 @@ export default function ProfileEditor() {
   const [draft, setDraft] = useState<VendorProfile>(() => existing ?? emptyProfile())
   const [error, setError] = useState('')
   const dialogRef = useRef<HTMLDivElement>(null)
+  const phoneRef = useRef<HTMLInputElement>(null)
   const firstLaunch = existing === null
+
+  // Keep the caret at the end of the phone field while typing so the live
+  // reformat (which inserts "(", ")", "-") never scrambles left-to-right entry.
+  useEffect(() => {
+    const el = phoneRef.current
+    if (el && document.activeElement === el) {
+      const end = el.value.length
+      el.setSelectionRange(end, end)
+    }
+  }, [draft.autofill_profile.phone])
 
   useEffect(() => {
     if (!open) return
@@ -352,7 +363,23 @@ export default function ProfileEditor() {
               <Field label="Owner / contact name" required><input className={fieldClass} autoComplete="name" value={draft.autofill_profile.owner_name} onChange={(e) => setContact('owner_name', e.target.value)} /></Field>
               <Field label="Business name" required><input className={fieldClass} autoComplete="organization" value={draft.autofill_profile.business_name} onChange={(e) => setContact('business_name', e.target.value)} /></Field>
               <Field label="Email" required><input className={fieldClass} type="email" autoComplete="email" value={draft.autofill_profile.email} onChange={(e) => setContact('email', e.target.value)} /></Field>
-              <Field label="Phone" required><input className={fieldClass} type="tel" autoComplete="tel" value={draft.autofill_profile.phone} onChange={(e) => setContact('phone', e.target.value)} /></Field>
+              <Field label="Phone" required>
+                <div className="mt-1 flex min-h-11 items-center rounded-md border border-border bg-white pl-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                  <span className="select-none pr-1 text-base font-semibold text-muted-foreground" aria-hidden="true">
+                    +1
+                  </span>
+                  <input
+                    ref={phoneRef}
+                    className="min-h-11 w-full border-0 bg-transparent px-1 text-base text-foreground outline-none"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel-national"
+                    placeholder="(415) 555-0132"
+                    value={formatUsPhoneLocal(draft.autofill_profile.phone.replace(/^\+1\s*/, ''))}
+                    onChange={(e) => setContact('phone', formatUsPhone(e.target.value))}
+                  />
+                </div>
+              </Field>
             </div>
             <Field label="Mailing address" required><input className={fieldClass} autoComplete="street-address" value={draft.autofill_profile.address} onChange={(e) => setContact('address', e.target.value)} /></Field>
             <div className="grid grid-cols-[1.5fr_.6fr_1fr] gap-2">

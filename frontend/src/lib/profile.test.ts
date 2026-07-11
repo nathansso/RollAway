@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   derivePriceTier,
+  formatUsPhone,
+  formatUsPhoneLocal,
   parseMenu,
   parseStoredProfile,
   validateProfile,
@@ -20,6 +22,34 @@ describe('parseMenu', () => {
       { name: 'Seasonal fruit cup', price: null },
       { name: 'Coffee', price: null },
     ])
+  })
+})
+
+describe('formatUsPhoneLocal', () => {
+  it('formats progressively as digits are typed', () => {
+    expect(formatUsPhoneLocal('')).toBe('')
+    expect(formatUsPhoneLocal('415')).toBe('(415')
+    expect(formatUsPhoneLocal('415555')).toBe('(415) 555')
+    expect(formatUsPhoneLocal('4155550132')).toBe('(415) 555-0132')
+  })
+
+  it('ignores non-digits, a leading +1, and extra digits', () => {
+    expect(formatUsPhoneLocal('(415) 555-0132')).toBe('(415) 555-0132')
+    expect(formatUsPhoneLocal('+1 415 555 0132')).toBe('(415) 555-0132')
+    expect(formatUsPhoneLocal('14155550132')).toBe('(415) 555-0132')
+    expect(formatUsPhoneLocal('415-555-0132-999')).toBe('(415) 555-0132')
+  })
+
+  it('reformats a legacy stored number', () => {
+    expect(formatUsPhoneLocal('415-555-0123')).toBe('(415) 555-0123')
+  })
+})
+
+describe('formatUsPhone', () => {
+  it('prefixes +1 once digits are present and stays blank otherwise', () => {
+    expect(formatUsPhone('')).toBe('')
+    expect(formatUsPhone('4155550132')).toBe('+1 (415) 555-0132')
+    expect(formatUsPhone('+1 (415) 555-0132')).toBe('+1 (415) 555-0132')
   })
 })
 

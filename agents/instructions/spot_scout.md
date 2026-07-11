@@ -73,14 +73,26 @@ JSON.
 
 ### 4. `get_restaurants` — competition / saturation
 ```jsonc
-// input
-{ "lat": 37.78, "lng": -122.40, "radius_m": 300 }
+// input  (day/time_from/time_to OPTIONAL & additive — pass them when the vendor names a time window)
+{ "lat": 37.78, "lng": -122.40, "radius_m": 300,
+  "day": "fri", "time_from": "18:00", "time_to": "22:00" }
 // output
 { "total": 14,
   "by_cuisine": { "tacos": 2, "burgers": 3, "coffee": 5 },
   "by_price": { "1": 6, "2": 7, "3": 1 },
-  "saturation": "low | medium | high" }
+  "saturation": "low | medium | high",     // popularity-weighted; same enum
+  // present ONLY when a valid window was requested:
+  "window": {
+    "day": "fri", "time_from": "18:00", "time_to": "22:00",
+    "open_count": 6, "open_weighted": 7.4,
+    "saturation": "low | medium | high",
+    "by_cuisine_open": { "tacos": 1, "burgers": 3 }
+  } }
 ```
+> Window rule: `time_from`/`time_to` require each other **and** `day`. Only pass all three
+> together. When the vendor gives a set-up window ("Friday 6–10pm"), pass it — the competition
+> that matters is who's **open during that window**, and `window.by_cuisine_open` powers
+> demand-gap reasoning ("only 1 taco place open tonight → gap"). It's still a competition proxy.
 
 ### 5. `get_events` — crowd draws (growth pillar)
 ```jsonc
@@ -125,10 +137,17 @@ you mention it. Never compute or estimate the width yourself.
 | Question type | Tools to call |
 |---|---|
 | "Where should I set up for X lunch near Y?" | `get_foot_traffic`, `get_restaurants`, `get_vendors`, `get_closures` (+ `check_clearance` on each candidate) |
+| "Where should I set up **Friday 6–10pm**?" | same, but pass `day`/`time_from`/`time_to` to `get_restaurants` (and `day`/`time` to `get_vendors`) so competition is scoped to the window |
 | "Can I park here / X feet from a restaurant?" | **`check_clearance`** (only) — then explain |
 | "Is this corner busy Friday noon?" | `get_foot_traffic` (+ `get_restaurants` for context) |
 | "Any events drawing crowds this weekend near me?" | `get_events` (+ `get_closures`) |
 | "Is another taco truck already there?" | `get_vendors` |
+
+**When the vendor names a set-up window** (a day + start/end time), pass `day`/`time_from`/`time_to`
+to `get_restaurants`. Then rank on the **`window`** block, not the all-hours counts: use
+`window.saturation` for how crowded the competition is *while they'll be out*, and
+`window.by_cuisine_open` for the demand gap in their cuisine ("only 1 taco place open Fri 6–10pm →
+good gap"). Fall back to top-level `saturation` when no window was given.
 
 For a ranking question, gather signals for each candidate point, run `check_clearance` per point,
 then rank. Prefer 2-4 candidate spots.
@@ -141,7 +160,8 @@ shape):
 - `constraints[]` — **copied verbatim** from `check_clearance.checks[]`: use each check's `rule`,
   `pass`, and a `detail` like `"nearest {actual_ft}ft"`. Never edit `pass`.
 - `demand.foot_traffic_score` — from `get_foot_traffic.score`; `demand.restaurant_saturation` —
-  from `get_restaurants.saturation`.
+  from `get_restaurants.window.saturation` when a window was requested, else
+  `get_restaurants.saturation`.
 - `nearby_vendors[]` — from `get_vendors.vendors[]` (`name`, `cuisine`, `scheduled_here`).
 - `verdict` / `score` — your synthesis:
   - `avoid` if `check_clearance.allowed` is false (any hard constraint fails) **or** a closure

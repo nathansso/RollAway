@@ -58,7 +58,7 @@
     },
     {
       "name": "get_restaurants",
-      "description": "Fixed-restaurant competition and saturation near a point.",
+      "description": "Fixed-restaurant competition and popularity-weighted saturation near a point. Pass day/time_from/time_to (all together) to scope competition to a set-up window; the output then adds a 'window' block with open-during-window counts and per-cuisine demand gap. §B.4.",
       "method": "POST",
       "endpoint": "/get_restaurants",
       "parameters": {
@@ -66,11 +66,14 @@
         "properties": {
           "lat": { "type": "number" },
           "lng": { "type": "number" },
-          "radius_m": { "type": "integer", "default": 300 }
+          "radius_m": { "type": "integer", "default": 300 },
+          "day": { "type": "string", "description": "mon..sun; required if a time window is given" },
+          "time_from": { "type": "string", "description": "HH:MM; requires time_to + day" },
+          "time_to": { "type": "string", "description": "HH:MM; requires time_from + day; may wrap past midnight" }
         },
         "required": ["lat", "lng"]
       },
-      "output_shape": { "total": 0, "by_cuisine": {}, "by_price": {}, "saturation": "low|medium|high" }
+      "output_shape": { "total": 0, "by_cuisine": {}, "by_price": {}, "saturation": "low|medium|high", "window": { "day": "", "time_from": "", "time_to": "", "open_count": 0, "open_weighted": 0, "saturation": "low|medium|high", "by_cuisine_open": {} } }
     },
     {
       "name": "get_events",

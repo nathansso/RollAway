@@ -13,7 +13,7 @@ import { read, readRepo, extractJsonBlocks, parseSourceIds, parseContractSourceI
 import { route } from "./lib/route.mjs";
 import { detectJailbreak, anonymize, refusalEnvelope } from "./lib/guardrails.mjs";
 import { validateEnvelope, validateChecklist } from "./lib/schema.mjs";
-import { payloads, clearancePayload } from "../fixtures/payloads.mjs";
+import { payloads, clearancePayload, restaurantsPayload } from "../fixtures/payloads.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const seeds = JSON.parse(read("evals/seeds.json")).seeds;
@@ -36,7 +36,7 @@ const B = {
   get_vendors:      { in: ["lat","lng","radius_m","day","time"], out: ["vendors","count"], item: ["permit_id","name","type","cuisine","status","point","scheduled_here","schedule_window"], itemKey: "vendors" },
   get_closures:     { in: ["lat","lng","radius_m","date_from","date_to"], out: ["closures","count"], item: ["id","reason","source","geometry","active_from","active_to"], itemKey: "closures" },
   get_foot_traffic: { in: ["lat","lng","radius_m","day","hour"], out: ["score","basis","nearby_stations","live_activity","historical_avg"] },
-  get_restaurants:  { in: ["lat","lng","radius_m"], out: ["total","by_cuisine","by_price","saturation"] },
+  get_restaurants:  { in: ["lat","lng","radius_m","day","time_from","time_to"], out: ["total","by_cuisine","by_price","saturation"] },
   get_events:       { in: ["lat","lng","radius_m","date_from","date_to"], out: ["events","count"], item: ["name","venue","point","start","expected_attendance","source"], itemKey: "events" },
   check_clearance:  { in: ["lat","lng","vendor_type"], out: ["allowed","checks"], item: ["rule","required_ft","actual_ft","pass","cite"], itemKey: "checks" }
 };
@@ -180,6 +180,21 @@ function runOffline() {
     // truck must NOT carry the sidewalk row
     if (clearancePayload("truck").checks.some((x) => /sidewalk/i.test(x.rule))) return bad("truck wrongly has a sidewalk row");
     return ok("sidewalk row: cite sf-sidewalk-width, required 10ft, pushcart-only");
+  });
+
+  // 8d. §B.4: get_restaurants window block is additive (present only with a valid full window)
+  check("get_restaurants §B.4 window block: additive + validated", () => {
+    const none = restaurantsPayload({});
+    if (!none.ok) return bad("no-window call should be ok");
+    if (!setEq(Object.keys(none.body), ["total","by_cuisine","by_price","saturation"])) return bad(`no-window keys drifted: ${Object.keys(none.body)}`);
+    const full = restaurantsPayload({ day: "fri", time_from: "18:00", time_to: "22:00" });
+    if (!full.ok || !full.body.window) return bad("full window should add a window block");
+    const w = full.body.window;
+    if (!setEq(Object.keys(w), ["day","time_from","time_to","open_count","open_weighted","saturation","by_cuisine_open"])) return bad(`window keys: ${Object.keys(w)}`);
+    if (!["low","medium","high"].includes(w.saturation)) return bad(`window.saturation ${w.saturation} not in enum`);
+    const partial = restaurantsPayload({ day: "fri", time_from: "18:00" });
+    if (partial.ok || !partial.body.error || partial.body.error.code !== "BAD_INPUT") return bad("partial window should be BAD_INPUT");
+    return ok("additive window; full=block, partial=BAD_INPUT, none=base 4 keys");
   });
 
   // 9. seed #1: pushcart_nocook excludes DMV, includes wide sidewalk clearance (cite sf-sidewalk-width)

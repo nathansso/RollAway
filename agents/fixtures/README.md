@@ -23,6 +23,10 @@ curl -s -X POST localhost:8787/check_clearance -H 'content-type: application/jso
   -d '{"lat":37.78,"lng":-122.40,"vendor_type":"truck"}' | jq .              # 3 rows
 curl -s -X POST localhost:8787/check_clearance -H 'content-type: application/json' \
   -d '{"lat":37.78,"lng":-122.40,"vendor_type":"pushcart_cooking"}' | jq .   # 4 rows (adds sidewalk width, cite sf-sidewalk-width)
+curl -s -X POST localhost:8787/get_restaurants -H 'content-type: application/json' \
+  -d '{"lat":37.78,"lng":-122.40,"day":"fri","time_from":"18:00","time_to":"22:00"}' | jq .   # §B.4: adds a `window` block
+curl -s -X POST localhost:8787/get_restaurants -H 'content-type: application/json' \
+  -d '{"lat":37.78,"lng":-122.40,"day":"fri"}' | jq .   # partial window -> BAD_INPUT
 ```
 
 ## Force the error envelope

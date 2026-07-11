@@ -158,6 +158,44 @@ appended as work proceeded. Dates are absolute (today = 2026-07-10).
   to `"sf-sidewalk-width"` (was `dpw-182101`). Exact snippet in `agents/RUNBOOK.md → HANDOFF`.
   I did **not** edit that file — it lives on `feat/functions-data`, not this branch.
 
+## D16. §B.4 — get_restaurants window-aware competition (Person-2 slice of Person 3's plan)
+- **Context:** Person 3's `get_restaurants` plan adds optional `day`/`time_from`/`time_to` inputs and,
+  when a window is given, a `window` output block (open-during-window competition, popularity-
+  weighted, with per-cuisine demand gap). It also upgrades top-level `saturation` to Σ venueWeight
+  (same field/enum). The plan asked "ping Person 2 to mirror the additive schema into their tool
+  registration." User scoped me to **"my Person-2 slice only."**
+- **The plan text I received was truncated** at the `window` block. Rather than guess later or risk
+  the exact name-drift that caused issues #1/#2, I **pinned the additive §B.4 shape in
+  `docs/CONTRACTS.md §B` myself** (I co-own §B) with field names taken straight from the plan's
+  stated semantics, and mirrored it into my side:
+  - `docs/CONTRACTS.md §B.4`: optional inputs (`day` mon..sun, `time_from`/`time_to` HH:MM, all
+    three together or `BAD_INPUT`; overnight wraps); `saturation` noted as now popularity-weighted
+    (same field/enum); additive `window` block `{ day, time_from, time_to, open_count,
+    open_weighted, saturation, by_cuisine_open }`. **Additive, no existing field/enum changes →
+    `contract_version` stays 1.**
+  - `fixtures/tool-schemas.json` + `payloads.mjs` (`restaurantsPayload()`, window only when full
+    window supplied; partial → `BAD_INPUT`) + `serve.js` (window-aware route).
+  - `instructions/spot_scout.md`: pass the window to `get_restaurants` when the vendor names one;
+    rank on `window.saturation` + `window.by_cuisine_open` (demand gap); `demand.restaurant_saturation`
+    prefers `window.saturation`. Still a competition proxy.
+  - `evals/run.mjs`: `get_restaurants` §B inputs now include the three window fields; new check 8d
+    (additive window: full→block, partial→BAD_INPUT, none→base 4 keys).
+- **Base output unchanged** when no window is passed (behaviour identical to today).
+
+## D17. PING P3 (+ the two riders in Person 3's plan)
+- **PING P3 (`docs/CONTRACTS.md §B.4`):** field names for the `get_restaurants` `window` block and
+  the three optional inputs are now pinned in §B — **Person 3's Function must return exactly these
+  names** (`open_count`, `open_weighted`, `saturation`, `by_cuisine_open`; inputs `day`/`time_from`/
+  `time_to`). Additive, non-breaking, no `contract_version` bump. My tool registration + Spot Scout
+  already read them; swap the fixture URL for the live Function and re-run evals.
+- **Rider 1 (P3, not mine):** copy the now-published `agents/enrichment/cuisine_lookup.json` into
+  `get_vendors` (they were joining against an empty `{}`). Already published + handoff in RUNBOOK §10.
+- **Rider 2 (coordination):** Person 3's plan says to file a coordination issue so P2 mirrors the
+  schema — I did the mirror proactively, so that issue is effectively pre-satisfied. Have NOT filed
+  a GitHub issue this turn (not requested); can comment/open one on request.
+- **Note:** I did **not** touch `/functions` — the `get_restaurants` implementation is Person 3's,
+  on `feat/functions-data`.
+
 ## D12. Verification (this session) — all GREEN
 - `fixtures`: `npm install` (express) + all 6 routes HTTP 200 with §B keys; `?fail=CODE` returns
   the §B error envelope (RATE_LIMIT→429, UPSTREAM_TIMEOUT→504).

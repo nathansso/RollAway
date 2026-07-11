@@ -105,14 +105,45 @@ HTTP endpoint taking JSON, returning JSON. **Freeze the field names.**
 
 ### 4. `get_restaurants`
 ```jsonc
-// input
-{ "lat": 37.78, "lng": -122.40, "radius_m": 300 }
+// input  (day/time_from/time_to are OPTIONAL and additive — omit ⇒ behaviour identical to before)
+{ "lat": 37.78, "lng": -122.40, "radius_m": 300,
+  "day": "fri", "time_from": "18:00", "time_to": "22:00" }
 // output
 { "total": 14,
   "by_cuisine": { "tacos": 2, "burgers": 3, "coffee": 5 },
   "by_price": { "1": 6, "2": 7, "3": 1 },
-  "saturation": "low | medium | high" }
+  "saturation": "low | medium | high" }   // now popularity-WEIGHTED (Σ venueWeight); same enum, same field
 ```
+
+#### §B.4 — window-aware competition (additive; contract_version unchanged)
+
+Optional inputs let a vendor scope competition to *when they'll actually be out*
+("Friday 6–10pm"). All three are optional and go together: **`time_from`/`time_to` require each
+other and `day`** (else `BAD_INPUT`). Overnight windows wrap (`20:00`–`01:00` = Fri→Sat).
+
+| Param | Form | Notes |
+|---|---|---|
+| `day` | `mon`..`sun` | required if a time window is given |
+| `time_from` | `HH:MM` | requires `time_to` + `day` |
+| `time_to` | `HH:MM` | requires `time_from` + `day`; may wrap past midnight |
+
+`saturation` (top-level) is now computed from **Σ venueWeight** (popularity-weighted) instead of a
+raw storefront count — **same field name, same enum**, so this is invisible to any existing consumer.
+
+**When (and only when) a valid window is supplied**, the output gains one additive block:
+```jsonc
+"window": {
+  "day": "fri", "time_from": "18:00", "time_to": "22:00",
+  "open_count": 6,                 // venues open during the window (raw count)
+  "open_weighted": 7.4,            // Σ venueWeight over venues open in the window
+  "saturation": "low | medium | high",   // window-specific weighted verdict (same enum)
+  "by_cuisine_open": { "tacos": 1, "burgers": 3 }   // per-cuisine open-during-window counts (demand-gap)
+}
+```
+> Field names pinned here by Person 2 so Person 3's Function matches exactly (see the last two
+> issues on why we pin names in §B). No existing field name/enum changes → non-breaking, so
+> `contract_version` stays at 1. Person 3 (`feat/functions-data`) implements this block in
+> `get_restaurants`; Person 2's tool registration + Spot Scout already read it.
 
 ### 5. `get_events`  (growth pillar)
 ```jsonc

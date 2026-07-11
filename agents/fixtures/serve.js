@@ -12,7 +12,7 @@
 // and the offline eval's expectations can never drift.
 
 import express from "express";
-import { payloads, errorEnvelope, errorStatus, TOOL_NAMES, clearancePayload } from "./payloads.mjs";
+import { payloads, errorEnvelope, errorStatus, TOOL_NAMES, clearancePayload, restaurantsPayload } from "./payloads.mjs";
 
 const app = express();
 app.use(express.json());
@@ -47,6 +47,17 @@ for (const tool of TOOL_NAMES) {
     if (tool === "check_clearance") {
       const vt = (req.body && req.body.vendor_type) || req.query.vendor_type || "truck";
       return res.json(clearancePayload(vt));
+    }
+    // get_restaurants is window-aware (§B.4): adds a `window` block when day+time_from+time_to given.
+    if (tool === "get_restaurants") {
+      const b = req.body || {};
+      const r = restaurantsPayload({
+        day: b.day || req.query.day,
+        time_from: b.time_from || req.query.time_from,
+        time_to: b.time_to || req.query.time_to
+      });
+      if (!r.ok) return res.status(errorStatus[r.body.error.code] || 500).json(r.body);
+      return res.json(r.body);
     }
     return res.json(payloads[tool]);
   };

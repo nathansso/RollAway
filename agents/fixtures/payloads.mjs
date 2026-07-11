@@ -100,6 +100,26 @@ export function clearancePayload(vendorType) {
   return { allowed: checks.every((c) => c.pass), checks };
 }
 
+// §B.4 — get_restaurants gains an optional `window` block ONLY when a valid day+time_from+time_to
+// is supplied. The base payload above keeps its exact 4 §B keys (no window) when no window is asked.
+export const restaurantsWindowBlock = (day, time_from, time_to) => ({
+  day, time_from, time_to,
+  open_count: 6,
+  open_weighted: 7.4,
+  saturation: "low",                 // low | medium | high (window-specific weighted verdict)
+  by_cuisine_open: { tacos: 1, burgers: 3 }
+});
+
+// Returns { ok, body } — ok:false with a BAD_INPUT envelope for a partial window (all three
+// window fields go together, per §B.4).
+export function restaurantsPayload({ day, time_from, time_to } = {}) {
+  const any = day || time_from || time_to;
+  const all = day && time_from && time_to;
+  if (any && !all) return { ok: false, body: errorEnvelope("BAD_INPUT") };
+  const base = payloads.get_restaurants;
+  return { ok: true, body: all ? { ...base, window: restaurantsWindowBlock(day, time_from, time_to) } : base };
+}
+
 // Common error envelope (all Functions) — reachable via ?fail=CODE on any route.
 export function errorEnvelope(code) {
   const messages = {

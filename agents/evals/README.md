@@ -28,6 +28,7 @@ No `npm install` — pure Node (v20+), no dependencies.
 | clearance fixture 50<75 fails | seed #2: the NO comes from geometry, cite `dpw-182101` |
 | check_clearance row count | 3 rows for truck/trailer, 4 for pushcart types |
 | sidewalk-width row cite | 4th row cites `sf-sidewalk-width` (resolves in SOURCES.md), pushcart-only |
+| get_restaurants §B.4 window | window block is additive: full window → block, partial → BAD_INPUT, none → base 4 keys |
 | pushcart_nocook excludes DMV / has sidewalk clearance | seed #1 |
 | truck includes DMV + Fire | the pushcart≠truck contrast |
 | fire-permit seed grounded | seed #4: no-cook cart has no Fire step + KB says so |

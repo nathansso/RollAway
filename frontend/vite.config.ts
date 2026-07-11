@@ -5,6 +5,15 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules/mapbox-gl')) return 'mapbox'
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -33,6 +42,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // mapbox-gl alone is ~1.6MB minified; still worth precaching for offline shell
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: 'index.html',
         globPatterns: ['**/*.{js,css,html,svg,png,json,geojson,woff2}'],
         runtimeCaching: [

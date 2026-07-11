@@ -12,7 +12,10 @@
     {
       "id": "spot-2nd-howard",
       "rank": 1,
-      "point": { "lat": 37.7869, "lng": -122.3982 },
+      "point": {
+        "lat": 37.7869,
+        "lng": -122.3982
+      },
       "block_label": "2nd & Howard",
       "score": 0.86,
       "verdict": "good",
@@ -27,7 +30,9 @@
       "competition": {
         "overlap_count": 1,
         "saturation": "low",
-        "menu_matches": ["tacos"],
+        "menu_matches": [
+          "tacos"
+        ],
         "price_tier": "$",
         "detail": "One nearby vendor overlaps your menu and value price point."
       },
@@ -43,12 +48,68 @@
         "detail": "No active closure intersects this block.",
         "source": null
       },
-      "travel_minutes": 8
+      "travel_minutes": 8,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.7869,
+            "lng": -122.3982
+          },
+          "suitability": "recommended",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "Non-hydrant placement checks pass at this point. Verify posted curb and parking signs before stopping or operating."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "tacos",
+              "count": 4
+            },
+            {
+              "cuisine": "coffee",
+              "count": 3
+            },
+            {
+              "cuisine": "sandwiches",
+              "count": 2
+            }
+          ],
+          "menu_overlap_count": 1,
+          "opportunity": "some_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.7869,
+            "lng": -122.3982
+          },
+          "mode": "driving",
+          "minutes": 8,
+          "estimated": true
+        }
+      }
     },
     {
       "id": "spot-folsom-1st",
       "rank": 2,
-      "point": { "lat": 37.7879, "lng": -122.3953 },
+      "point": {
+        "lat": 37.7879,
+        "lng": -122.3953
+      },
       "block_label": "Folsom & 1st",
       "score": 0.68,
       "verdict": "caution",
@@ -79,12 +140,68 @@
         "detail": "No active closure intersects this block.",
         "source": null
       },
-      "travel_minutes": 11
+      "travel_minutes": 11,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.7879,
+            "lng": -122.3953
+          },
+          "suitability": "verify",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "Non-hydrant placement checks pass at this point. Verify posted curb and parking signs before stopping or operating."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "tacos",
+              "count": 4
+            },
+            {
+              "cuisine": "coffee",
+              "count": 3
+            },
+            {
+              "cuisine": "sandwiches",
+              "count": 2
+            }
+          ],
+          "menu_overlap_count": 0,
+          "opportunity": "low_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.7879,
+            "lng": -122.3953
+          },
+          "mode": "driving",
+          "minutes": 11,
+          "estimated": true
+        }
+      }
     },
     {
       "id": "spot-mission-5th",
       "rank": 3,
-      "point": { "lat": 37.782, "lng": -122.4058 },
+      "point": {
+        "lat": 37.782,
+        "lng": -122.4058
+      },
       "block_label": "Mission & 5th",
       "score": 0.31,
       "verdict": "avoid",
@@ -99,7 +216,10 @@
       "competition": {
         "overlap_count": 2,
         "saturation": "high",
-        "menu_matches": ["tacos", "burritos"],
+        "menu_matches": [
+          "tacos",
+          "burritos"
+        ],
         "price_tier": "$",
         "detail": "Two scheduled vendors overlap your menu and price point."
       },
@@ -112,10 +232,63 @@
       },
       "closure": {
         "active": true,
-        "detail": "5th Street fair closure, Friday 10:00–18:00.",
+        "detail": "5th Street fair closure, Friday 10:00\u00e2\u20ac\u201c18:00.",
         "source": "sfmta_event"
       },
-      "travel_minutes": 7
+      "travel_minutes": 7,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.782,
+            "lng": -122.4058
+          },
+          "suitability": "avoid",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "An active closure or placement restriction affects this target."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "tacos",
+              "count": 4
+            },
+            {
+              "cuisine": "coffee",
+              "count": 3
+            },
+            {
+              "cuisine": "sandwiches",
+              "count": 2
+            }
+          ],
+          "menu_overlap_count": 2,
+          "opportunity": "some_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.782,
+            "lng": -122.4058
+          },
+          "mode": "driving",
+          "minutes": 7,
+          "estimated": true
+        }
+      }
     }
   ]
 }

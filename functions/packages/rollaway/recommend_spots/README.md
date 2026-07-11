@@ -49,6 +49,25 @@ runs the full SoMa Friday-lunch demo.
     "events": { "bonus": 0.05, "nearest": "..." },
     "travel_minutes": 8
   },
+  "area_insights": {
+    "parking": {
+      "point": { "lat": 37.78, "lng": -122.40 },
+      "suitability": "recommended",
+      "permit_checks": [ /* non-hydrant check_clearance rows */ ],
+      "note": "Verify posted curb and parking signs before stopping or operating."
+    },
+    "local_cuisine": {
+      "nearby": [ { "cuisine": "tacos", "count": 4 } ],
+      "menu_overlap_count": 1,
+      "opportunity": "some_direct_overlap"
+    },
+    "navigation": {
+      "destination": { "lat": 37.78, "lng": -122.40 },
+      "mode": "driving",
+      "minutes": 8,
+      "estimated": false
+    }
+  },
   "why_one_line": "High lunch foot traffic; little direct menu competition; clears all setbacks."
 } ] }
 ```
@@ -90,6 +109,13 @@ fan-out.
   `score.js`.
 
 The agent only writes prose — it is never asked to do math or legality.
+
+The additive `area_insights` block makes the selected candidate usable as a
+parking/setup navigation target. It reports restaurant-entrance, school, sidewalk,
+and other returned placement checks while intentionally excluding the hydrant row;
+summarizes nearby cuisine counts and direct menu overlap; and carries the exact
+navigation destination. A `recommended` value is guidance, not proof that curb
+parking is legal: the UI must tell vendors to verify posted curb and parking signs.
 
 ## Env vars
 

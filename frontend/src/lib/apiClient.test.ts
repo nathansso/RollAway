@@ -63,6 +63,8 @@ describe('fixture API client', () => {
     expect(response.recommendations[0].foot_traffic.basis).toBe('bay_wheels')
     expect(response.recommendations[0].travel_minutes).toBeGreaterThanOrEqual(3)
     expect(response.recommendations[0].travel_distance_miles).toBeGreaterThanOrEqual(0)
+    expect(response.recommendations[0].area_insights?.parking.suitability).toBe('recommended')
+    expect(response.recommendations[0].area_insights?.parking.permit_checks.every((check) => !/hydrant/i.test(check.rule))).toBe(true)
     for (const spot of response.recommendations) {
       expect({
         minutes: spot.travel_minutes,
@@ -151,6 +153,27 @@ describe('recommendation network boundary', () => {
               closures: false,
               travel_minutes: 8,
             },
+            area_insights: {
+              parking: {
+                point: { lat: 37.7869, lng: -122.3982 },
+                suitability: 'recommended',
+                permit_checks: [
+                  { rule: 'restaurant entrance setback', pass: true, required_ft: 75, actual_ft: 110, cite: 'dpw-182101' },
+                ],
+                note: 'Verify posted curb and parking signs.',
+              },
+              local_cuisine: {
+                nearby: [{ cuisine: 'tacos', count: 4 }],
+                menu_overlap_count: 0,
+                opportunity: 'low_direct_overlap',
+              },
+              navigation: {
+                destination: { lat: 37.7869, lng: -122.3982 },
+                mode: 'driving',
+                minutes: 8,
+                estimated: false,
+              },
+            },
             why_one_line: 'Strong lunch demand',
           },
         ],
@@ -162,6 +185,11 @@ describe('recommendation network boundary', () => {
       block_label: '2nd & Howard',
       travel_minutes: 3,
       travel_distance_miles: 0,
+      area_insights: {
+        parking: { suitability: 'recommended' },
+        local_cuisine: { opportunity: 'low_direct_overlap' },
+        navigation: { mode: 'driving' },
+      },
     })
   })
 
@@ -175,6 +203,11 @@ describe('recommendation network boundary', () => {
     expect(normalized.recommendations[0]).toMatchObject({
       travel_minutes: 3,
       travel_distance_miles: 0,
+      area_insights: {
+        parking: { suitability: 'recommended' },
+        local_cuisine: { opportunity: 'some_direct_overlap' },
+        navigation: { mode: 'driving' },
+      },
     })
   })
 

@@ -12,6 +12,7 @@ import {
 } from '../common/Icons'
 import { useAppStore } from '../../store'
 import { useDialogFocus } from '../../lib/useDialogFocus'
+import { buildNavigationUrl } from '../../lib/navigation'
 import type { RecommendationSpot } from '../../types/contract'
 
 function FactRow({
@@ -54,6 +55,13 @@ function Details({ spot }: { spot: RecommendationSpot }) {
       : spot.competition.saturation === 'high'
         ? 'avoid'
         : 'caution'
+  const area = spot.area_insights
+  const permitChecks = area ? area.parking.permit_checks : []
+  const permitPasses = permitChecks.filter((check) => check.pass).length
+  const cuisineSummary = area?.local_cuisine.nearby
+    .slice(0, 3)
+    .map((row) => `${row.cuisine.replace(/_/g, ' ')} (${row.count})`)
+    .join(', ')
 
   return (
     <ul className="mt-3 rounded-2xl border border-border bg-white px-4">
@@ -70,6 +78,33 @@ function Details({ spot }: { spot: RecommendationSpot }) {
         detail={spot.competition.detail}
         tone={competitionTone}
       />
+      {area && (
+        <>
+          <FactRow
+            icon={<ShieldIcon className="h-5 w-5" />}
+            title="Parking & setup target"
+            value={area.parking.suitability === 'recommended' ? 'Recommended' : area.parking.suitability === 'avoid' ? 'Avoid' : 'Verify'}
+            detail={area.parking.note}
+            tone={area.parking.suitability === 'recommended' ? 'good' : area.parking.suitability === 'avoid' ? 'avoid' : 'caution'}
+          />
+          <FactRow
+            icon={<ShieldIcon className="h-5 w-5" />}
+            title="Permit placement metrics (excluding hydrants)"
+            value={`${permitPasses}/${permitChecks.length} pass`}
+            detail={permitChecks.length > 0
+              ? permitChecks.map((check) => `${check.rule}: ${check.pass ? 'pass' : 'fail'}`).join(' · ')
+              : 'No non-hydrant placement measurements were returned; verify requirements before operating.'}
+            tone={permitChecks.length > 0 && permitPasses === permitChecks.length ? 'good' : 'caution'}
+          />
+          <FactRow
+            icon={<FoodIcon className="h-5 w-5" />}
+            title="Local cuisine mix"
+            value={`${area.local_cuisine.menu_overlap_count} direct overlap${area.local_cuisine.menu_overlap_count === 1 ? '' : 's'}`}
+            detail={cuisineSummary ? `Nearby: ${cuisineSummary}.` : 'No nearby cuisine counts were returned for this area.'}
+            tone={area.local_cuisine.opportunity === 'low_direct_overlap' ? 'good' : area.local_cuisine.opportunity === 'high_direct_overlap' ? 'avoid' : 'caution'}
+          />
+        </>
+      )}
       <FactRow
         icon={<ShieldIcon className="h-5 w-5" />}
         title="Legality check"
@@ -97,12 +132,16 @@ function Details({ spot }: { spot: RecommendationSpot }) {
 export default function SpotPanel() {
   const selectedId = useAppStore((state) => state.selectedSpotId)
   const spots = useAppStore((state) => state.recommendations)
+  const location = useAppStore((state) => state.location)
   const selectSpot = useAppStore((state) => state.selectSpot)
   const panelRef = useRef<HTMLElement>(null)
   const spot = spots.find((candidate) => candidate.id === selectedId)
   useDialogFocus(panelRef, () => selectSpot(null), true, Boolean(spot))
 
   if (!spot) return null
+  const navigationTarget = spot.area_insights ? spot.area_insights.navigation.destination : spot.point
+  const navigationMode = spot.area_insights ? spot.area_insights.navigation.mode : 'driving'
+  const navigationUrl = buildNavigationUrl(location, navigationTarget, navigationMode)
   const verdictLabel =
     spot.verdict === 'good' ? 'Good fit' : spot.verdict === 'caution' ? 'Use caution' : 'Avoid'
 
@@ -151,7 +190,7 @@ export default function SpotPanel() {
             {spot.why_one_line}
           </p>
           <a
-            href={`https://www.google.com/maps/dir/?api=1&destination=${spot.point.lat},${spot.point.lng}&travelmode=driving`}
+            href={navigationUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-on-primary"
@@ -159,7 +198,7 @@ export default function SpotPanel() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <polygon points="3 11 22 2 13 21 11 13 3 11" />
             </svg>
-            Navigate to this spot
+            Navigate to suggested parking
           </a>
           <Details spot={spot} />
           <div className="mt-3 rounded-xl border border-border bg-white p-3 text-xs leading-relaxed text-muted-foreground">

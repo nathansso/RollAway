@@ -300,13 +300,17 @@ test('first launch, map recommendations, details, permits, and EasyApply', async
   await page.getByRole('button', { name: 'Find spots' }).click()
   await expect(page.getByText('2nd & Howard', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: /Open details for rank 1/ }).click()
+  await page.getByRole('button', { name: /Open details for suggested spot, 2nd & Howard/ }).click()
   await expect(page.getByRole('dialog', { name: /2nd & Howard/ })).toBeVisible()
   await expect(page.getByText('Estimated foot traffic')).toBeVisible()
   await expect(
     page.getByText(/Bay Wheels activity is an estimate\/proxy/),
   ).toBeVisible()
   await expect(page.getByText('Menu & price competition')).toBeVisible()
+  await expect(page.getByText('Parking & setup target')).toBeVisible()
+  await expect(page.getByText('Permit placement metrics (excluding hydrants)')).toBeVisible()
+  await expect(page.getByText('Local cuisine mix')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Navigate to suggested parking' })).toHaveAttribute('href', /origin=.*destination=/)
   await expect(page.getByText('Legality check')).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog', { name: /2nd & Howard/ })).toBeHidden()
@@ -508,7 +512,7 @@ test('fixture mode keeps the schematic map usable without a Mapbox token', async
   await expect(
     page.getByRole('status').filter({ hasText: /Permit status/ }),
   ).toBeVisible()
-  const rank = page.getByRole('button', { name: /Recommendation 1: 2nd & Howard/ })
+  const rank = page.getByRole('button', { name: /Suggested spot: 2nd & Howard\. Open details\./ })
   const rankBox = await rank.boundingBox()
   expect(rankBox).not.toBeNull()
   expect(rankBox!.width).toBeGreaterThanOrEqual(44)

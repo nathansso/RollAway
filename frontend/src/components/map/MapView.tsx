@@ -28,6 +28,7 @@ const VENDOR_SOURCE = 'vendors'
 const LAYER_CLUSTERS = 'vendor-clusters'
 const LAYER_CLUSTER_COUNT = 'vendor-cluster-count'
 const LAYER_POINTS = 'vendor-points'
+const LAYER_POINTS_HIT = 'vendor-points-hit'
 
 // Vendor permit-status colors (green = active, amber = pending, slate = inactive)
 const STATUS_ACTIVE = '#16a34a'
@@ -73,6 +74,19 @@ async function addVendorLayers(map: mapboxgl.Map): Promise<void> {
         'text-size': 13,
       },
       paint: { 'text-color': '#ffffff' },
+    })
+
+    // Invisible hit-area under each vendor dot: the visible dot is only
+    // ~18px, so taps land on this larger transparent circle instead.
+    map.addLayer({
+      id: LAYER_POINTS_HIT,
+      type: 'circle',
+      source: VENDOR_SOURCE,
+      filter: ['!', ['has', 'point_count']],
+      paint: {
+        'circle-radius': 22,
+        'circle-opacity': 0,
+      },
     })
 
     map.addLayer({
@@ -191,7 +205,7 @@ export default function MapView() {
     })
 
     // Vendor tap -> popup with name, cuisine, type, status chip.
-    map.on('click', LAYER_POINTS, (e) => {
+    map.on('click', LAYER_POINTS_HIT, (e) => {
       if (useAppStore.getState().pinMode) return
       const feature = e.features?.[0]
       if (!feature || feature.geometry.type !== 'Point') return
@@ -203,7 +217,7 @@ export default function MapView() {
         .addTo(map)
     })
 
-    for (const layer of [LAYER_CLUSTERS, LAYER_POINTS]) {
+    for (const layer of [LAYER_CLUSTERS, LAYER_POINTS_HIT]) {
       map.on('mouseenter', layer, () => {
         if (!useAppStore.getState().pinMode) {
           map.getCanvas().style.cursor = 'pointer'

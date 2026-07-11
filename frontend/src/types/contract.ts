@@ -142,7 +142,10 @@ export interface VendorProperties {
   /** Enriched cuisine from the shared §C enum. */
   cuisine: string
   status: VendorStatus
-  fooditems?: string
+  /** True when the permit schedule places the vendor at this point (§B.1). */
+  scheduled_here?: boolean
+  /** Human-readable schedule window, e.g. "Mo-Fr 8am-3pm" (§B.1). */
+  schedule_window?: string
 }
 
 export interface VendorFeature {

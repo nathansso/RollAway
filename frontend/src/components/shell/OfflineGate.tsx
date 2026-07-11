@@ -104,7 +104,7 @@ export default function OfflineGate({ children }: { children: ReactNode }) {
         }`}
       >
         {showOfflineBanner && (
-          <div className="pointer-events-auto mx-3 mt-2 flex items-start gap-2.5 rounded-2xl bg-caution px-4 py-3 text-white shadow-lg">
+          <div className="pointer-events-auto mx-3 mt-2 flex items-start gap-2.5 rounded-2xl bg-caution px-4 py-3 text-slate-900 shadow-lg">
             <WifiOffIcon className="mt-0.5 h-5 w-5 shrink-0" />
             <p className="text-sm font-medium leading-snug">
               You&rsquo;re offline &mdash; the map and copilot need a

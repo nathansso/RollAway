@@ -9,8 +9,7 @@
         "name": "Golden Gate Halal",
         "type": "Truck",
         "cuisine": "halal",
-        "status": "APPROVED",
-        "fooditems": "chicken over rice: gyro: falafel"
+        "status": "APPROVED"
       }
     },
     {
@@ -21,8 +20,7 @@
         "name": "Tacos El Patron",
         "type": "Truck",
         "cuisine": "tacos",
-        "status": "APPROVED",
-        "fooditems": "tacos: burritos: quesadillas: aguas frescas"
+        "status": "APPROVED"
       }
     },
     {
@@ -33,8 +31,7 @@
         "name": "La Esquina Taqueria Truck",
         "type": "Truck",
         "cuisine": "tacos",
-        "status": "APPROVED",
-        "fooditems": "tacos al pastor: carnitas: horchata"
+        "status": "APPROVED"
       }
     },
     {
@@ -45,8 +42,7 @@
         "name": "Rincon Coffee Co.",
         "type": "Push Cart",
         "cuisine": "coffee",
-        "status": "APPROVED",
-        "fooditems": "espresso: cold brew: pastries"
+        "status": "APPROVED"
       }
     },
     {
@@ -57,8 +53,7 @@
         "name": "SoMa StrEat Sweets",
         "type": "Push Cart",
         "cuisine": "desserts",
-        "status": "REQUESTED",
-        "fooditems": "churros: ice cream sandwiches"
+        "status": "REQUESTED"
       }
     },
     {
@@ -69,8 +64,7 @@
         "name": "Embarcadero Dogs",
         "type": "Push Cart",
         "cuisine": "hot_dogs",
-        "status": "APPROVED",
-        "fooditems": "hot dogs: chips: soda"
+        "status": "APPROVED"
       }
     },
     {
@@ -81,8 +75,7 @@
         "name": "Mission Al Pastor",
         "type": "Truck",
         "cuisine": "tacos",
-        "status": "APPROVED",
-        "fooditems": "tacos: tortas: quesadillas"
+        "status": "APPROVED"
       }
     },
     {
@@ -93,8 +86,7 @@
         "name": "Paletas Doña Rosa",
         "type": "Push Cart",
         "cuisine": "ice_cream",
-        "status": "APPROVED",
-        "fooditems": "paletas: mangonadas"
+        "status": "APPROVED"
       }
     },
     {
@@ -105,8 +97,7 @@
         "name": "Oracle Park Kettle Corn",
         "type": "Push Cart",
         "cuisine": "desserts",
-        "status": "SUSPEND",
-        "fooditems": "kettle corn: lemonade"
+        "status": "SUSPEND"
       }
     },
     {
@@ -117,8 +108,7 @@
         "name": "Panhandle Pho Wheels",
         "type": "Truck",
         "cuisine": "asian",
-        "status": "APPROVED",
-        "fooditems": "pho: banh mi: spring rolls"
+        "status": "APPROVED"
       }
     },
     {
@@ -129,8 +119,7 @@
         "name": "Marina Melts",
         "type": "Truck",
         "cuisine": "sandwiches",
-        "status": "EXPIRED",
-        "fooditems": "grilled cheese: tomato soup"
+        "status": "EXPIRED"
       }
     },
     {
@@ -141,8 +130,7 @@
         "name": "Union Square Crepes",
         "type": "Truck",
         "cuisine": "desserts",
-        "status": "APPROVED",
-        "fooditems": "sweet crepes: savory crepes: coffee"
+        "status": "APPROVED"
       }
     },
     {
@@ -153,8 +141,7 @@
         "name": "Ferry Point BBQ",
         "type": "Truck",
         "cuisine": "bbq",
-        "status": "APPROVED",
-        "fooditems": "brisket: pulled pork: cornbread"
+        "status": "APPROVED"
       }
     },
     {
@@ -165,8 +152,7 @@
         "name": "Civic Center Shawarma",
         "type": "Truck",
         "cuisine": "halal",
-        "status": "REQUESTED",
-        "fooditems": "shawarma wraps: hummus plates"
+        "status": "REQUESTED"
       }
     },
     {
@@ -177,8 +163,7 @@
         "name": "Dogpatch Poke Cart",
         "type": "Push Cart",
         "cuisine": "seafood",
-        "status": "APPROVED",
-        "fooditems": "poke bowls: seaweed salad"
+        "status": "APPROVED"
       }
     }
   ]

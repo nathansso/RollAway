@@ -41,6 +41,68 @@ export class ChatClientError extends Error {
   }
 }
 
+const VERDICTS = new Set<string>(['good', 'caution', 'avoid'])
+
+function clamp01(n: number): number {
+  return Math.min(1, Math.max(0, n))
+}
+
+/** Defensive pass over a real-backend body so a sloppy payload can't crash the UI. */
+function sanitizeResponse(body: ChatResponse): ChatResponse {
+  const map_actions = Array.isArray(body.map_actions)
+    ? body.map_actions
+        .filter(
+          (a) =>
+            a != null &&
+            a.type === 'add_spot' &&
+            VERDICTS.has(a.verdict) &&
+            a.breakdown != null &&
+            a.breakdown.demand != null &&
+            a.breakdown.constraints != null,
+        )
+        .map((a) => ({ ...a, score: clamp01(a.score) }))
+    : null
+  const citations = Array.isArray(body.citations) ? body.citations : []
+  const checklist =
+    body.checklist && Array.isArray(body.checklist.steps) ? body.checklist : null
+  return { ...body, citations, map_actions, checklist }
+}
+
+/** Drain a streamed (SSE / NDJSON) body into a single parsed JSON payload. */
+async function readStreamedBody(res: Response, isSse: boolean): Promise<unknown> {
+  if (!res.body) return null
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let raw = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    raw += decoder.decode(value, { stream: true })
+  }
+  raw += decoder.decode()
+  const payloads: string[] = []
+  for (const line of raw.split('\n')) {
+    let data = line
+    if (isSse) {
+      if (!line.startsWith('data:')) continue
+      data = line.slice(5).trimStart()
+    }
+    data = data.trim()
+    if (!data || data === '[DONE]') continue
+    payloads.push(data)
+  }
+  if (payloads.length === 0) return null
+  try {
+    return JSON.parse(payloads.join(''))
+  } catch {
+    try {
+      return JSON.parse(payloads[payloads.length - 1])
+    } catch {
+      return null
+    }
+  }
+}
+
 async function sendReal(req: ChatRequest): Promise<ChatResponse> {
   if (!ENDPOINT) {
     throw new ChatClientError(
@@ -52,7 +114,7 @@ async function sendReal(req: ChatRequest): Promise<ChatResponse> {
   try {
     res = await fetch(ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(req),
     })
   } catch {
@@ -61,7 +123,14 @@ async function sendReal(req: ChatRequest): Promise<ChatResponse> {
       "Couldn't reach the copilot. Check your connection and try again.",
     )
   }
-  const body: unknown = await res.json().catch(() => null)
+  const contentType = res.headers.get('content-type') ?? ''
+  const isStream =
+    contentType.includes('text/event-stream') || contentType.includes('ndjson')
+  const body: unknown = isStream
+    ? await readStreamedBody(res, contentType.includes('text/event-stream')).catch(
+        () => null,
+      )
+    : await res.json().catch(() => null)
   if (isApiError(body)) {
     throw new ChatClientError(body.error.code, body.error.message)
   }
@@ -71,7 +140,7 @@ async function sendReal(req: ChatRequest): Promise<ChatResponse> {
       'The copilot had trouble answering. Try again in a moment.',
     )
   }
-  return body as ChatResponse
+  return sanitizeResponse(body as ChatResponse)
 }
 
 export function sendChat(req: ChatRequest): Promise<ChatResponse> {

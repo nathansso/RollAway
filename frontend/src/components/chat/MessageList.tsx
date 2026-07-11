@@ -192,7 +192,8 @@ export default function MessageList() {
     <div
       role="log"
       aria-label="Conversation"
-      aria-live="polite"
+      /* announcements handled by the always-mounted CopilotAnnouncer in App.tsx
+         — aria-live here would double-announce while the sheet is open */
       className="flex flex-1 flex-col gap-3 overflow-y-auto px-3 py-3"
     >
       {messages.map((msg) => (

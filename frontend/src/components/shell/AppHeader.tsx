@@ -65,7 +65,7 @@ export default function AppHeader() {
   return (
     <>
       <header className="pointer-events-none absolute inset-x-0 top-0 z-30 pt-[env(safe-area-inset-top)]">
-        <div className="flex items-center justify-between gap-2 px-3 pt-3">
+        <div className="flex items-center justify-between gap-2 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-3">
           {/* Wordmark pill */}
           <div className="pointer-events-auto rounded-full bg-white/95 px-4 py-2 shadow-md backdrop-blur">
             <span className="font-display text-lg leading-none text-primary">
@@ -109,7 +109,7 @@ export default function AppHeader() {
           type="button"
           onClick={checkPinnedSpot}
           disabled={sending}
-          className="pointer-events-auto fixed right-4 bottom-[calc(8.5rem+env(safe-area-inset-bottom))] z-30 flex min-h-11 items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition-transform duration-150 active:scale-[0.97] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          className="pointer-events-auto fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[calc(8.5rem+env(safe-area-inset-bottom))] z-30 flex min-h-11 items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition-transform duration-150 active:scale-[0.97] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <MapPinIcon className="h-4.5 w-4.5" />
           Check this spot

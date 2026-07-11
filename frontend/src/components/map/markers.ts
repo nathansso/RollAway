@@ -20,6 +20,14 @@ const VERDICT_BG: Record<Verdict, string> = {
   avoid: 'bg-avoid',
 }
 
+// Score text color per verdict head: amber (caution) is too light for white
+// text, so it gets dark text instead.
+const VERDICT_SCORE_TEXT: Record<Verdict, string> = {
+  good: 'text-white',
+  caution: 'text-slate-900',
+  avoid: 'text-white',
+}
+
 const VERDICT_TEXT: Record<Verdict, string> = {
   good: 'text-good',
   caution: 'text-caution',
@@ -62,7 +70,8 @@ export function buildSpotMarkerElement(
     VERDICT_BG[spot.verdict]
 
   const score = document.createElement('span')
-  score.className = 'font-mono text-sm font-bold leading-none text-white'
+  score.className =
+    'font-mono text-sm font-bold leading-none ' + VERDICT_SCORE_TEXT[spot.verdict]
   // contract score is 0–1; show it as 0–100
   score.textContent = String(Math.round(spot.score * 100))
   head.appendChild(score)
@@ -102,12 +111,14 @@ function statusChipClass(status: VendorStatus): string {
   switch (status) {
     case 'APPROVED':
     case 'ISSUED':
-      return 'bg-good'
+      return 'bg-good text-white'
     case 'REQUESTED':
-      return 'bg-caution'
+      return 'bg-caution text-slate-900'
     case 'EXPIRED':
     case 'SUSPEND':
-      return 'bg-slate-400'
+      return 'bg-slate-600 text-white'
+    default:
+      return 'bg-slate-600 text-white'
   }
 }
 
@@ -126,7 +137,7 @@ export function buildVendorPopup(props: VendorProperties): HTMLDivElement {
 
   const chip = document.createElement('span')
   chip.className =
-    'mt-2 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-white ' +
+    'mt-2 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ' +
     statusChipClass(props.status)
   chip.textContent = props.status
 

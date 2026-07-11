@@ -50,7 +50,7 @@ export default function Composer() {
   }
 
   return (
-    <div className="border-t border-border bg-white px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+    <div className="border-t border-border bg-white pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
       <div className="flex items-end gap-2">
         <textarea
           ref={textareaRef}
@@ -65,7 +65,7 @@ export default function Composer() {
           rows={1}
           placeholder="Ask your copilot…"
           aria-label="Message"
-          className="min-h-11 flex-1 resize-none overflow-y-auto rounded-2xl border border-border bg-muted px-3.5 py-2.5 text-sm leading-5 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="min-h-11 flex-1 resize-none overflow-y-auto rounded-2xl border border-border bg-muted px-3.5 py-2.5 text-base leading-5 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
         <button
           type="button"

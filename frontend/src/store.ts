@@ -29,6 +29,14 @@ export type SheetView = 'peek' | 'chat' | 'spot' | 'permits'
 const CHECKLIST_KEY = 'rollaway.checklist'
 const DONE_STEPS_KEY = 'rollaway.checklist.done'
 
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
 function loadStoredChecklist(): Checklist | null {
   try {
     const raw = localStorage.getItem(CHECKLIST_KEY)
@@ -90,11 +98,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   sending: false,
 
   vendorType:
-    (localStorage.getItem('rollaway.vendor_type') as VendorType | null) ?? null,
+    (safeGetItem('rollaway.vendor_type') as VendorType | null) ?? null,
   setVendorType: (t) => {
-    if (t) localStorage.setItem('rollaway.vendor_type', t)
-    else localStorage.removeItem('rollaway.vendor_type')
     set({ vendorType: t })
+    try {
+      if (t) localStorage.setItem('rollaway.vendor_type', t)
+      else localStorage.removeItem('rollaway.vendor_type')
+    } catch {
+      // best-effort persistence
+    }
   },
 
   mapCenter: { lat: 37.7793, lng: -122.4013 }, // SoMa, San Francisco
@@ -120,11 +132,15 @@ export const useAppStore = create<AppState>((set, get) => ({
         : s,
     )
     const next = { ...checklist, steps }
-    localStorage.setItem(
-      DONE_STEPS_KEY,
-      JSON.stringify(steps.filter((s) => s.status === 'done').map((s) => s.order)),
-    )
     set({ checklist: next })
+    try {
+      localStorage.setItem(
+        DONE_STEPS_KEY,
+        JSON.stringify(steps.filter((s) => s.status === 'done').map((s) => s.order)),
+      )
+    } catch {
+      // best-effort persistence
+    }
   },
 
   sheetView: 'peek',
@@ -165,19 +181,24 @@ export const useAppStore = create<AppState>((set, get) => ({
         sending: false,
       }
 
-      if (res.map_actions?.length) {
+      if (res.map_actions) {
         const spots = res.map_actions.filter(
           (a): a is AddSpotAction => a.type === 'add_spot',
         )
         patch.spots = spots
-        patch.spotsEpoch = get().spotsEpoch + 1
+        if (spots.length > 0) patch.spotsEpoch = get().spotsEpoch + 1
         patch.selectedSpotId = null
+        if (get().sheetView === 'spot') patch.sheetView = 'chat'
       }
 
       if (res.checklist) {
         patch.checklist = res.checklist
-        localStorage.setItem(CHECKLIST_KEY, JSON.stringify(res.checklist))
-        localStorage.setItem(DONE_STEPS_KEY, '[]')
+        try {
+          localStorage.setItem(CHECKLIST_KEY, JSON.stringify(res.checklist))
+          localStorage.setItem(DONE_STEPS_KEY, '[]')
+        } catch {
+          // best-effort persistence
+        }
       }
 
       set(patch)

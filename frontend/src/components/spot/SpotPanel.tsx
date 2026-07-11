@@ -4,7 +4,7 @@
  * demand signals, and nearby vendors. Reads everything from the store.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../../store'
 import type {
   AddSpotAction,
@@ -289,7 +289,7 @@ function NearbyVendorsSection({ vendors }: { vendors: NearbyVendor[] }) {
               </span>
               {v.scheduled_here && (
                 <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
-                  Scheduled here Friday
+                  Scheduled here
                 </span>
               )}
             </li>
@@ -304,19 +304,41 @@ function NearbyVendorsSection({ vendors }: { vendors: NearbyVendor[] }) {
 
 function SpotSheet({ spot, onClose }: { spot: AddSpotAction; onClose: () => void }) {
   const [entered, setEntered] = useState(false)
+  const sheetRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     const raf = requestAnimationFrame(() => setEntered(true))
     return () => cancelAnimationFrame(raf)
   }, [])
+
+  // Focus management: move focus into the sheet on open, restore on close.
+  useEffect(() => {
+    const previouslyFocused = document.activeElement
+    sheetRef.current?.focus()
+    return () => {
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus()
+    }
+  }, [])
+
+  // Escape closes the sheet, same as the close button.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
 
   const name = spotDisplayName(spot.id)
   const meta = VERDICT_META[spot.verdict]
 
   return (
     <div
+      ref={sheetRef}
+      tabIndex={-1}
       role="dialog"
       aria-label={`${name} spot details`}
-      className={`fixed inset-x-0 bottom-0 z-40 flex max-h-[80dvh] flex-col rounded-t-3xl bg-background shadow-[0_-8px_30px_rgba(15,23,42,0.18)] transition-transform duration-200 ease-out ${
+      className={`fixed inset-x-0 bottom-0 z-40 flex max-h-[80dvh] flex-col rounded-t-3xl bg-background shadow-[0_-8px_30px_rgba(15,23,42,0.18)] outline-none transition-transform duration-200 ease-out ${
         entered ? 'translate-y-0' : 'translate-y-full'
       }`}
     >

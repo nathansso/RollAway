@@ -16,7 +16,7 @@ import MessageList from './MessageList'
 import QuickPrompts from './QuickPrompts'
 import VendorTypePicker from './VendorTypePicker'
 
-const PEEK_HEIGHT = '108px'
+const PEEK_HEIGHT = 'calc(108px + env(safe-area-inset-bottom, 0px))'
 const EXPANDED_HEIGHT = '75dvh'
 
 function ChevronDownIcon() {
@@ -100,7 +100,7 @@ export default function ChatSheet() {
               Ask where to set up, or what permits you need
             </span>
           </button>
-          <QuickPrompts className="px-3 pb-3" />
+          <QuickPrompts className="px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]" />
         </div>
       )}
     </section>

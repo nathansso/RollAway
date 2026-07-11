@@ -3,7 +3,7 @@
  * agency-grouped to-do list. Shown when store.sheetView === 'permits'.
  */
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../../store'
 import type { ChecklistStep } from '../../types/contract'
 import {
@@ -158,7 +158,7 @@ function StepRow({ step, expanded, onToggleCite }: StepRowProps) {
 
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {step.deadline_label && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-caution/15 px-2.5 py-1 text-xs font-medium text-caution">
+            <span className="inline-flex items-center gap-1 rounded-full bg-caution/15 px-2.5 py-1 text-xs font-medium text-amber-800">
               <ClockIcon />
               {step.deadline_label}
             </span>
@@ -218,8 +218,26 @@ export default function PermitChecklist() {
   const [expandedCites, setExpandedCites] = useState<ReadonlySet<number>>(
     () => new Set(),
   )
+  const sheetRef = useRef<HTMLElement>(null)
+  const open = sheetView === 'permits'
 
-  if (sheetView !== 'permits') return null
+  // Focus management: move focus into the sheet on open, close on Escape,
+  // restore focus to the previously focused element on close.
+  useEffect(() => {
+    if (!open) return
+    const previouslyFocused = document.activeElement
+    sheetRef.current?.focus()
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSheetView('chat')
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus()
+    }
+  }, [open, setSheetView])
+
+  if (!open) return null
 
   const toggleCite = (order: number) => {
     setExpandedCites((prev) => {
@@ -238,10 +256,12 @@ export default function PermitChecklist() {
 
   return (
     <section
+      ref={sheetRef}
+      tabIndex={-1}
       role="dialog"
       aria-modal="true"
       aria-label="Permit checklist"
-      className="fixed inset-x-0 bottom-0 z-30 flex max-h-[85dvh] flex-col rounded-t-3xl bg-background shadow-[0_-8px_30px_rgba(15,23,42,0.15)]"
+      className="fixed inset-x-0 bottom-0 z-30 flex max-h-[85dvh] flex-col rounded-t-3xl bg-background shadow-[0_-8px_30px_rgba(15,23,42,0.15)] outline-none"
     >
       {/* header */}
       <header className="flex items-start justify-between gap-3 px-5 pb-3 pt-5">
@@ -288,7 +308,7 @@ export default function PermitChecklist() {
       )}
 
       {/* scrollable body */}
-      <div className="flex-1 overflow-y-auto px-5 pb-6">
+      <div className="flex-1 overflow-y-auto px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
         {!checklist ? (
           <EmptyState />
         ) : (

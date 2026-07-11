@@ -1,10 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Calistoga&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import 'tailwindcss';
 @import 'mapbox-gl/dist/mapbox-gl.css';
 
 @theme {
   /* Rollaway design tokens — warm street-food orange + map blue */
-  --color-primary: #ea580c;
+  --color-primary: #c2410c;
   --color-on-primary: #ffffff;
   --color-secondary: #f97316;
   --color-accent: #2563eb;
@@ -14,7 +13,7 @@
   --color-muted-foreground: #64748b;
   --color-border: #fceae1;
   --color-destructive: #dc2626;
-  --color-ring: #ea580c;
+  --color-ring: #c2410c;
 
   /* verdict colors */
   --color-good: #16a34a;

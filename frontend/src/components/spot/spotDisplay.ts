@@ -8,13 +8,14 @@ import type { Saturation, Verdict } from '../../types/contract'
 /**
  * Derive a friendly spot name from its id.
  * "spot-2nd-howard" -> "2nd & Howard"; "spot-mission-5th" -> "Mission & 5th".
+ * Opaque backend ids (uuids, hashes, no readable words) -> "Suggested spot".
  */
 export function spotDisplayName(id: string): string {
-  const tokens = id
-    .replace(/^spot[-_]?/i, '')
-    .split(/[-_]+/)
-    .filter(Boolean)
-  if (tokens.length === 0) return id
+  const stripped = id.replace(/^spot[-_]?/i, '')
+  const tokens = stripped.split(/[-_]+/).filter(Boolean)
+  const uuidLike = /^[0-9a-f-]{20,}$/i.test(stripped)
+  const hasWord = tokens.some((t) => /[a-z]/i.test(t))
+  if (tokens.length === 0 || uuidLike || !hasWord) return 'Suggested spot'
   const capped = tokens.map((t) => t.charAt(0).toUpperCase() + t.slice(1))
   if (capped.length === 2) return `${capped[0]} & ${capped[1]}`
   return capped.join(' ')

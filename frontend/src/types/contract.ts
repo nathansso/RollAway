@@ -92,6 +92,34 @@ export interface LegalitySignal {
   cite: string
 }
 
+export interface AreaPermitCheck {
+  rule: string
+  pass: boolean
+  required_ft: number | null
+  actual_ft: number | null
+  cite: string | null
+}
+
+export interface AreaInsights {
+  parking: {
+    point: LatLng
+    suitability: 'recommended' | 'verify' | 'avoid'
+    permit_checks: AreaPermitCheck[]
+    note: string
+  }
+  local_cuisine: {
+    nearby: { cuisine: string; count: number }[]
+    menu_overlap_count: number
+    opportunity: 'low_direct_overlap' | 'some_direct_overlap' | 'high_direct_overlap'
+  }
+  navigation: {
+    destination: LatLng
+    mode: 'driving' | 'walking' | 'cycling'
+    minutes: number | null
+    estimated: boolean
+  }
+}
+
 export interface RecommendationSpot {
   id: string
   rank: number
@@ -122,6 +150,7 @@ export interface RecommendationSpot {
   }
   travel_minutes: number
   travel_distance_miles: number
+  area_insights?: AreaInsights
 }
 
 export interface RecommendSpotsResponse {

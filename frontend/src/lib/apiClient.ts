@@ -1,4 +1,5 @@
 import type {
+  AreaInsights,
   ClosuresResponse,
   EasyApplyFieldKey,
   LegacyChatResponse,
@@ -69,6 +70,44 @@ function isNonNegativeFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
 }
 
+function isNullableNonNegativeNumber(value: unknown): boolean {
+  return value === null || isNonNegativeFiniteNumber(value)
+}
+
+function isAreaInsights(value: unknown): value is AreaInsights {
+  if (!isRecord(value) || !isRecord(value.parking) ||
+      !isRecord(value.local_cuisine) || !isRecord(value.navigation)) return false
+  const parking = value.parking
+  const cuisine = value.local_cuisine
+  const navigation = value.navigation
+  return (
+    isPoint(parking.point) &&
+    isWithinSanFrancisco(parking.point as LatLng) &&
+    ['recommended', 'verify', 'avoid'].includes(String(parking.suitability)) &&
+    typeof parking.note === 'string' &&
+    Array.isArray(parking.permit_checks) &&
+    parking.permit_checks.every((check) =>
+      isRecord(check) &&
+      typeof check.rule === 'string' &&
+      typeof check.pass === 'boolean' &&
+      isNullableNonNegativeNumber(check.required_ft) &&
+      isNullableNonNegativeNumber(check.actual_ft) &&
+      (check.cite === null || typeof check.cite === 'string')) &&
+    Array.isArray(cuisine.nearby) &&
+    cuisine.nearby.every((row) =>
+      isRecord(row) && typeof row.cuisine === 'string' &&
+      isNonNegativeFiniteNumber(row.count)) &&
+    isNonNegativeFiniteNumber(cuisine.menu_overlap_count) &&
+    ['low_direct_overlap', 'some_direct_overlap', 'high_direct_overlap']
+      .includes(String(cuisine.opportunity)) &&
+    isPoint(navigation.destination) &&
+    isWithinSanFrancisco(navigation.destination as LatLng) &&
+    ['driving', 'walking', 'cycling'].includes(String(navigation.mode)) &&
+    isNullableNonNegativeNumber(navigation.minutes) &&
+    typeof navigation.estimated === 'boolean'
+  )
+}
+
 const VERDICTS = new Set<Verdict>(['good', 'caution', 'avoid'])
 const VENDOR_TYPES = new Set<VendorType>([
   'truck',
@@ -114,6 +153,7 @@ function isRecommendation(value: unknown): value is RecommendationSpot {
     typeof value.closure.active === 'boolean' &&
     typeof value.closure.detail === 'string' &&
     (value.closure.source === null || typeof value.closure.source === 'string') &&
+    (value.area_insights === undefined || isAreaInsights(value.area_insights)) &&
     isNonNegativeFiniteNumber(value.travel_minutes) &&
     isNonNegativeFiniteNumber(value.travel_distance_miles)
   )
@@ -392,6 +432,9 @@ export function adaptNativeRecommendations(
       },
       travel_minutes: competitionRecord ? breakdown.travel_minutes : travel.minutes,
       travel_distance_miles: travel.miles,
+      area_insights: isAreaInsights(candidate.area_insights)
+        ? candidate.area_insights
+        : undefined,
     })
   }
   return { contract_version: 2, generated_for: request.when, recommendations }

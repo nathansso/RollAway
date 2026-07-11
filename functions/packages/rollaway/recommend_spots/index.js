@@ -25,6 +25,7 @@ const {
 const { travelMatrix } = require('./travel');
 const { menuCompetition } = require('./menu_competition');
 const { scoreCandidate } = require('./score');
+const { buildAreaInsights } = require('./area_insights');
 const { makeCandidates, signalArgs } = require('./candidates');
 
 // ---- Scenario defaults -----------------------------------------------------
@@ -293,13 +294,22 @@ exports.main = guard(async (args) => {
       clearance: signalSets[i].clearance,
     };
     candidate.block_label = blockLabel(candidate.point, signalSets[i].vendors);
-    return scoreCandidate({
+    const spot = scoreCandidate({
       candidate,
       signals,
       competition: competitions[i],
       travel: travelRows[i],
       maxTravelMinutes: ctx.max_travel_minutes,
     });
+    spot.area_insights = buildAreaInsights({
+      point: candidate.point,
+      signals,
+      competition: competitions[i],
+      eliminated: spot.eliminated,
+      travel: travelRows[i],
+      travelMode: ctx.travel_mode,
+    });
+    return spot;
   });
 
   // Rank non-eliminated by score desc; eliminated go last, unranked.
@@ -324,6 +334,7 @@ exports.main = guard(async (args) => {
     eliminated: s.eliminated,
     violations: s.violations,
     score_breakdown: s.score_breakdown,
+    area_insights: s.area_insights,
     why_one_line: s.why_one_line,
   }));
 

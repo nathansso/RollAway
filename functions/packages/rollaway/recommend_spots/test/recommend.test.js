@@ -62,6 +62,11 @@ test('returns exactly 3 spots, each with a full score_breakdown', async () => {
     // competition carries penalty + overlapping list
     assert.equal(typeof s.score_breakdown.competition.penalty, 'number');
     assert.ok(Array.isArray(s.score_breakdown.competition.overlapping));
+    assert.ok(s.area_insights && s.area_insights.parking);
+    assert.deepEqual(s.area_insights.parking.point, s.point);
+    assert.ok(!s.area_insights.parking.permit_checks.some((check) => /hydrant/i.test(check.rule)));
+    assert.ok(Array.isArray(s.area_insights.local_cuisine.nearby));
+    assert.deepEqual(s.area_insights.navigation.destination, s.point);
   }
 });
 

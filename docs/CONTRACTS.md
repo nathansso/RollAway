@@ -250,3 +250,19 @@ checklist-pushcart-nocook`
   `check_clearance` row, on `pushcart_cooking`/`pushcart_nocook` only** (distinct legal basis
   from `dpw-182101`; the dataset `4g86-grxu` is the compute input, not the citation).
 - Full descriptions of every id: `agents/kb/SOURCES.md`.
+
+## Additive recommendation area insights
+
+`recommend_spots` may include an `area_insights` object on each spot. This is an
+additive field for parking/setup guidance and navigation:
+
+- `parking.point` is the exact suggested navigation target.
+- `parking.suitability` is `recommended`, `verify`, or `avoid`.
+- `parking.permit_checks` contains returned placement checks other than hydrants.
+- `local_cuisine.nearby` summarizes surrounding cuisine counts and
+  `menu_overlap_count` reports direct menu competition.
+- `navigation` carries destination, travel mode, minutes, and whether travel is estimated.
+
+Consumers must not describe `recommended` as guaranteed legal parking. Posted curb
+signs, temporary restrictions, and current street conditions still require on-site
+verification.

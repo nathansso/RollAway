@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#EA580C"/>
+  <!-- food truck -->
+  <g fill="#FFF7ED">
+    <rect x="10" y="22" width="30" height="18" rx="3"/>
+    <path d="M40 27h8l6 7v6h-14z"/>
+    <rect x="14" y="26" width="10" height="7" rx="1.5" fill="#EA580C"/>
+    <rect x="43" y="29" width="7" height="5" rx="1" fill="#EA580C"/>
+  </g>
+  <circle cx="20" cy="42" r="5" fill="#0F172A" stroke="#FFF7ED" stroke-width="2.5"/>
+  <circle cx="46" cy="42" r="5" fill="#0F172A" stroke="#FFF7ED" stroke-width="2.5"/>
+  <!-- awning -->
+  <path d="M8 22h34v-4a2 2 0 0 1 2-2H12a4 4 0 0 0-4 4z" fill="#FDBA74"/>
+</svg>

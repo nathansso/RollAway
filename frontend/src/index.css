@@ -1310,6 +1310,16 @@ html.landing-route #root {
   background: #fff;
   padding: 1.5rem;
   box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.landing-card:hover {
+  transform: translateY(-3px);
+  border-color: rgb(194 65 12 / 35%);
+  box-shadow: 0 14px 32px rgb(15 23 42 / 11%);
 }
 
 .landing-step {
@@ -1336,34 +1346,84 @@ html.landing-route #root {
   margin-top: 1rem;
 }
 
-/* Framed hero mock — the app's own map screen, sans Mapbox bundle. */
-.landing-hero-mock {
+/* Phone mock of the app's own map screen, sans Mapbox bundle. */
+.landing-phone {
   position: relative;
   width: 100%;
-  max-width: 22rem;
+  max-width: 17.5rem;
   margin-inline: auto;
-  aspect-ratio: 320 / 540;
-  padding: 8px;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: #fff;
+  aspect-ratio: 9 / 19.5;
+  padding: 0.5rem;
+  border-radius: 2.75rem;
+  background: linear-gradient(155deg, #33405a 0%, #0f172a 55%);
   box-shadow:
-    0 24px 60px rgb(15 23 42 / 22%),
-    0 4px 12px rgb(15 23 42 / 10%);
+    0 32px 70px rgb(15 23 42 / 34%),
+    0 10px 24px rgb(15 23 42 / 18%),
+    inset 0 0 0 2px rgb(255 255 255 / 7%);
 }
 
-.landing-hero-mock__screen {
+.landing-phone__screen {
   position: absolute;
-  inset: 8px;
+  inset: 0.5rem;
   overflow: hidden;
-  border-radius: var(--radius-ui);
+  border-radius: 2.3rem;
   background: #e8ece5;
 }
 
-.landing-hero-mock__chrome {
+/* Titanium side buttons */
+.landing-phone__side {
+  position: absolute;
+  z-index: 0;
+  border-radius: 2px;
+  background: #232f45;
+}
+.landing-phone__side--power {
+  right: -3px;
+  top: 30%;
+  width: 3px;
+  height: 9%;
+}
+.landing-phone__side--vol-up {
+  left: -3px;
+  top: 22%;
+  width: 3px;
+  height: 6%;
+}
+.landing-phone__side--vol-down {
+  left: -3px;
+  top: 31%;
+  width: 3px;
+  height: 6%;
+}
+
+.landing-phone__island {
+  position: absolute;
+  top: 0.7rem;
+  left: 50%;
+  z-index: 9;
+  width: 32%;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: #05070d;
+  transform: translateX(-50%);
+}
+
+.landing-phone__home {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  z-index: 9;
+  width: 34%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgb(15 23 42 / 32%);
+  transform: translateX(-50%);
+}
+
+.landing-phone__chrome {
   position: absolute;
   inset-inline: 0.6rem;
-  top: 0.6rem;
+  top: 2.5rem;
   z-index: 5;
   display: flex;
   align-items: center;
@@ -1372,7 +1432,7 @@ html.landing-route #root {
   pointer-events: none;
 }
 
-.landing-hero-mock__context {
+.landing-phone__context {
   border: 1px solid rgb(255 255 255 / 70%);
   border-radius: var(--radius-ui);
   background: rgb(255 255 255 / 92%);
@@ -1384,13 +1444,13 @@ html.landing-route #root {
   backdrop-filter: blur(8px);
 }
 
-.landing-hero-mock__pin {
+.landing-phone__pin {
   position: absolute;
   z-index: 4;
   transform: translate(-50%, -88%);
 }
 
-.landing-hero-mock__vendor {
+.landing-phone__vendor {
   position: absolute;
   z-index: 3;
   width: 12px;
@@ -1402,7 +1462,7 @@ html.landing-route #root {
   transform: translate(-50%, -50%);
 }
 
-.landing-hero-mock__user {
+.landing-phone__user {
   position: absolute;
   left: 31%;
   top: 48%;
@@ -1416,10 +1476,10 @@ html.landing-route #root {
   transform: translate(-50%, -50%);
 }
 
-.landing-hero-mock__card {
+.landing-phone__card {
   position: absolute;
-  inset-inline: 0.55rem;
-  bottom: 0.55rem;
+  inset-inline: 0.6rem;
+  bottom: 1.35rem;
   z-index: 6;
   flex: initial;
   min-height: 0;

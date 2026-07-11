@@ -2,22 +2,25 @@ import BrandMark from '../common/BrandMark'
 import { CheckIcon, ClockIcon } from '../common/Icons'
 
 /**
- * A framed, on-palette mock of the Rollaway map screen for the landing hero.
- * It reuses the app's own schematic map + ranked-pin + recommendation-card
- * styling (the exact look shown when Mapbox has no token), so it reads as a
- * real screenshot — without pulling the Mapbox bundle onto the landing page.
- * Spot data mirrors the shipped demo fixture (2nd & Howard / Folsom & 1st /
- * Mission & 5th).
+ * A phone mock of the Rollaway map screen for the landing hero. It reuses the
+ * app's own schematic map, ranked pins, and recommendation card (the exact look
+ * shown when Mapbox has no token), so it reads like a real device screenshot,
+ * without pulling the Mapbox bundle onto the landing page. Spot data mirrors the
+ * shipped demo fixture (2nd & Howard / Folsom & 1st / Mission & 5th).
  */
 export default function HeroMock() {
   return (
     <div
-      className="landing-hero-mock"
+      className="landing-phone"
       role="img"
-      aria-label="Rollaway map of SoMa for Friday lunch, ranking three blocks: 2nd and Howard as a good fit, Folsom and 1st to check, and Mission and 5th to avoid inside a street closure."
+      aria-label="A phone showing the Rollaway map of SoMa for Friday lunch, ranking three blocks: 2nd and Howard as a good fit, Folsom and 1st to check, and Mission and 5th to avoid inside a street closure."
     >
-      <div className="landing-hero-mock__screen">
-        {/* Schematic SF map field — the app's real no-token fallback look */}
+      <span className="landing-phone__side landing-phone__side--power" aria-hidden="true" />
+      <span className="landing-phone__side landing-phone__side--vol-up" aria-hidden="true" />
+      <span className="landing-phone__side landing-phone__side--vol-down" aria-hidden="true" />
+
+      <div className="landing-phone__screen">
+        {/* Schematic SF map field: the app's real no-token fallback look */}
         <div className="fallback-map" aria-hidden="true">
           <div className="fallback-map__grid" />
           <div className="fallback-map__street fallback-map__street--one" />
@@ -25,57 +28,48 @@ export default function HeroMock() {
           <div className="fallback-map__closure" />
         </div>
 
+        {/* Dynamic island */}
+        <span className="landing-phone__island" aria-hidden="true" />
+
         {/* App header lockup + session context, exactly as the shell renders it */}
-        <div className="landing-hero-mock__chrome" aria-hidden="true">
+        <div className="landing-phone__chrome" aria-hidden="true">
           <span className="brand-lockup">
             <BrandMark compact />
           </span>
-          <span className="landing-hero-mock__context">SoMa · Fri lunch</span>
+          <span className="landing-phone__context">SoMa · Fri lunch</span>
         </div>
 
         {/* User location + nearby vendors */}
-        <span className="landing-hero-mock__user" aria-hidden="true" />
-        <span
-          className="landing-hero-mock__vendor"
-          style={{ left: '40%', top: '58%' }}
-          aria-hidden="true"
-        />
-        <span
-          className="landing-hero-mock__vendor"
-          style={{ left: '74%', top: '31%' }}
-          aria-hidden="true"
-        />
-        <span
-          className="landing-hero-mock__vendor"
-          style={{ left: '28%', top: '70%' }}
-          aria-hidden="true"
-        />
+        <span className="landing-phone__user" aria-hidden="true" />
+        <span className="landing-phone__vendor" style={{ left: '40%', top: '58%' }} aria-hidden="true" />
+        <span className="landing-phone__vendor" style={{ left: '74%', top: '31%' }} aria-hidden="true" />
+        <span className="landing-phone__vendor" style={{ left: '28%', top: '70%' }} aria-hidden="true" />
 
         {/* Ranked spot pins */}
         <span
-          className="rank-marker rank-marker--good landing-hero-mock__pin"
-          style={{ left: '21%', top: '28%' }}
+          className="rank-marker rank-marker--good landing-phone__pin"
+          style={{ left: '21%', top: '30%' }}
           aria-hidden="true"
         >
           <span>1</span>
         </span>
         <span
-          className="rank-marker rank-marker--caution landing-hero-mock__pin"
-          style={{ left: '63%', top: '40%' }}
+          className="rank-marker rank-marker--caution landing-phone__pin"
+          style={{ left: '63%', top: '42%' }}
           aria-hidden="true"
         >
           <span>2</span>
         </span>
         <span
-          className="rank-marker rank-marker--avoid landing-hero-mock__pin"
-          style={{ left: '60%', top: '55%' }}
+          className="rank-marker rank-marker--avoid landing-phone__pin"
+          style={{ left: '60%', top: '56%' }}
           aria-hidden="true"
         >
           <span>3</span>
         </span>
 
         {/* Top-ranked recommendation card, matching the in-app tray */}
-        <div className="recommendation-card landing-hero-mock__card" aria-hidden="true">
+        <div className="recommendation-card landing-phone__card" aria-hidden="true">
           <span className="recommendation-card__rank recommendation-card__rank--good">
             <svg width="16" height="16" viewBox="0 0 12 12" aria-hidden="true">
               <circle cx="6" cy="6" r="3.5" fill="currentColor" />
@@ -100,6 +94,9 @@ export default function HeroMock() {
             </span>
           </span>
         </div>
+
+        {/* Home indicator */}
+        <span className="landing-phone__home" aria-hidden="true" />
       </div>
     </div>
   )

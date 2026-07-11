@@ -27,7 +27,7 @@ const FEATURE_ICON: Record<string, ComponentType<SVGProps<SVGSVGElement>>> = {
 const STEPS = [
   {
     title: 'Tell us about your truck',
-    body: 'Your menu, price point, hours, and where you start the day. Stored on your device — no account.',
+    body: 'Your menu, price point, hours, and where you start the day. Stored on your device, no account.',
   },
   {
     title: 'See blocks ranked good, check, or avoid',
@@ -78,8 +78,8 @@ export default function LandingPage() {
                 id="hero-heading"
                 className="mt-4 font-display text-4xl font-bold leading-[1.06] tracking-[-0.03em] text-foreground sm:text-5xl lg:text-[3.4rem]"
               >
-                Find the best block to park your food truck —{' '}
-                <span className="text-primary">and get permitted to be there.</span>
+                {HERO.headlineLead}{' '}
+                <span className="text-primary">{HERO.headlineAccent}</span>
               </h1>
               <p className="mt-5 max-w-xl text-lg leading-8 text-muted-foreground">
                 {HERO.subhead}

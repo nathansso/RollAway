@@ -23,6 +23,15 @@ This branch owns event opportunities, vendor outreach drafts, and a dedicated Gr
 - Require explicit vendor approval before opening or invoking a send action, and never finalize a contract automatically.
 - Track draft, contacted, awaiting response, accepted, rejected, and expired states.
 
+## Area-aware parking and navigation
+
+- Treat each ranked recommendation point as a suggested parking/setup target derived from surrounding signals.
+- Include deterministic placement metrics other than the fire-hydrant check, including restaurant entrance, school, sidewalk, active closure, occupied-spot, and travel constraints when available.
+- Include nearby cuisine counts and direct menu-overlap opportunity in the decision evidence.
+- Provide origin-aware navigation from the vendor's selected location to the recommendation target.
+- Never claim that a recommendation guarantees legal curb parking; require the vendor to verify posted signs and current curb conditions.
+- Keep permit and cuisine calculations deterministic. Gradient AI may explain the evidence but may not alter the ranking or legal result.
+
 ## Frontend
 
 - Add menu import, extraction review, correction, and confirmation screens.

@@ -266,6 +266,49 @@ button:disabled {
   backdrop-filter: blur(14px);
 }
 
+/* #30: single location bar — pin toggles live location, input searches. */
+.location-bar__pin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 32px;
+  flex-shrink: 0;
+  border-radius: var(--radius-ui);
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-accent);
+}
+.location-bar__pin.is-live {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+/* #30: the minimized search summary pill shown after a search runs. */
+.map-controls__pill {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--color-border);
+  background: rgb(255 255 255 / 96%);
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 6px 18px rgb(15 23 42 / 14%);
+  text-align: left;
+}
+.map-controls__time-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-ui);
+  border: 1px solid var(--color-border);
+  background: #fff;
+  padding: 0.55rem 0.7rem;
+}
+
 .map-recenter {
   position: absolute;
   top: calc(env(safe-area-inset-top) + 10rem);
@@ -1532,7 +1575,7 @@ html.landing-route #root {
 /* #14 time-range scroll wheel */
 .time-wheel__frame {
   position: relative;
-  height: 132px;
+  height: 108px;
   overflow: hidden;
   border-radius: 0.75rem;
   border: 1px solid var(--color-border);
@@ -1565,8 +1608,8 @@ html.landing-route #root {
 .time-wheel__band {
   position: absolute;
   inset-inline: 0;
-  top: 44px;
-  height: 44px;
+  top: 36px;
+  height: 36px;
   pointer-events: none;
   border-top: 1px solid var(--color-primary);
   border-bottom: 1px solid var(--color-primary);

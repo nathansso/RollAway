@@ -3,7 +3,10 @@ import { useEffect, useRef } from 'react'
 // #14: a Google-Maps-style start/end time picker. Each column is a snap-scroll
 // "wheel" of 30-minute steps with the centered row highlighted.
 const STEP_MIN = 30
-const ITEM_H = 44 // px — also the minimum touch target
+// #30: compact rows so the wheel reads as a control, not a dominating panel.
+// Below the 44px min tap target intentionally — rows also scroll and respond to
+// arrow keys, and each row stays a full-width hit area.
+const ITEM_H = 36 // px
 const OPTIONS: number[] = Array.from(
   { length: (24 * 60) / STEP_MIN },
   (_, i) => i * STEP_MIN,

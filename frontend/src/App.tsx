@@ -112,7 +112,7 @@ export default function App() {
         >
           <MapView onViewReadyChange={setMapViewReady} />
           <AppHeader />
-          <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4.25rem)] z-20 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))]">
+          <div className="absolute inset-x-0 top-[calc(env(safe-area-inset-top)+4.25rem)] z-30 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))]">
             <SessionControls />
           </div>
           {!recommendationRevealPending && (

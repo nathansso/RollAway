@@ -8,6 +8,9 @@ packages:
     environment:
       SOCRATA_APP_TOKEN: "${SOCRATA_APP_TOKEN}"
       GOOGLE_PLACES_KEY: "${GOOGLE_PLACES_KEY}"
+      # Server-side Google key for recommend_spots: Distance Matrix (traffic)
+      # + Geocoding (issue #17). Not referrer-restricted; keep server-only.
+      GOOGLE_MAPS_SERVER_KEY: "${GOOGLE_MAPS_SERVER_KEY}"
       TICKETMASTER_KEY: "${TICKETMASTER_KEY}"
       SFMTA_EVENTS_URL: "${SFMTA_EVENTS_URL}"
       # Demo-reliability + orchestrator (recommend_spots) vars. All must EXIST in

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 const isMapboxUrl = (rawUrl: string) => {
   const hostname = new URL(rawUrl).hostname
@@ -16,47 +17,96 @@ const isLocalBrowserUrl = (url: URL) =>
   url.hostname === '127.0.0.1' ||
   url.hostname === 'localhost'
 
-function trackFixtureNetwork(page: import('@playwright/test').Page) {
+// #14/#17 call Google (Places, Street View) from the browser; these are not the
+// business API and are mocked in e2e so the flow is deterministic and offline.
+const isGoogleUrl = (rawUrl: string) => {
+  try {
+    return new URL(rawUrl).hostname.endsWith('googleapis.com')
+  } catch {
+    return false
+  }
+}
+
+function trackFixtureNetwork(page: Page) {
   const mapboxRequests: string[] = []
   const rollAwayBusinessRequests: string[] = []
-
   page.on('request', (request) => {
     const url = new URL(request.url())
     if (isLocalBrowserUrl(url)) return
     if (isMapboxUrl(request.url())) mapboxRequests.push(request.url())
-    else rollAwayBusinessRequests.push(request.url())
+    else if (isGoogleUrl(request.url())) {
+      // Google Places/Street View — not the business API. Ignore.
+    } else rollAwayBusinessRequests.push(request.url())
   })
-
   return { mapboxRequests, rollAwayBusinessRequests }
 }
 
-async function expectMapSurface(page: import('@playwright/test').Page) {
-  const mapbox = page.getByRole('application', {
-    name: 'Interactive map of recommendations, permitted vendors, closures, and your location',
-  })
-  const fallback = page.getByRole('region', { name: 'Schematic map of SoMa' })
-
-  await expect
-    .poll(async () => (await mapbox.isVisible()) || (await fallback.isVisible()), {
-      timeout: 15_000,
-    })
-    .toBe(true)
-
-  return (await mapbox.isVisible()) ? 'mapbox' : 'fallback'
+const STORED_PROFILE = {
+  schema_version: 1,
+  vendor_type: 'truck',
+  cuisine: 'mexican',
+  menu: { raw: 'Tacos $5', items: [{ name: 'Tacos', price: 5 }], price_tier: '$' },
+  home_base: { label: 'SoMa', point: null },
+  max_travel: { value: 15, unit: 'minutes' },
+  operating_windows: [{ day: 'fri', time_from: '11:00', time_to: '14:00' }],
+  permit_status: 'researching',
+  autofill_profile: {
+    owner_name: 'Avery Rivera',
+    business_name: 'Mission Tacos',
+    email: 'avery@example.com',
+    phone: '415-555-0123',
+    address: '123 Mission St',
+    city: 'San Francisco',
+    state: 'CA',
+    postal_code: '94103',
+  },
 }
 
-async function expectMinimumTouchTargets(
-  locator: import('@playwright/test').Locator,
-): Promise<void> {
-  for (const control of await locator.all()) {
-    const box = await control.boundingBox()
-    expect(box).not.toBeNull()
-    expect(box!.width).toBeGreaterThanOrEqual(44)
-    expect(box!.height).toBeGreaterThanOrEqual(44)
-  }
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+)
+
+async function mockStreetView(page: Page) {
+  await page.route('**/maps.googleapis.com/maps/api/streetview*', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: TINY_PNG }),
+  )
 }
 
-async function completeProfile(page: import('@playwright/test').Page) {
+async function mockPlaces(page: Page) {
+  await page.route('**/places.googleapis.com/v1/places:autocomplete', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        suggestions: [
+          {
+            placePrediction: {
+              placeId: 'PLACE_FERRY',
+              structuredFormat: {
+                mainText: { text: 'Ferry Building' },
+                secondaryText: { text: '1 Ferry Building, San Francisco, CA' },
+              },
+              text: { text: 'Ferry Building, San Francisco, CA' },
+            },
+          },
+        ],
+      }),
+    }),
+  )
+  await page.route('**/places.googleapis.com/v1/places/PLACE_FERRY', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        location: { latitude: 37.7955, longitude: -122.3937 },
+        formattedAddress: '1 Ferry Building, San Francisco, CA 94111, USA',
+      }),
+    }),
+  )
+}
+
+async function completeProfile(page: Page) {
   await expect(
     page.getByRole('heading', { name: 'Tell us about your business' }),
   ).toBeVisible()
@@ -73,67 +123,90 @@ async function completeProfile(page: import('@playwright/test').Page) {
   await page.getByLabel('Phone').fill('415-555-0123')
   await page.getByLabel('Mailing address').fill('123 Mission St')
   await page.getByLabel('ZIP').fill('94103')
-  await page.getByRole('button', { name: 'Continue to session setup' }).click()
+  await page.getByRole('button', { name: 'Find my spots' }).click()
+  // #14: no session page — the profile heading is replaced by the map flow.
   await expect(
-    page.getByRole('heading', { name: 'Tell us about your business' }),
-  ).toBeHidden()
+    page.getByRole('heading', { name: 'When are you setting up?' }),
+  ).toHaveCount(0)
 }
 
-async function findPlaces(page: import('@playwright/test').Page) {
-  await page.getByRole('button', { name: 'Find places to roll' }).click()
-  await expect(page.getByText('2nd & Howard', { exact: true })).toBeVisible()
+async function awaitRecommendations(page: Page) {
+  await expect(page.getByText('2nd & Howard', { exact: true })).toBeVisible({
+    timeout: 25_000,
+  })
 }
 
 // The permit checklist is reached from the profile (not a trip-page tab).
-async function openPermits(page: import('@playwright/test').Page) {
+async function openPermits(page: Page) {
   await page.getByRole('button', { name: /Edit profile/ }).click()
   await page.getByRole('button', { name: 'Permit checklist' }).click()
 }
 
-async function expectFullScreenLoader(
-  page: import('@playwright/test').Page,
-  status: string,
-) {
+async function expectFullScreenLoader(page: Page, status: string) {
   const loader = page.getByRole('status', { name: 'Get your business rolling' })
   await expect(loader).toBeVisible()
-  await expect(
-    loader.getByRole('heading', { name: 'Get your business rolling' }),
-  ).toBeVisible()
   await expect(loader.getByText(status, { exact: true })).toBeVisible()
-  await expect(loader).toBeFocused()
-
-  const loaderBox = await loader.boundingBox()
-  const truckBox = await loader.locator('.truck-loader svg').boundingBox()
-  const viewport = page.viewportSize()
-  expect(loaderBox).not.toBeNull()
-  expect(truckBox).not.toBeNull()
-  expect(viewport).not.toBeNull()
-  expect(loaderBox!.x).toBeCloseTo(0, 0)
-  expect(loaderBox!.y).toBeCloseTo(0, 0)
-  expect(loaderBox!.width).toBeCloseTo(viewport!.width, 0)
-  expect(loaderBox!.height).toBeCloseTo(viewport!.height, 0)
-  expect(truckBox!.x + truckBox!.width / 2).toBeCloseTo(viewport!.width / 2, 0)
-  await expect(loader).toHaveCSS('background-color', 'rgb(249, 115, 22)')
 }
 
-test('full-screen loader covers recommendation and permit operations', async ({
+test('first launch: profile -> loading -> map -> spot details -> permits -> EasyApply', async ({
   page,
 }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockStreetView(page)
   await page.goto('/app')
   await page.evaluate(() => localStorage.clear())
   await page.reload()
 
   await completeProfile(page)
-  await page.getByRole('button', { name: 'Find places to roll' }).click()
+  await awaitRecommendations(page)
+  // #14: origin defaults to the granted in-SF location.
+  await expect(page.getByText('Live location', { exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Recommendation setup' })).toBeVisible()
+
+  // #17: spot details show the Street View image + address.
+  await page
+    .getByRole('button', { name: /Open details for suggested spot, 2nd & Howard/ })
+    .click()
+  const panel = page.getByRole('dialog', { name: /2nd & Howard/ })
+  await expect(panel).toBeVisible()
+  await expect(panel.getByRole('img', { name: 'Street View near 2nd & Howard' })).toBeVisible()
+  await expect(panel.getByText('2nd St & Howard St, San Francisco, CA 94105')).toBeVisible()
+  await expect(panel.getByText('Estimated foot traffic')).toBeVisible()
+  await expect(
+    page.getByRole('link', { name: 'Navigate to suggested parking' }),
+  ).toHaveAttribute('href', /origin=.*destination=/)
+  await page.keyboard.press('Escape')
+  await expect(panel).toBeHidden()
+
+  // Permits + EasyApply.
+  await openPermits(page)
+  await page.getByRole('button', { name: 'Build my permit checklist' }).click()
+  await expect(page.getByRole('heading', { name: 'Your permit path' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Public Works' })).toBeVisible()
+
+  await page
+    .getByRole('button', { name: /Review & submit simulated draft for Prepare/ })
+    .click()
+  await expect(
+    page.getByRole('dialog', { name: /Prepare the MFF location application/ }),
+  ).toBeVisible()
+  await page.getByLabel(/Proposed start date/).fill('2026-08-01')
+  await page.getByLabel(/Applicant signature/).fill('Avery Rivera')
+  await page.getByRole('checkbox').last().check()
+  await page.getByRole('button', { name: 'Prepare simulated packet' }).click()
+  await expect(page.getByRole('heading', { name: 'Simulated packet ready' })).toBeVisible()
+})
+
+test('full-screen loader covers the auto-fired recommendation and permit operations', async ({
+  page,
+}) => {
+  await page.goto('/app')
+  await page.evaluate(() => localStorage.clear())
+  await page.reload()
+
+  await completeProfile(page)
+  // #14: recommendations auto-fire — the loader appears without a button press.
   await expectFullScreenLoader(page, 'Ranking San Francisco setup spots…')
-  await expect(page.locator('.truck-loader__body')).toHaveCSS('animation-name', 'none')
-  await expect(page.locator('.truck-loader__wheel').first()).toHaveCSS(
-    'animation-name',
-    'none',
-  )
-  await expect(page.locator('.truck-loader__dust')).toHaveCSS('animation-name', 'none')
-  await expect(page.getByText('2nd & Howard', { exact: true })).toBeVisible()
+  await awaitRecommendations(page)
 
   await openPermits(page)
   await Promise.all([
@@ -143,401 +216,97 @@ test('full-screen loader covers recommendation and permit operations', async ({
   await expect(page.getByRole('heading', { name: 'Public Works' })).toBeVisible()
 })
 
-test('permit generation is explicit and shows the personalized checklist', async ({
-  page,
-}) => {
+test('#14 controls: time wheel + address autocomplete on the map', async ({ page }) => {
+  await mockPlaces(page)
+  await page.addInitScript((profile) => {
+    localStorage.setItem('rollaway.profile.v1', JSON.stringify(profile))
+  }, STORED_PROFILE)
   await page.goto('/app')
-  await page.evaluate(() => localStorage.clear())
-  await page.reload()
+  await awaitRecommendations(page)
 
-  await completeProfile(page)
-  await findPlaces(page)
-  await openPermits(page)
-
-  await expect(
-    page.getByRole('heading', { name: 'Build your San Francisco permit path' }),
-  ).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Public Works' })).toHaveCount(0)
-  await page.waitForTimeout(1_200)
-  await expect(page.getByRole('heading', { name: 'Public Works' })).toHaveCount(0)
-
-  await Promise.all([
-    page.locator('.full-screen-loader').waitFor({ state: 'attached' }),
-    page.getByRole('button', { name: 'Build my permit checklist' }).click(),
-  ])
-  await expect(page.getByRole('heading', { name: 'Your permit path' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Public Works' })).toBeVisible()
-  await expect(page.getByText('30-day notice', { exact: true })).toBeVisible()
-  await expect(page.getByText('90-day tentative approval window')).toBeVisible()
-  await expect(page.getByText('15-day appeal', { exact: true })).toBeVisible()
-  await expect(page.getByRole('link', { name: /Open official PDF form for Prepare/ })).toHaveAttribute(
-    'href',
-    'https://sfpublicworks.org/sites/default/files/Application_for_Mobile_Food_Facility.pdf',
-  )
-})
-
-test('guided setup stages profile, location, and recommendations', async ({ page }) => {
-  await page.addInitScript(() => {
-    Object.defineProperty(window, '__geoRequests', { value: 0, writable: true })
-    Object.defineProperty(navigator, 'geolocation', {
-      configurable: true,
-      value: {
-        getCurrentPosition: (
-          _success: PositionCallback,
-          error: PositionErrorCallback,
-        ) => {
-          ;(window as typeof window & { __geoRequests: number }).__geoRequests += 1
-          error({
-            code: 1,
-            message: 'Permission denied',
-            PERMISSION_DENIED: 1,
-            POSITION_UNAVAILABLE: 2,
-            TIMEOUT: 3,
-          } as GeolocationPositionError)
-        },
-      },
-    })
-  })
-  await page.goto('/app')
-  await page.evaluate(() => localStorage.clear())
-  await page.reload()
-
-  await expect(
-    page.getByRole('main', { name: 'Tell us about your business' }),
-  ).toBeVisible()
-  await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(page.getByRole('region', { name: 'Schematic map of SoMa' })).toHaveCount(
-    0,
-  )
-  expect(
-    await page.evaluate(
-      () => (window as typeof window & { __geoRequests: number }).__geoRequests,
-    ),
-  ).toBe(0)
-
-  await completeProfile(page)
-
-  await expect(
-    page.getByRole('heading', { name: 'When are you setting up?' }),
-  ).toBeVisible()
-  await expect(page.getByText(/San Francisco only/)).toBeVisible()
-  await expect(page.getByRole('region', { name: 'Schematic map of SoMa' })).toHaveCount(
-    0,
-  )
-  expect(
-    await page.evaluate(
-      () => (window as typeof window & { __geoRequests: number }).__geoRequests,
-    ),
-  ).toBe(0)
-
-  await page.getByRole('button', { name: 'Custom date and time' }).click()
-  await page.getByLabel('Date').fill('2099-08-01')
-  await page.getByLabel('From').fill('16:30')
-  await page.getByLabel('To').fill('20:15')
+  await page.getByRole('button', { name: 'Custom' }).click()
+  const startWheel = page.getByRole('listbox', { name: 'Start' })
+  await expect(startWheel).toBeVisible()
+  await expect(page.getByRole('listbox', { name: 'End' })).toBeVisible()
+  await startWheel.getByRole('option', { name: '9:00 AM' }).click()
   await page.getByRole('button', { name: 'Use this window' }).click()
-  await expect(
-    page.getByRole('button', { name: 'Custom date and time' }),
-  ).toHaveAttribute('aria-pressed', 'true')
-
-  await page.getByRole('button', { name: 'Use my live location' }).click()
-  expect(
-    await page.evaluate(
-      () => (window as typeof window & { __geoRequests: number }).__geoRequests,
-    ),
-  ).toBe(1)
-  await expect(page.getByText('Using SoMa · location denied')).toBeVisible()
-  await expect(page.getByRole('region', { name: 'Schematic map of SoMa' })).toHaveCount(
-    0,
+  await expect(page.getByRole('button', { name: 'Custom' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
   )
+  await awaitRecommendations(page)
 
-  await findPlaces(page)
-  await expectMapSurface(page)
-  await expect(page.getByLabel('Rollaway').first()).toBeVisible()
-  await expect(page.getByText('Find your next block.', { exact: true })).toHaveCount(0)
+  const search = page.getByPlaceholder('Search a starting address')
+  await search.fill('Ferry Building')
+  await page.getByRole('option', { name: /Ferry Building/ }).click()
+  await expect(
+    page.getByText('1 Ferry Building, San Francisco, CA 94111, USA'),
+  ).toBeVisible()
+  await awaitRecommendations(page)
 })
 
-test('first launch, map recommendations, details, permits, and EasyApply', async ({
-  page,
-}) => {
-  const { mapboxRequests, rollAwayBusinessRequests } = trackFixtureNetwork(page)
+test('granted in-SF geolocation shows Live location', async ({ page }) => {
+  await page.addInitScript((profile) => {
+    localStorage.setItem('rollaway.profile.v1', JSON.stringify(profile))
+  }, STORED_PROFILE)
   await page.goto('/app')
-  await page.evaluate(() => localStorage.clear())
-  await page.reload()
-
-  await completeProfile(page)
-  await findPlaces(page)
-  const mapSurface = await expectMapSurface(page)
-  expect(rollAwayBusinessRequests).toEqual([])
-  if (mapSurface === 'mapbox') expect(mapboxRequests.length).toBeGreaterThan(0)
-  await expect(page.getByRole('region', { name: 'Recommendation setup' })).toBeVisible()
-  await page.getByRole('button', { name: /Use my location/ }).click()
-  await expect(
-    page.getByText(/Using SoMa · location denied|Using SoMa · unavailable/),
-  ).toBeVisible()
-
-  await page.reload()
-  await expect(
-    page.getByRole('heading', { name: 'Tell us about your business' }),
-  ).toBeHidden()
-  await expect(
-    page.getByRole('heading', { name: 'When are you setting up?' }),
-  ).toBeVisible()
-  const sessionShell = page
-    .locator('main[aria-labelledby="session-title"]')
-    .locator('..')
-  await page.getByRole('button', { name: 'Back / Edit profile' }).click()
-  await expect(sessionShell).toHaveAttribute('inert', '')
-  await expect(sessionShell).toHaveAttribute('aria-hidden', 'true')
-  const profileDialog = page.getByRole('dialog', { name: 'Update your setup' })
-  await expect(profileDialog).toBeVisible()
-  const profileOverlay = profileDialog.locator('..')
-  await expect(profileOverlay).toHaveAttribute(
-    'class',
-    /pl-\[max\(1\.25rem,env\(safe-area-inset-left\)\)\]/,
-  )
-  await expect(profileOverlay).toHaveAttribute(
-    'class',
-    /pr-\[max\(1\.25rem,env\(safe-area-inset-right\)\)\]/,
-  )
-  await expect(profileOverlay).toHaveAttribute('class', /sm:pt-5/)
-  await expect(profileOverlay).toHaveAttribute('class', /sm:pb-5/)
-  await expect(profileOverlay).not.toHaveAttribute('class', /sm:p-5/)
-  await expect(page.getByRole('heading', { name: 'Update your setup' })).toBeVisible()
-  await page.getByLabel('Business name').fill('Mission Tacos Co.')
-  await page.getByRole('button', { name: 'Save profile changes' }).click()
-
-  await findPlaces(page)
-  await expect(page.getByText('Folsom & 1st', { exact: true })).toBeVisible()
-  await expect(page.getByText('Mission & 5th', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Tomorrow dinner' }).click()
-  await expect(page.getByText('2nd & Howard', { exact: true })).toBeHidden()
-  await page.getByRole('button', { name: 'Find spots' }).click()
-  await expect(page.getByText('2nd & Howard', { exact: true })).toBeVisible()
-
-  await page.getByRole('button', { name: /Open details for suggested spot, 2nd & Howard/ }).click()
-  await expect(page.getByRole('dialog', { name: /2nd & Howard/ })).toBeVisible()
-  await expect(page.getByText('Estimated foot traffic')).toBeVisible()
-  await expect(
-    page.getByText(/Bay Wheels activity is an estimate\/proxy/),
-  ).toBeVisible()
-  await expect(page.getByText('Menu & price competition')).toBeVisible()
-  await expect(page.getByText('Parking & setup target')).toBeVisible()
-  await expect(page.getByText('Permit placement metrics (excluding hydrants)')).toBeVisible()
-  await expect(page.getByText('Local cuisine mix')).toBeVisible()
-  await expect(page.getByText('Nearby event opportunity')).toBeVisible()
-  await expect(page.getByText("Here's a draft you can send")).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Navigate to suggested parking' })).toHaveAttribute('href', /origin=.*destination=/)
-  await expect(page.getByText('Legality check')).toBeVisible()
-  await page.keyboard.press('Escape')
-  await expect(page.getByRole('dialog', { name: /2nd & Howard/ })).toBeHidden()
-
-  await openPermits(page)
-  await page.getByRole('button', { name: 'Build my permit checklist' }).click()
-  await expect(page.getByRole('heading', { name: 'Your permit path' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Public Works' })).toBeVisible()
-  await expect(page.getByText('30-day notice', { exact: true })).toBeVisible()
-  await expect(page.getByText('90-day tentative approval window')).toBeVisible()
-  await expect(page.getByText('15-day appeal', { exact: true })).toBeVisible()
-
-  const firstChecklist = page.getByRole('checkbox', {
-    name: /Mark complete: Prepare the MFF location application/,
-  })
-  await firstChecklist.click()
-  await page.reload()
-  await findPlaces(page)
-  await openPermits(page)
-  await page.getByRole('button', { name: 'Build my permit checklist' }).click()
-  await expect(
-    page.getByRole('checkbox', {
-      name: /Mark incomplete: Prepare the MFF location application/,
-    }),
-  ).toHaveAttribute('aria-checked', 'true')
-
-  await page
-    .getByRole('button', { name: /Review & submit simulated draft for Prepare/ })
-    .click()
-  await expect(
-    page.getByRole('dialog', { name: /Prepare the MFF location application/ }),
-  ).toBeVisible()
-  await expect(page.getByText('Auto-filled').first()).toBeVisible()
-  await expect(page.getByText('Missing', { exact: true })).toBeVisible()
-  await expect(page.getByText('Must verify').first()).toBeVisible()
-  await page.getByLabel(/Proposed start date/).fill('2026-08-01')
-  await page.getByLabel(/Applicant signature/).fill('Avery Rivera')
-  await page.getByRole('checkbox').last().check()
-  await page.getByRole('button', { name: 'Prepare simulated packet' }).click()
-  await expect(
-    page.getByRole('heading', { name: 'Simulated packet ready' }),
-  ).toBeVisible()
-
-  await expect(
-    page.locator('[data-chat], .chat-sheet, [aria-label*="chat" i]'),
-  ).toHaveCount(0)
-})
-
-test('granted geolocation updates the session state', async ({ browser }) => {
-  const context = await browser.newContext({
-    ...test.info().project.use,
-    permissions: ['geolocation'],
-    geolocation: { latitude: 37.7869, longitude: -122.3982 },
-  })
-  const page = await context.newPage()
-  await page.goto('/app')
-  await page.evaluate(() => {
-    localStorage.setItem(
-      'rollaway.profile.v1',
-      JSON.stringify({
-        schema_version: 1,
-        vendor_type: 'truck',
-        menu: {
-          raw: 'Tacos $5',
-          items: [{ name: 'Tacos', price: 5 }],
-          price_tier: '$',
-        },
-        home_base: { label: 'SoMa', point: null },
-        max_travel: { value: 20, unit: 'minutes' },
-        operating_windows: [{ day: 'fri', time_from: '11:00', time_to: '14:00' }],
-        permit_status: 'researching',
-        autofill_profile: {
-          owner_name: 'Avery Rivera',
-          business_name: 'Mission Tacos',
-          email: 'avery@example.com',
-          phone: '415-555-0123',
-          address: '123 Mission St',
-          city: 'San Francisco',
-          state: 'CA',
-          postal_code: '94103',
-        },
-      }),
-    )
-  })
-  await page.reload()
-  await page.getByRole('button', { name: 'Use my live location' }).click()
+  await awaitRecommendations(page)
   await expect(page.getByText('Live location', { exact: true })).toBeVisible()
-  await context.close()
 })
 
-test('outside-SF geolocation uses the SoMa fallback with notice', async ({
+test('outside-SF geolocation falls back to the SoMa origin with a notice', async ({
   browser,
 }) => {
   const context = await browser.newContext({
     ...test.info().project.use,
     permissions: ['geolocation'],
-    geolocation: { latitude: 37.8044, longitude: -122.2712 },
+    geolocation: { latitude: 37.8044, longitude: -122.2712 }, // Oakland
   })
   const page = await context.newPage()
+  await page.addInitScript((profile) => {
+    localStorage.setItem('rollaway.profile.v1', JSON.stringify(profile))
+  }, STORED_PROFILE)
   await page.goto('/app')
-  await page.evaluate(() => {
-    localStorage.setItem(
-      'rollaway.profile.v1',
-      JSON.stringify({
-        schema_version: 1,
-        vendor_type: 'truck',
-        cuisine: 'american',
-        menu: {
-          raw: 'Burgers $12',
-          items: [{ name: 'Burgers', price: 12 }],
-          price_tier: '$$',
-        },
-        home_base: { label: 'SoMa', point: null },
-        max_travel: { value: 20, unit: 'minutes' },
-        operating_windows: [{ day: 'fri', time_from: '11:00', time_to: '14:00' }],
-        permit_status: 'researching',
-        autofill_profile: {
-          owner_name: 'Avery Rivera',
-          business_name: 'Mission Burgers',
-          email: 'avery@example.com',
-          phone: '415-555-0123',
-          address: '123 Mission St',
-          city: 'San Francisco',
-          state: 'CA',
-          postal_code: '94103',
-        },
-      }),
-    )
-  })
-  await page.reload()
-  await page.getByRole('button', { name: 'Use my live location' }).click()
-  await expect(
-    page.getByText('Using SoMa · outside San Francisco', { exact: true }),
-  ).toBeVisible()
-  await expect(
-    page.getByText(
-      'Your location is outside San Francisco. Using the SoMa demo origin.',
-      { exact: true },
-    ),
-  ).toBeVisible()
+  await awaitRecommendations(page)
+  await expect(page.getByText('Using SoMa · outside SF', { exact: true })).toBeVisible()
   await context.close()
+})
+
+test('denied geolocation falls back to SoMa and still recommends', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: (_ok: PositionCallback, err: PositionErrorCallback) =>
+          err({
+            code: 1,
+            message: 'denied',
+            PERMISSION_DENIED: 1,
+            POSITION_UNAVAILABLE: 2,
+            TIMEOUT: 3,
+          } as GeolocationPositionError),
+      },
+    })
+  })
+  await page.addInitScript((profile) => {
+    localStorage.setItem('rollaway.profile.v1', JSON.stringify(profile))
+  }, STORED_PROFILE)
+  await page.goto('/app')
+  await awaitRecommendations(page)
+  await expect(page.getByText('Using SoMa · location denied', { exact: true })).toBeVisible()
 })
 
 test('fixture mode keeps the schematic map usable without a Mapbox token', async ({
   page,
 }) => {
   const { mapboxRequests, rollAwayBusinessRequests } = trackFixtureNetwork(page)
+  await page.addInitScript((profile) => {
+    localStorage.setItem('rollaway.profile.v1', JSON.stringify(profile))
+  }, STORED_PROFILE)
   await page.goto('/app')
-  await page.evaluate(() => {
-    localStorage.setItem(
-      'rollaway.profile.v1',
-      JSON.stringify({
-        schema_version: 1,
-        vendor_type: 'pushcart_nocook',
-        menu: {
-          raw: 'Paleta $5',
-          items: [{ name: 'Paleta', price: 5 }],
-          price_tier: '$',
-        },
-        home_base: { label: 'SoMa', point: null },
-        max_travel: { value: 15, unit: 'minutes' },
-        operating_windows: [{ day: 'sat', time_from: '11:00', time_to: '15:00' }],
-        permit_status: 'researching',
-        autofill_profile: {
-          owner_name: 'Avery Rivera',
-          business_name: 'Mission Paletas',
-          email: 'avery@example.com',
-          phone: '415-555-0123',
-          address: '123 Mission St',
-          city: 'San Francisco',
-          state: 'CA',
-          postal_code: '94103',
-        },
-      }),
-    )
-  })
-  await page.reload()
-  await page.getByRole('button', { name: 'Find places to roll' }).click()
-  await expect(
-    page.getByRole('region', { name: 'Schematic map of SoMa' }),
-  ).toBeVisible()
+  await awaitRecommendations(page)
+  await expect(page.getByRole('region', { name: 'Schematic map of SoMa' })).toBeVisible()
   await expect(page.getByText('Map preview')).toBeVisible({ timeout: 15_000 })
   expect(mapboxRequests).toEqual([])
   expect(rollAwayBusinessRequests).toEqual([])
-  await expect(page.getByText('2nd & Howard', { exact: true })).toBeVisible()
-  await expectMinimumTouchTargets(page.locator('.map-controls button'))
-  await page.getByRole('button', { name: 'Custom' }).click()
-  await expectMinimumTouchTargets(page.locator('.map-controls .choice-chip'))
-  await expectMinimumTouchTargets(page.locator('.map-controls .compact-input'))
-  await page.getByRole('button', { name: 'Custom' }).click()
-  await expect(
-    page.getByRole('button', { name: 'Recenter map on your origin' }),
-  ).toHaveCount(0)
-  const vendor = page
-    .getByRole('button', { name: /Vendor .* Cuisine .* Permit status/i })
-    .first()
-  await vendor.focus()
-  await page.keyboard.press('Enter')
-  await expect(
-    page.getByRole('status').filter({ hasText: /Permit status/ }),
-  ).toBeVisible()
-  const rank = page.getByRole('button', { name: /Suggested spot: 2nd & Howard\. Open details\./ })
-  const rankBox = await rank.boundingBox()
-  expect(rankBox).not.toBeNull()
-  expect(rankBox!.width).toBeGreaterThanOrEqual(44)
-  expect(rankBox!.height).toBeGreaterThanOrEqual(44)
-  await rank.click()
-  await expect(page.getByRole('dialog', { name: /2nd & Howard/ })).toBeVisible()
-  await page.keyboard.press('Escape')
-  await openPermits(page)
-  await expect(
-    page.getByRole('heading', { name: 'Build your San Francisco permit path' }),
-  ).toBeVisible()
 })

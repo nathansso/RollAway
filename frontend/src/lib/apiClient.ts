@@ -189,6 +189,7 @@ function isRecommendation(value: unknown): value is RecommendationSpot {
     typeof value.closure.active === 'boolean' &&
     typeof value.closure.detail === 'string' &&
     (value.closure.source === null || typeof value.closure.source === 'string') &&
+    (value.address === undefined || value.address === null || typeof value.address === 'string') &&
     (value.area_insights === undefined || isAreaInsights(value.area_insights)) &&
     (value.event_opportunity === undefined || value.event_opportunity === null || isEventOpportunity(value.event_opportunity)) &&
     (value.outreach_draft === undefined || value.outreach_draft === null || isOutreachDraft(value.outreach_draft)) &&
@@ -472,6 +473,7 @@ export function adaptNativeRecommendations(
       },
       travel_minutes: competitionRecord ? breakdown.travel_minutes : travel.minutes,
       travel_distance_miles: travel.miles,
+      address: typeof candidate.address === 'string' ? candidate.address : null,
       area_insights: isAreaInsights(candidate.area_insights)
         ? candidate.area_insights
         : undefined,
@@ -593,6 +595,7 @@ export function adaptLegacyRecommendations(
         },
         travel_minutes: travel.minutes,
         travel_distance_miles: travel.miles,
+        address: null,
         event_opportunity: isEventOpportunity(action.event_opportunity) ? action.event_opportunity : null,
         outreach_draft: isEventOpportunity(action.event_opportunity) && isOutreachDraft(action.outreach_draft)
           ? action.outreach_draft : null,

@@ -455,7 +455,7 @@ export default function ProfileEditor() {
 
           <div className="sticky bottom-0 -mx-5 mt-6 border-t border-border bg-background/95 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur">
             <button type="submit" className="primary-button w-full">
-              {existing ? 'Save profile changes' : 'Continue to session setup'}
+              {existing ? 'Save profile changes' : 'Find my spots'}
             </button>
           </div>
         </form>

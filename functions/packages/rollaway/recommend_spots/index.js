@@ -23,10 +23,17 @@ const {
   isDemoMode, loadSnapshot, snapshotKey, fetchJSON, demoFetchOpts, haversineMeters,
 } = require('./shared');
 const { travelMatrix } = require('./travel');
+const { googleMatrix } = require('./google_travel');
+const { reverseGeocode } = require('./geocode');
 const { menuCompetition } = require('./menu_competition');
 const { scoreCandidate, pickEventOpportunity } = require('./score');
 const { buildAreaInsights } = require('./area_insights');
-const { makeCandidates, signalArgs } = require('./candidates');
+const { makeCandidates, makeRangeCandidates, signalArgs } = require('./candidates');
+
+// #17: how many in-range points to fully score (each does a signal fan-out), and
+// how many ranked spots to return (frontend caps recommendations at 5).
+const SCORE_POOL_MAX = 8;
+const K_SPOTS = 5;
 
 // ---- Scenario defaults -----------------------------------------------------
 let SCENARIO = {
@@ -267,18 +274,67 @@ function buildContext(args) {
 }
 
 // ---------------------------------------------------------------------------
+// #17: effective range + candidate selection
+// ---------------------------------------------------------------------------
+
+/** Traffic-aware travel via Google Distance Matrix, falling back to Mapbox. */
+async function travelForPool(ctx, points) {
+  const key = process.env.GOOGLE_MAPS_SERVER_KEY;
+  if (key && !isDemoMode()) {
+    try {
+      return await googleMatrix(ctx.location, points, ctx.travel_mode, key, ctx.when);
+    } catch (err) {
+      console.error('Google Distance Matrix degraded to Mapbox:',
+        err && err.message ? err.message : err);
+    }
+  }
+  return travelMatrix(ctx.location, points, ctx.travel_mode);
+}
+
+/** Evenly-strided subset preserving spatial spread (pool is anchor-first). */
+function selectSpread(list, n) {
+  if (list.length <= n) return list;
+  const out = [];
+  const stride = list.length / n;
+  for (let i = 0; i < n; i += 1) out.push(list[Math.floor(i * stride)]);
+  return out;
+}
+
+/** Reverse-geocode each returned spot to a street address (best effort). */
+async function attachAddresses(spots) {
+  const key = process.env.GOOGLE_MAPS_SERVER_KEY;
+  await Promise.all(spots.map(async (s) => {
+    s.address = key ? await reverseGeocode(s.point, key) : null;
+  }));
+}
+
+// ---------------------------------------------------------------------------
 // Orchestrator
 // ---------------------------------------------------------------------------
 exports.main = guard(async (args) => {
   const ctx = buildContext(args);
-  const candidates = makeCandidates(ctx.location);
 
-  // Travel matrix (one Mapbox call for origin -> all candidates) in parallel
-  // with the per-candidate signal fan-out.
-  const [travelRows, ...signalSets] = await Promise.all([
-    travelMatrix(ctx.location, candidates.map((c) => c.point), ctx.travel_mode),
-    ...candidates.map((c) => fetchSignals(c, ctx)),
-  ]);
+  // 1. Sample a range pool and keep only points reachable within the travel
+  //    budget by traffic-aware time (issue #17: strength within range, not
+  //    proximity). Always keep the anchor so we never return empty.
+  const pool = makeRangeCandidates(ctx.location);
+  const poolTravel = await travelForPool(ctx, pool);
+  let inRange = pool
+    .map((point, i) => ({ point, travel: poolTravel[i] }))
+    .filter((c) => c.travel && c.travel.minutes != null
+      && c.travel.minutes <= ctx.max_travel_minutes);
+  if (inRange.length === 0) inRange = [{ point: pool[0], travel: poolTravel[0] }];
+
+  // 2. Cap the scoring pool to a spread of candidates and assign stable ids.
+  const candidates = selectSpread(inRange, SCORE_POOL_MAX).map((c, i) => ({
+    id: `spot-${i + 1}`,
+    point: c.point,
+    block_label: null,
+    travel: c.travel,
+  }));
+
+  // 3. Signal fan-out for the selected candidates (in parallel).
+  const signalSets = await Promise.all(candidates.map((c) => fetchSignals(c, ctx)));
 
   // Menu competition per candidate (RAG when MENU_RAG_URL set, else bridge).
   const competitions = await Promise.all(
@@ -289,7 +345,7 @@ exports.main = guard(async (args) => {
     ))
   );
 
-  // Score every candidate deterministically.
+  // 4. Score every candidate deterministically (travel already computed).
   const scored = candidates.map((candidate, i) => {
     const signals = {
       vendors: signalSets[i].vendors,
@@ -304,7 +360,7 @@ exports.main = guard(async (args) => {
       candidate,
       signals,
       competition: competitions[i],
-      travel: travelRows[i],
+      travel: candidate.travel,
       maxTravelMinutes: ctx.max_travel_minutes,
     });
     spot.event_opportunity = pickEventOpportunity(candidate.point, signals.events, ctx.radius_m);
@@ -313,22 +369,25 @@ exports.main = guard(async (args) => {
       signals,
       competition: competitions[i],
       eliminated: spot.eliminated,
-      travel: travelRows[i],
+      travel: candidate.travel,
       travelMode: ctx.travel_mode,
     });
     return spot;
   });
 
-  // Rank non-eliminated by score desc; eliminated go last, unranked.
+  // 5. Rank non-eliminated by score desc and keep the top K (issue #17 k=5).
+  //    If nothing survives scoring, fall back to the best eliminated so the
+  //    caller still sees why (with violations), capped at K.
   const ranked = scored.filter((s) => !s.eliminated).sort((a, b) => b.score - a.score);
-  const eliminated = scored.filter((s) => s.eliminated);
-  ranked.forEach((s, i) => { s.rank = i + 1; });
-  eliminated.forEach((s) => { s.rank = null; });
-
-  const spots = [...ranked, ...eliminated];
+  const eliminated = scored.filter((s) => s.eliminated).sort((a, b) => b.score - a.score);
+  const spots = (ranked.length > 0 ? ranked : eliminated).slice(0, K_SPOTS);
+  spots.forEach((s, i) => { s.rank = s.eliminated ? null : i + 1; });
 
   // One Spot Scout call for all spots (or deterministic template) — after math.
   await attachWhyLines(spots, ctx);
+
+  // Reverse-geocode the returned spots to street addresses (issue #17).
+  await attachAddresses(spots);
 
   // Emit the LOCKED §4g shape (strip internals; stable key order).
   const out = spots.map((s) => ({
@@ -336,6 +395,7 @@ exports.main = guard(async (args) => {
     id: s.id,
     point: s.point,
     block_label: s.block_label,
+    address: s.address || null,
     verdict: s.verdict,
     score: s.score,
     eliminated: s.eliminated,

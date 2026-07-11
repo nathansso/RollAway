@@ -7,6 +7,8 @@ import {
   toLocalDate,
 } from '../../lib/when'
 import { useAppStore } from '../../store'
+import AddressSearch from './AddressSearch'
+import TimeRangeWheel from './TimeRangeWheel'
 import type { WhenPreset } from '../../types/contract'
 
 const PRESETS: { value: Exclude<WhenPreset, 'custom'>; label: string }[] = [
@@ -19,6 +21,7 @@ export default function SessionControls() {
   const when = useAppStore((state) => state.when)
   const setWhen = useAppStore((state) => state.setWhen)
   const locationStatus = useAppStore((state) => state.locationStatus)
+  const originLabel = useAppStore((state) => state.originLabel)
   const requestLocation = useAppStore((state) => state.requestLocation)
   const recommendationStatus = useAppStore((state) => state.recommendationStatus)
   const requestRecommendations = useAppStore((state) => state.requestRecommendations)
@@ -28,16 +31,28 @@ export default function SessionControls() {
   const [customTo, setCustomTo] = useState(when.time_to)
   const customValid = isValidCustomWindow(customDate, customFrom, customTo)
 
+  const openCustom = () => {
+    // Seed the wheels from the current window so it opens where you left off.
+    setCustomDate(when.date)
+    setCustomFrom(when.time_from)
+    setCustomTo(when.time_to)
+    setCustomOpen((open) => !open)
+  }
+
   const locationLabel =
-    locationStatus === 'granted'
-      ? 'Live location'
-      : locationStatus === 'requesting'
-        ? 'Finding you…'
-        : locationStatus === 'denied'
-          ? 'Using SoMa · location denied'
-          : locationStatus === 'unavailable'
-            ? 'Using SoMa · unavailable'
-            : 'Use my location'
+    locationStatus === 'address' && originLabel
+      ? originLabel
+      : locationStatus === 'granted'
+        ? 'Live location'
+        : locationStatus === 'requesting'
+          ? 'Finding you…'
+          : locationStatus === 'denied'
+            ? 'Using SoMa · location denied'
+            : locationStatus === 'unavailable'
+              ? 'Using SoMa · unavailable'
+              : locationStatus === 'outside_sf'
+                ? 'Using SoMa · outside SF'
+                : 'Use my location'
 
   return (
     <section aria-label="Recommendation setup" className="map-controls">
@@ -60,7 +75,7 @@ export default function SessionControls() {
           type="button"
           aria-expanded={customOpen}
           aria-pressed={when.preset === 'custom'}
-          onClick={() => setCustomOpen((open) => !open)}
+          onClick={openCustom}
           className={`choice-chip ${when.preset === 'custom' ? 'choice-chip--active' : ''}`}
         >
           Custom
@@ -68,23 +83,31 @@ export default function SessionControls() {
       </div>
 
       {customOpen && (
-        <div className="mt-2 grid grid-cols-3 gap-2 rounded-xl border border-border bg-white p-2 shadow-md">
-          <label className="col-span-3 text-xs font-semibold text-foreground sm:col-span-1">
+        <div className="mt-2 rounded-xl border border-border bg-white p-3 shadow-md">
+          <label className="block text-xs font-semibold text-foreground">
             Date
-            <input className="compact-input" type="date" min={toLocalDate(new Date())} value={customDate} onChange={(event) => setCustomDate(event.target.value)} />
+            <input
+              className="compact-input"
+              type="date"
+              min={toLocalDate(new Date())}
+              value={customDate}
+              onChange={(event) => setCustomDate(event.target.value)}
+            />
           </label>
-          <label className="text-xs font-semibold text-foreground">
-            From
-            <input className="compact-input" type="time" value={customFrom} onChange={(event) => setCustomFrom(event.target.value)} />
-          </label>
-          <label className="text-xs font-semibold text-foreground">
-            To
-            <input className="compact-input" type="time" value={customTo} onChange={(event) => setCustomTo(event.target.value)} />
-          </label>
+          <div className="mt-3">
+            <TimeRangeWheel
+              from={customFrom}
+              to={customTo}
+              onChange={(nextFrom, nextTo) => {
+                setCustomFrom(nextFrom)
+                setCustomTo(nextTo)
+              }}
+            />
+          </div>
           <button
             type="button"
             disabled={!customValid}
-            className="secondary-button col-span-3 disabled:cursor-not-allowed disabled:opacity-45"
+            className="secondary-button mt-3 w-full disabled:cursor-not-allowed disabled:opacity-45"
             onClick={() => {
               setWhen(createCustomWhen(customDate, customFrom, customTo))
               setCustomOpen(false)
@@ -92,11 +115,15 @@ export default function SessionControls() {
           >
             Use this window
           </button>
-          <p className="col-span-3 text-[11px] text-muted-foreground">
+          <p className="mt-2 text-[11px] text-muted-foreground">
             End times before start times are treated as overnight windows.
           </p>
         </div>
       )}
+
+      <div className="mt-2">
+        <AddressSearch />
+      </div>
 
       <div className="mt-2 flex items-stretch gap-2">
         <button

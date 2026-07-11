@@ -185,7 +185,7 @@ export default function PermitChecklist() {
                               </button>
                             )}
                             {item.filled_form && (
-                              <FilledFormWorkflow itemId={item.id} form={item.filled_form} />
+                              <FilledFormWorkflow itemId={item.id} source={item.cite} form={item.filled_form} />
                             )}
                           </div>
                         </li>

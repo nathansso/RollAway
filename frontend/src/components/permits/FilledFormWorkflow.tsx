@@ -1,18 +1,18 @@
 import type { ChangeEvent } from 'react'
 import { useAppStore } from '../../store'
-import type { FilledForm, FilledFormFieldType } from '../../types/contract'
+import type { FilledForm, FilledFormFieldType, VendorProfile } from '../../types/contract'
 import {
   EMPTY_FORM_STATE,
   RENEWAL_DAYS,
   allFieldsComplete,
-  buildFilledFormHtml,
   daysUntilRenewal,
-  filledFormFilename,
+  fieldValue,
   formStatus,
   isFieldOutstanding,
   isFieldRequired,
 } from './permitForms'
 import type { PermitFormState } from './permitForms'
+import FilledPdfView from './FilledPdfView'
 
 // HTML input `type` for a field type. select/textarea are handled separately; text is the default.
 const INPUT_TYPE: Partial<Record<FilledFormFieldType, string>> = {
@@ -22,30 +22,49 @@ const INPUT_TYPE: Partial<Record<FilledFormFieldType, string>> = {
   number: 'number',
 }
 
-// Generate the filled-out form and download it as a self-contained HTML file. Returns false in a
-// non-browser env. Outstanding fields are kept and marked in the artifact — never invented.
-function downloadFilledForm(form: FilledForm, state: PermitFormState): boolean {
-  if (typeof document === 'undefined' || typeof URL.createObjectURL !== 'function') return false
-  const blob = new Blob([buildFilledFormHtml(form, state)], { type: 'text/html' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filledFormFilename(form)
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
-  return true
+// Flat `profile_key -> value` map used to fill the real PDF: vendor profile as the base, overlaid
+// by the card's resolved field values (so the PDF matches the card), then the user's typed entries.
+// Only non-empty strings survive — we never place a value we do not have.
+function buildPdfValues(
+  form: FilledForm,
+  profile: VendorProfile | null,
+  state: PermitFormState,
+): Record<string, string> {
+  const out: Record<string, string> = {}
+  const put = (key: string, value: unknown) => {
+    if (typeof value === 'string' && value.trim()) out[key] = value.trim()
+  }
+  if (profile) {
+    const ap = profile.autofill_profile ?? {}
+    put('business_name', ap.business_name)
+    put('owner_name', ap.owner_name)
+    put('email', ap.email)
+    put('phone', ap.phone)
+    put('address', ap.address)
+    put('city', ap.city)
+    put('state', ap.state)
+    put('postal_code', ap.postal_code)
+    put('vendor_type', profile.vendor_type)
+    put('menu', profile.menu?.raw)
+    const point = profile.home_base?.point
+    if (point) put('pinned_point', `${point.lat}, ${point.lng}`)
+  }
+  for (const field of form.fields) put(field.profile_key, fieldValue(field, state))
+  for (const [key, value] of Object.entries(state.values)) put(key, value)
+  return out
 }
 
 export default function FilledFormWorkflow({
   itemId,
+  source,
   form,
 }: {
   itemId: string
+  source: string
   form: FilledForm
 }) {
   const state = useAppStore((s) => s.permitForms[itemId]) ?? EMPTY_FORM_STATE
+  const profile = useAppStore((s) => s.profile)
   const setField = useAppStore((s) => s.setPermitFormField)
   const exportForm = useAppStore((s) => s.exportPermitForm)
   const setSubmission = useAppStore((s) => s.setPermitFormSubmission)
@@ -53,11 +72,7 @@ export default function FilledFormWorkflow({
   const status = formStatus(form, state)
   const complete = allFieldsComplete(form, state)
   const days = daysUntilRenewal(state)
-
-  const handleDownload = () => {
-    downloadFilledForm(form, state)
-    exportForm(itemId)
-  }
+  const pdfValues = buildPdfValues(form, profile, state)
 
   const statusBadge = {
     in_progress: { text: 'In progress', className: 'bg-caution/15 text-caution' },
@@ -141,22 +156,14 @@ export default function FilledFormWorkflow({
         })}
       </dl>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          className="easyapply-button"
-          disabled={!complete}
-          onClick={handleDownload}
-        >
-          {state.exported ? 'Download again' : 'Download filled form'}
-          <span className="sr-only"> for {form.form}</span>
-        </button>
-        {!complete && (
-          <span className="text-xs text-muted-foreground">
-            Fill the required fields to download.
-          </span>
-        )}
-      </div>
+      <FilledPdfView
+        source={source}
+        values={pdfValues}
+        formName={form.form}
+        formUrl={form.form_url}
+        canDownload={complete}
+        onDownload={() => exportForm(itemId)}
+      />
 
       {status === 'awaiting_submit' && (
         <div role="group" aria-label="Have you submitted this form?" className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">

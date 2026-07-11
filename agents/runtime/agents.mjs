@@ -8,7 +8,7 @@ import { dirname, resolve } from "node:path";
 import { complete, runWithTools, haveKey } from "./gradient.mjs";
 import { openaiTools, executeTool } from "./tools.mjs";
 import { competitionOverlap } from "../menu_rag/query.mjs";
-import { attachFormUrls, parseFormsTable, parseFormFieldsTable, buildFormSchema } from "./forms.mjs";
+import { attachFormUrls, parseFormsTable, parseFormFieldsTable, buildFormSchema, resolveFormUrl } from "./forms.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const INSTR = resolve(__dir, "..", "instructions");
@@ -414,6 +414,13 @@ export async function runPermitCopilot(message, context = {}) {
   if (env.checklist === undefined) env.checklist = null;
   env.checklist = attachFormUrls(env.checklist, FORMS);
   return { env, trace: [] };
+}
+
+// The verified, allowlisted PDF url for a form `source` id (null if SOURCE-NEEDED/off-domain).
+// Used by the GET /form_pdf proxy so the browser can load the agency PDF despite its lack of CORS.
+export function resolveFormPdfUrl(source) {
+  if (!source || !/^[a-z0-9-]+$/.test(source)) return null;
+  return resolveFormUrl(source, FORMS);
 }
 
 // Doc-ingestion for paperwork (serverless-inference runtime route POST /form_fill).

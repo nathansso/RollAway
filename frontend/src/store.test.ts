@@ -153,7 +153,7 @@ describe('guided app store phases', () => {
 
     expect(store.getState().appPhase).toBe('profile')
     expect(store.getState().saveProfile(validProfile)).toBe(true)
-    expect(store.getState().appPhase).toBe('session')
+    expect(store.getState().appPhase).toBe('loading_recommendations')
 
     const recommendationRun = store.getState().startRecommendations()
     expect(store.getState().appPhase).toBe('loading_recommendations')
@@ -170,11 +170,11 @@ describe('guided app store phases', () => {
     expect(store.getState().permitStatus).toBe('success')
   })
 
-  it('initializes a stored valid profile at session setup', async () => {
+  it('initializes a stored valid profile straight onto the recommendation map', async () => {
     const store = await loadStore(validProfile)
 
     expect(store.getState().profile).toEqual(validProfile)
-    expect(store.getState().appPhase).toBe('session')
+    expect(store.getState().appPhase).toBe('loading_recommendations')
   })
 
   it('keeps ready phase when an existing profile is edited', async () => {
@@ -210,11 +210,11 @@ describe('guided app store phases', () => {
     request.resolve(recommendations)
     await run
 
-    expect(store.getState().appPhase).toBe('session')
+    expect(store.getState().appPhase).toBe('loading_recommendations')
     expect(store.getState().recommendations).toEqual([])
   })
 
-  it('returns to session when a profile is saved during recommendation loading', async () => {
+  it('stays on the map (re-arming the search) when a profile is saved during recommendation loading', async () => {
     const request = deferred<RecommendSpotsResponse>()
     api.recommendSpots.mockReturnValueOnce(request.promise)
     const store = await loadStore(validProfile)
@@ -230,7 +230,7 @@ describe('guided app store phases', () => {
     request.resolve(recommendations)
     await run
 
-    expect(store.getState().appPhase).toBe('session')
+    expect(store.getState().appPhase).toBe('loading_recommendations')
     expect(store.getState().recommendationStatus).toBe('idle')
     expect(store.getState().recommendations).toEqual([])
   })
@@ -257,13 +257,13 @@ describe('guided app store phases', () => {
     expect(store.getState().permitChecklist).toBeNull()
   })
 
-  it('returns recommendation failures to session with a visible error', async () => {
+  it('keeps recommendation failures on the map with a visible error', async () => {
     api.recommendSpots.mockRejectedValueOnce(new Error('network down'))
     const store = await loadStore(validProfile)
 
     await store.getState().startRecommendations()
 
-    expect(store.getState().appPhase).toBe('session')
+    expect(store.getState().appPhase).toBe('ready')
     expect(store.getState().recommendationStatus).toBe('error')
     expect(store.getState().recommendationError).toBe(
       'Recommendations could not be loaded. Try again.',

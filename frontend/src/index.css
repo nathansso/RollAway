@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@import 'mapbox-gl/dist/mapbox-gl.css';
 
 @theme {
   --color-primary: #c2410c;
@@ -16,6 +15,10 @@
   --color-good: #15803d;
   --color-caution: #b45309;
   --color-avoid: #b91c1c;
+  /* #17 location strength grade: strong=green, moderate=yellow, weak=orange */
+  --color-grade-strong: #15803d;
+  --color-grade-moderate: #ca8a04;
+  --color-grade-weak: #ea580c;
   --font-display:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     sans-serif;
@@ -413,13 +416,13 @@ button:disabled {
 }
 
 .recommendation-card__rank--good {
-  background: var(--color-good);
+  background: var(--color-grade-strong);
 }
 .recommendation-card__rank--caution {
-  background: var(--color-caution);
+  background: var(--color-grade-moderate);
 }
 .recommendation-card__rank--avoid {
-  background: var(--color-avoid);
+  background: var(--color-grade-weak);
 }
 
 .rank-marker {
@@ -462,22 +465,22 @@ button:disabled {
 }
 
 .rank-marker--good span {
-  background: var(--color-good);
+  background: var(--color-grade-strong);
 }
 .rank-marker--caution span {
-  background: var(--color-caution);
+  background: var(--color-grade-moderate);
 }
 .rank-marker--avoid span {
-  background: var(--color-avoid);
+  background: var(--color-grade-weak);
 }
 .rank-marker--good span::after {
-  border-top-color: var(--color-good);
+  border-top-color: var(--color-grade-strong);
 }
 .rank-marker--caution span::after {
-  border-top-color: var(--color-caution);
+  border-top-color: var(--color-grade-moderate);
 }
 .rank-marker--avoid span::after {
-  border-top-color: var(--color-avoid);
+  border-top-color: var(--color-grade-weak);
 }
 
 .rank-marker:focus-visible {
@@ -1182,4 +1185,356 @@ button:disabled {
   .user-location-marker::before {
     animation: none !important;
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * Marketing landing page (route: /). Reuses the app tokens; the app
+ * itself lives at /app. Scrolls inside a fixed container so it never
+ * fights the app's `body { overflow: hidden }`.
+ * ------------------------------------------------------------------ */
+
+/* The app keeps `body { overflow: hidden }`; the landing route (marked on
+ * <html> from main.tsx) restores normal document scrolling so the scrollbar,
+ * keyboard paging, and anchor links all behave conventionally. */
+html.landing-route,
+html.landing-route body,
+html.landing-route #root {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+
+.landing-root {
+  min-height: 100dvh;
+  overflow-x: hidden;
+  color: var(--color-foreground);
+  background:
+    radial-gradient(circle at 82% -10%, rgb(249 115 22 / 20%), transparent 34rem),
+    radial-gradient(circle at 2% 6%, rgb(37 99 235 / 7%), transparent 30rem),
+    var(--color-background);
+}
+
+.landing-shell {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: max(1.25rem, env(safe-area-inset-left));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
+}
+
+.landing-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--color-border);
+  background: rgb(255 247 237 / 82%);
+  padding-top: env(safe-area-inset-top);
+  backdrop-filter: blur(12px);
+}
+
+.landing-nav__cta {
+  min-height: 40px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.landing-cta--lg {
+  min-height: 52px;
+  padding: 0.85rem 1.5rem;
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+.landing-textlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-bottom: 2px solid transparent;
+  color: var(--color-foreground);
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: color 160ms ease;
+}
+
+.landing-textlink:hover {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.landing-textlink:focus-visible {
+  outline: 3px solid var(--color-ring);
+  outline-offset: 3px;
+  border-radius: var(--radius-ui-sm);
+}
+
+.landing-hero {
+  padding-block: clamp(2.5rem, 6vw, 5rem);
+}
+
+.landing-hero__visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.landing-hero__caption {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-primary);
+}
+
+.landing-section {
+  padding-block: clamp(2.25rem, 5.5vw, 4.25rem);
+}
+
+.landing-stats {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-border);
+}
+
+.landing-stat {
+  background: #fff;
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+}
+
+.landing-card {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #fff;
+  padding: 1.5rem;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.landing-card:hover {
+  transform: translateY(-3px);
+  border-color: rgb(194 65 12 / 35%);
+  box-shadow: 0 14px 32px rgb(15 23 42 / 11%);
+}
+
+.landing-step {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 70%);
+  padding: 1.5rem;
+}
+
+.landing-closing {
+  border-radius: 12px;
+  padding: clamp(2.5rem, 6vw, 4rem) 1.5rem;
+  color: #fff;
+  text-align: center;
+  background:
+    radial-gradient(circle at 100% 0%, rgb(249 115 22 / 24%), transparent 26rem),
+    var(--color-foreground);
+  box-shadow: 0 24px 60px rgb(15 23 42 / 25%);
+}
+
+.landing-footer {
+  border-top: 1px solid var(--color-border);
+  background: rgb(255 247 237 / 55%);
+  margin-top: 1rem;
+}
+
+/* Phone mock of the app's own map screen, sans Mapbox bundle. */
+.landing-phone {
+  position: relative;
+  width: 100%;
+  max-width: 17.5rem;
+  margin-inline: auto;
+  aspect-ratio: 9 / 19.5;
+  padding: 0.5rem;
+  border-radius: 2.75rem;
+  background: linear-gradient(155deg, #33405a 0%, #0f172a 55%);
+  box-shadow:
+    0 32px 70px rgb(15 23 42 / 34%),
+    0 10px 24px rgb(15 23 42 / 18%),
+    inset 0 0 0 2px rgb(255 255 255 / 7%);
+}
+
+.landing-phone__screen {
+  position: absolute;
+  inset: 0.5rem;
+  overflow: hidden;
+  border-radius: 2.3rem;
+  background: #e8ece5;
+}
+
+/* Titanium side buttons */
+.landing-phone__side {
+  position: absolute;
+  z-index: 0;
+  border-radius: 2px;
+  background: #232f45;
+}
+.landing-phone__side--power {
+  right: -3px;
+  top: 30%;
+  width: 3px;
+  height: 9%;
+}
+.landing-phone__side--vol-up {
+  left: -3px;
+  top: 22%;
+  width: 3px;
+  height: 6%;
+}
+.landing-phone__side--vol-down {
+  left: -3px;
+  top: 31%;
+  width: 3px;
+  height: 6%;
+}
+
+.landing-phone__island {
+  position: absolute;
+  top: 0.7rem;
+  left: 50%;
+  z-index: 9;
+  width: 32%;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: #05070d;
+  transform: translateX(-50%);
+}
+
+.landing-phone__home {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  z-index: 9;
+  width: 34%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgb(15 23 42 / 32%);
+  transform: translateX(-50%);
+}
+
+.landing-phone__chrome {
+  position: absolute;
+  inset-inline: 0.6rem;
+  top: 2.5rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.landing-phone__context {
+  border: 1px solid rgb(255 255 255 / 70%);
+  border-radius: var(--radius-ui);
+  background: rgb(255 255 255 / 92%);
+  padding: 0.3rem 0.5rem;
+  color: var(--color-foreground);
+  font-size: 0.65rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgb(15 23 42 / 12%);
+  backdrop-filter: blur(8px);
+}
+
+.landing-phone__pin {
+  position: absolute;
+  z-index: 4;
+  transform: translate(-50%, -88%);
+}
+
+.landing-phone__vendor {
+  position: absolute;
+  z-index: 3;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: var(--radius-ui-sm);
+  background: #64748b;
+  box-shadow: 0 2px 4px rgb(15 23 42 / 25%);
+  transform: translate(-50%, -50%);
+}
+
+.landing-phone__user {
+  position: absolute;
+  left: 31%;
+  top: 48%;
+  z-index: 3;
+  width: 14px;
+  height: 14px;
+  border: 3px solid #fff;
+  border-radius: var(--radius-ui-sm);
+  background: var(--color-accent);
+  box-shadow: 0 0 0 8px rgb(37 99 235 / 15%);
+  transform: translate(-50%, -50%);
+}
+
+.landing-phone__card {
+  position: absolute;
+  inset-inline: 0.6rem;
+  bottom: 1.35rem;
+  z-index: 6;
+  flex: initial;
+  min-height: 0;
+}
+
+@media (min-width: 640px) {
+  .landing-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* #14 time-range scroll wheel */
+.time-wheel__frame {
+  position: relative;
+  height: 132px;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
+  background: #fff;
+}
+.time-wheel__viewport {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  outline: none;
+}
+.time-wheel__viewport::-webkit-scrollbar {
+  display: none;
+}
+.time-wheel__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  scroll-snap-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+  background: transparent;
+}
+.time-wheel__item.is-active {
+  color: var(--color-foreground);
+}
+.time-wheel__band {
+  position: absolute;
+  inset-inline: 0;
+  top: 44px;
+  height: 44px;
+  pointer-events: none;
+  border-top: 1px solid var(--color-primary);
+  border-bottom: 1px solid var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
 }

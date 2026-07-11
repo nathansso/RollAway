@@ -45,6 +45,15 @@ const server = http.createServer(async (req, res) => {
       return res.end(text)
     }
 
+    // Menu extraction (sign-up) -> live agent runtime (Gradient serverless inference)
+    if (name === 'menu_extract') {
+      const body = await readBody(req)
+      const r = await fetch(`${RUNTIME}/menu_extract`, { method: 'POST', headers: { 'content-type': 'application/json' }, body })
+      const text = await r.text()
+      res.writeHead(r.status, { 'content-type': 'application/json' })
+      return res.end(text)
+    }
+
     if (!FUNCS.includes(name)) { res.writeHead(404, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ error: 'no such function', name })) }
 
     // Merge query params (GET) + JSON body (POST) into the function's args object

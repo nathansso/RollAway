@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   derivePriceTier,
+  formatUsPhone,
+  formatUsPhoneLocal,
+  isValidEmailShape,
+  isValidUsPhone,
   parseMenu,
   parseStoredProfile,
   validateProfile,
@@ -20,6 +24,70 @@ describe('parseMenu', () => {
       { name: 'Seasonal fruit cup', price: null },
       { name: 'Coffee', price: null },
     ])
+  })
+})
+
+describe('formatUsPhoneLocal', () => {
+  it('formats progressively as digits are typed', () => {
+    expect(formatUsPhoneLocal('')).toBe('')
+    expect(formatUsPhoneLocal('415')).toBe('(415')
+    expect(formatUsPhoneLocal('415555')).toBe('(415) 555')
+    expect(formatUsPhoneLocal('4155550132')).toBe('(415) 555-0132')
+  })
+
+  it('ignores non-digits, a leading +1, and extra digits', () => {
+    expect(formatUsPhoneLocal('(415) 555-0132')).toBe('(415) 555-0132')
+    expect(formatUsPhoneLocal('+1 415 555 0132')).toBe('(415) 555-0132')
+    expect(formatUsPhoneLocal('14155550132')).toBe('(415) 555-0132')
+    expect(formatUsPhoneLocal('415-555-0132-999')).toBe('(415) 555-0132')
+  })
+
+  it('reformats a legacy stored number', () => {
+    expect(formatUsPhoneLocal('415-555-0123')).toBe('(415) 555-0123')
+  })
+})
+
+describe('isValidEmailShape', () => {
+  it('accepts any real-looking address regardless of TLD (issue #12)', () => {
+    for (const email of [
+      'avery@example.com',
+      'student@berkeley.edu',
+      'first.last@school.edu',
+      'name+tag@school.edu',
+      'a@b.museum',
+      'someone@sub.domain.co.uk',
+      '  spaced@example.org  ',
+    ]) {
+      expect(isValidEmailShape(email)).toBe(true)
+    }
+  })
+
+  it('still rejects clearly malformed shapes', () => {
+    for (const email of ['', 'plainword', 'no@tld', 'a@b.', '@b.com', 'a b@c.com']) {
+      expect(isValidEmailShape(email)).toBe(false)
+    }
+  })
+})
+
+describe('formatUsPhone', () => {
+  it('prefixes +1 once digits are present and stays blank otherwise', () => {
+    expect(formatUsPhone('')).toBe('')
+    expect(formatUsPhone('4155550132')).toBe('+1 (415) 555-0132')
+    expect(formatUsPhone('+1 (415) 555-0132')).toBe('+1 (415) 555-0132')
+  })
+})
+
+describe('isValidUsPhone', () => {
+  it('accepts a complete 10-digit number in any format', () => {
+    for (const p of ['4155550132', '(415) 555-0132', '+1 (415) 555-0132', '415-555-0132']) {
+      expect(isValidUsPhone(p)).toBe(true)
+    }
+  })
+
+  it('rejects incomplete or empty numbers', () => {
+    for (const p of ['', '415', '(415) 555', '15550132']) {
+      expect(isValidUsPhone(p)).toBe(false)
+    }
   })
 })
 
@@ -64,6 +132,30 @@ describe('profile persistence boundary', () => {
   it('accepts the canonical pushcart_nocook profile', () => {
     expect(validateProfile(validProfile)).toBe(true)
     expect(parseStoredProfile(JSON.stringify(validProfile))).toEqual(validProfile)
+  })
+
+  it('accepts an empty home_base label now that the field is removed (#11)', () => {
+    expect(
+      validateProfile({ ...validProfile, home_base: { label: '', point: null } }),
+    ).toBe(true)
+  })
+
+  it('rejects an incomplete phone number (#11 phone validity)', () => {
+    expect(
+      validateProfile({
+        ...validProfile,
+        autofill_profile: { ...validProfile.autofill_profile, phone: '415-555' },
+      }),
+    ).toBe(false)
+    expect(
+      validateProfile({
+        ...validProfile,
+        autofill_profile: {
+          ...validProfile.autofill_profile,
+          phone: '+1 (415) 555-0132',
+        },
+      }),
+    ).toBe(true)
   })
 
   it('migrates a persisted v1 profile without cuisine to American', () => {

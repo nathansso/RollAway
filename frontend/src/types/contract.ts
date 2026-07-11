@@ -7,7 +7,6 @@ export interface LatLng {
 
 export type AppPhase =
   | 'profile'
-  | 'session'
   | 'loading_recommendations'
   | 'ready'
   | 'loading_permits'
@@ -164,6 +163,14 @@ export interface RecommendationSpot {
   }
   travel_minutes: number
   travel_distance_miles: number
+  /** Reverse-geocoded street address for the spot (server-side Geocoding). */
+  address: string | null
+  /**
+   * Optional prebuilt Street View image URL. Usually null — the frontend
+   * derives a referrer-restricted Street View Static URL from `point` with the
+   * browser key (see lib/streetView). Present only if a backend supplies one.
+   */
+  image_url?: string | null
   area_insights?: AreaInsights
   event_opportunity?: EventOpportunity | null
   outreach_draft?: OutreachDraft | null

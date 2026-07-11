@@ -11,9 +11,13 @@ export default function AppHeader() {
   return (
     <header className="pointer-events-none absolute inset-x-0 top-0 z-30 pt-[env(safe-area-inset-top)]">
       <div className="flex items-center justify-between gap-3 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pt-3">
-        <div className="pointer-events-auto brand-lockup">
+        <a
+          href="/"
+          aria-label="Rollaway — go to home page"
+          className="pointer-events-auto brand-lockup no-underline transition hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           <BrandMark compact />
-        </div>
+        </a>
         <button
           type="button"
           onClick={openProfile}

@@ -37,7 +37,11 @@ VITE_RECOMMEND_SPOTS_URL=http://localhost:8090/recommend_spots
 VITE_VENDORS_URL=http://localhost:8090/get_vendors
 VITE_CLOSURES_URL=http://localhost:8090/get_closures
 VITE_PERMIT_CHECKLIST_URL=http://localhost:8090/permit_copilot
+VITE_MENU_EXTRACT_URL=http://localhost:8090/menu_extract
 ```
+
+`VITE_MENU_EXTRACT_URL` powers sign-up menu extraction (photo / PDF / link → items)
+via Gradient. Leave it empty to fall back to in-browser text-only parsing.
 ```bash
 cd frontend && npm run dev -- --port 5199
 ```

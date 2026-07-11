@@ -50,6 +50,26 @@ function makeCandidates(location) {
   }));
 }
 
+// #17: range-based candidate pool. Instead of a fixed 3-point ring hugging the
+// pin, sample the anchor + concentric rings in all directions. The orchestrator
+// then filters this pool by traffic-aware travel time (<= max_travel_minutes)
+// and scores the survivors by STRENGTH — not proximity.
+const RANGE_RING_RADII_M = [300, 700, 1300, 2200];
+const RANGE_BEARINGS = [0, 45, 90, 135, 180, 225, 270, 315];
+
+/** Anchor + concentric rings of points around a location (issue #17). */
+function makeRangeCandidates(location, opts = {}) {
+  const radii = opts.radii || RANGE_RING_RADII_M;
+  const bearings = opts.bearings || RANGE_BEARINGS;
+  const points = [offsetPoint(location.lat, location.lng, 0, 0)];
+  for (const r of radii) {
+    for (const b of bearings) {
+      points.push(offsetPoint(location.lat, location.lng, b, r));
+    }
+  }
+  return points;
+}
+
 function addHoursHHMM(hhmm, h) {
   const [H, M] = String(hhmm).split(':').map(Number);
   const t = (((H + h) % 24) + 24) % 24;
@@ -77,5 +97,6 @@ function signalArgs(point, ctx) {
 
 module.exports = {
   MAX_CANDIDATES, EVENTS_RADIUS_M, SETUP_WINDOW_HOURS,
-  offsetPoint, makeCandidates, signalArgs, addHoursHHMM,
+  RANGE_RING_RADII_M, RANGE_BEARINGS,
+  offsetPoint, makeCandidates, makeRangeCandidates, signalArgs, addHoursHHMM,
 };

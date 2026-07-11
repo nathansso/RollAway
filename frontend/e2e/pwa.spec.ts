@@ -29,7 +29,7 @@ test('production PWA shell and fixture data reload offline', async ({
     else rollAwayBusinessRequests.push(request.url())
   })
 
-  await page.goto('/')
+  await page.goto('/app')
   await page.evaluate(() => {
     localStorage.setItem(
       'rollaway.profile.v1',
@@ -90,7 +90,9 @@ test('production PWA shell and fixture data reload offline', async ({
   await expect(page.getByText(/Offline\. Fixture recommendations/)).toBeVisible()
   await page.getByRole('button', { name: 'Find places to roll' }).click()
   await expect(page.getByText('2nd & Howard', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Permits' }).click()
+  // Permit checklist now lives behind the profile, not a trip-page tab.
+  await page.getByRole('button', { name: /Edit profile/ }).click()
+  await page.getByRole('button', { name: 'Permit checklist' }).click()
   await expect(
     page.getByRole('heading', { name: 'Build your San Francisco permit path' }),
   ).toBeVisible()

@@ -47,7 +47,7 @@ describe('EasyApply prefill', () => {
       owner_name: 'Avery Rivera',
       vendor_type: 'truck',
       menu: 'Tacos $5',
-      location: 'Mission District',
+      location: '1 Mission St, San Francisco',
       signature: '',
     })
   })

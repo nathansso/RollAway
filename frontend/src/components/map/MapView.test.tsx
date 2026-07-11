@@ -3,6 +3,7 @@ import { act, cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '../../lib/apiClient'
+import { normalizeRecommendations } from '../../lib/recommendations'
 import { useAppStore } from '../../store'
 import type { RecommendationSpot } from '../../types/contract'
 import {
@@ -51,7 +52,8 @@ beforeEach(async () => {
     },
     { delayMs: 0 },
   )
-  spots = response.recommendations
+  // Mirror what the store does: normalize verdicts and keep the top 3.
+  spots = normalizeRecommendations(response.recommendations).slice(0, 3)
   useAppStore.setState({
     vendors: await apiClient.getVendors(state.location, state.when),
     recommendations: spots,
@@ -72,8 +74,10 @@ describe('map result interaction', () => {
     render(<RecommendationTray />)
 
     expect(screen.getAllByText('Estimated city travel')).toHaveLength(3)
-    expect(screen.getByText(`${spots[0].travel_minutes} min`)).toBeDefined()
-    expect(screen.getByText(`${spots[0].travel_distance_miles.toFixed(1)} mi`)).toBeDefined()
+    const cards = screen.getAllByRole('button', { name: /Open details for suggested spot/ })
+    expect(cards).toHaveLength(3)
+    expect(cards[0].textContent).toContain(`${spots[0].travel_minutes} min`)
+    expect(cards[0].textContent).toContain(`${spots[0].travel_distance_miles.toFixed(1)} mi`)
   })
 
   it('moves card focus with horizontal arrow keys', async () => {

@@ -84,7 +84,7 @@ test('fixture mode renders Mapbox with only intercepted fake-token traffic', asy
     route.fulfill({ status: 204, body: '' }),
   )
 
-  await page.goto('/')
+  await page.goto('/app')
   await page.evaluate(() => {
     localStorage.setItem(
       'rollaway.profile.v1',

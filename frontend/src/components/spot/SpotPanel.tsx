@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import {
   AlertIcon,
   CheckIcon,
@@ -13,7 +13,25 @@ import {
 import { useAppStore } from '../../store'
 import { useDialogFocus } from '../../lib/useDialogFocus'
 import { buildNavigationUrl } from '../../lib/navigation'
+import { buildStreetViewUrl } from '../../lib/streetView'
 import type { RecommendationSpot } from '../../types/contract'
+
+// #17: Street View image for the spot. Hides itself if there's no browser key
+// or Google returns no panorama (return_error_code -> 404 -> onError).
+function StreetViewImage({ spot }: { spot: RecommendationSpot }) {
+  const [failed, setFailed] = useState(false)
+  const src = spot.image_url ?? buildStreetViewUrl(spot.point, { width: 640, height: 320 })
+  if (!src || failed) return null
+  return (
+    <img
+      src={src}
+      alt={`Street View near ${spot.block_label}`}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="mt-3 h-40 w-full rounded-xl border border-border object-cover"
+    />
+  )
+}
 
 function FactRow({
   icon,
@@ -170,6 +188,9 @@ export default function SpotPanel() {
             <h2 id="spot-title" className="mt-1 font-display text-2xl text-foreground">
               {spot.block_label}
             </h2>
+            {spot.address && (
+              <p className="mt-0.5 text-xs text-muted-foreground">{spot.address}</p>
+            )}
             <div className="mt-2 flex items-center gap-2">
               <span className={`verdict-badge verdict-badge--${spot.verdict}`}>
                 {spot.verdict === 'good' ? <CheckIcon className="h-4 w-4" /> : <AlertIcon className="h-4 w-4" />}
@@ -186,7 +207,8 @@ export default function SpotPanel() {
           </button>
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-          <p className="rounded-xl border border-border bg-white px-4 py-3 text-sm font-medium leading-snug text-foreground">
+          <StreetViewImage spot={spot} />
+          <p className="mt-3 rounded-xl border border-border bg-white px-4 py-3 text-sm font-medium leading-snug text-foreground">
             {spot.why_one_line}
           </p>
           {spot.event_opportunity && (

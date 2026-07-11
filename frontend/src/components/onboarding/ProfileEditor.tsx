@@ -1,18 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CloseIcon } from '../common/Icons'
+import { ChevronIcon, CloseIcon, FileIcon, PermitIcon } from '../common/Icons'
 import BrandMark from '../common/BrandMark'
-import { SAMPLE_MENUS, sampleMenuText } from '../../fixtures/sampleMenus'
-import { derivePriceTier, parseMenu } from '../../lib/profile'
+import { SAMPLE_MENUS } from '../../fixtures/sampleMenus'
+import { derivePriceTier, formatUsPhone, formatUsPhoneLocal, parseMenu } from '../../lib/profile'
+import { apiClient, ApiClientError } from '../../lib/apiClient'
 import { useDialogFocus } from '../../lib/useDialogFocus'
 import { useAppStore } from '../../store'
 import type { CuisineId } from '../../fixtures/sampleMenus'
 import type {
   AutofillProfile,
-  DayCode,
   OperatingWindow,
   VendorProfile,
   VendorType,
 } from '../../types/contract'
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('read failed'))
+    reader.readAsDataURL(file)
+  })
+}
 
 const EMPTY_CONTACT: AutofillProfile = {
   owner_name: '',
@@ -73,10 +82,27 @@ export default function ProfileEditor() {
   const existing = useAppStore((state) => state.profile)
   const close = useAppStore((state) => state.closeProfileEditor)
   const saveProfile = useAppStore((state) => state.saveProfile)
+  const setActiveTab = useAppStore((state) => state.setActiveTab)
+  const appPhase = useAppStore((state) => state.appPhase)
   const [draft, setDraft] = useState<VendorProfile>(() => existing ?? emptyProfile())
   const [error, setError] = useState('')
+  const [menuStatus, setMenuStatus] = useState<'idle' | 'extracting' | 'success' | 'error'>('idle')
+  const [menuNotice, setMenuNotice] = useState('')
+  const [menuViewOpen, setMenuViewOpen] = useState(false)
+  const [menuUrl, setMenuUrl] = useState('')
   const dialogRef = useRef<HTMLDivElement>(null)
+  const phoneRef = useRef<HTMLInputElement>(null)
   const firstLaunch = existing === null
+
+  // Keep the caret at the end of the phone field while typing so the live
+  // reformat (which inserts "(", ")", "-") never scrambles left-to-right entry.
+  useEffect(() => {
+    const el = phoneRef.current
+    if (el && document.activeElement === el) {
+      const end = el.value.length
+      el.setSelectionRange(end, end)
+    }
+  }, [draft.autofill_profile.phone])
 
   useEffect(() => {
     if (!open) return
@@ -97,14 +123,6 @@ export default function ProfileEditor() {
       autofill_profile: { ...current.autofill_profile, [key]: value },
     }))
 
-  const setWindow = (index: number, patch: Partial<OperatingWindow>) =>
-    setDraft((current) => ({
-      ...current,
-      operating_windows: current.operating_windows.map((window, windowIndex) =>
-        windowIndex === index ? { ...window, ...patch } : window,
-      ),
-    }))
-
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
     const profile: VendorProfile = {
@@ -117,17 +135,55 @@ export default function ProfileEditor() {
     }
   }
 
-  const uploadMenu = async (file?: File) => {
+  const applyExtraction = async (payload: Parameters<typeof apiClient.extractMenu>[0]) => {
+    setMenuStatus('extracting')
+    setMenuNotice('Reading your menu…')
+    try {
+      const { items, plain_text } = await apiClient.extractMenu({
+        ...payload,
+        vendor_type: draft.vendor_type,
+      })
+      if (!items.length || !plain_text.trim()) {
+        setMenuStatus('error')
+        setMenuNotice('No menu items found. Try a clearer photo, a text file, or a menu link.')
+        return
+      }
+      setDraft((current) => ({
+        ...current,
+        menu: { raw: plain_text, items, price_tier: derivePriceTier(items) },
+      }))
+      setMenuStatus('success')
+      setMenuNotice(`Extracted ${items.length} item${items.length === 1 ? '' : 's'}.`)
+      setMenuViewOpen(true)
+    } catch (extractionError) {
+      setMenuStatus('error')
+      setMenuNotice(
+        extractionError instanceof ApiClientError
+          ? extractionError.message
+          : 'Menu extraction failed. Try another source.',
+      )
+    }
+  }
+
+  const extractFromFile = async (file?: File) => {
     if (!file) return
-    if (file.size > 500_000) {
-      setError('Menu files must be 500 KB or smaller.')
+    if (file.size > 8_000_000) {
+      setMenuStatus('error')
+      setMenuNotice('Menu files must be 8 MB or smaller.')
       return
     }
-    try {
-      const raw = await file.text()
-      setDraft((current) => ({ ...current, menu: { ...current.menu, raw } }))
-    } catch {
-      setError('That file could not be read. Paste the menu text instead.')
+    const isText = file.type.startsWith('text/') || /\.(txt|csv|md)$/i.test(file.name)
+    if (isText) {
+      const text = await file.text().catch(() => '')
+      await applyExtraction({ input_type: 'text', text })
+    } else {
+      const image_data_url = await fileToDataUrl(file).catch(() => '')
+      if (!image_data_url) {
+        setMenuStatus('error')
+        setMenuNotice('That file could not be read.')
+        return
+      }
+      await applyExtraction({ input_type: 'image', image_data_url })
     }
   }
 
@@ -181,6 +237,21 @@ export default function ProfileEditor() {
             </div>
           )}
 
+          {existing && appPhase === 'ready' && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('permits')
+                close()
+              }}
+              className="secondary-button mb-5 w-full"
+            >
+              <PermitIcon className="h-5 w-5 text-primary" />
+              Permit checklist
+              <ChevronIcon className="h-4 w-4" />
+            </button>
+          )}
+
           <section className="form-section">
             <h2 className="section-title">Your operation</h2>
             <Field label="Vendor type" required>
@@ -218,67 +289,92 @@ export default function ProfileEditor() {
                 ))}
               </select>
             </Field>
-            <Field label="Menu" required hint="Paste text or upload a plain-text-compatible file. Raw text stays on this device.">
-              <textarea
-                className={`${fieldClass} min-h-32 resize-y`}
-                value={draft.menu.raw}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    menu: { ...current.menu, raw: event.target.value },
-                  }))
-                }
-                placeholder={'Al pastor taco $5\nVeggie burrito $11\nHorchata $4'}
-              />
+            <Field
+              label="Menu"
+              required
+              hint="Upload a photo, PDF, or text file of your menu — or paste a link. Rollaway reads it into items and prices with Gradient AI."
+            >
+              <div className="mt-1 grid gap-2">
+                <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-border bg-white px-4 text-sm font-semibold text-foreground transition hover:bg-muted focus-within:ring-2 focus-within:ring-ring">
+                  <FileIcon className="h-4 w-4 text-primary" />
+                  Upload menu (image, PDF, or text)
+                  <input
+                    className="sr-only"
+                    type="file"
+                    accept="image/*,application/pdf,.txt,.csv,.md,text/plain,text/csv"
+                    onChange={(event) => void extractFromFile(event.target.files?.[0])}
+                  />
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    aria-label="Menu website link"
+                    className={fieldClass}
+                    type="url"
+                    inputMode="url"
+                    placeholder="…or paste a menu link (https://)"
+                    value={menuUrl}
+                    onChange={(event) => setMenuUrl(event.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="secondary-button shrink-0"
+                    disabled={!menuUrl.trim() || menuStatus === 'extracting'}
+                    onClick={() =>
+                      void applyExtraction({ input_type: 'url', url: menuUrl.trim() })
+                    }
+                  >
+                    Extract
+                  </button>
+                </div>
+              </div>
             </Field>
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() =>
-                  setDraft((current) => ({
-                    ...current,
-                    menu: { ...current.menu, raw: sampleMenuText(current.cuisine) },
-                  }))
-                }
+
+            {menuStatus !== 'idle' && (
+              <p
+                role="status"
+                aria-live="polite"
+                className={`text-sm font-semibold ${
+                  menuStatus === 'success'
+                    ? 'text-good'
+                    : menuStatus === 'error'
+                      ? 'text-destructive'
+                      : 'text-muted-foreground'
+                }`}
               >
-                Use sample menu
-              </button>
-              <label className="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-border bg-white px-4 text-sm font-semibold text-foreground hover:bg-muted focus-within:ring-2 focus-within:ring-ring">
-                Upload menu file
-                <input
-                  className="sr-only"
-                  type="file"
-                  accept=".txt,.csv,.md,text/plain,text/csv"
-                  onChange={(event) => void uploadMenu(event.target.files?.[0])}
-                />
-              </label>
-              <span className="rounded-md bg-muted px-3 py-1.5 text-sm text-foreground">
-                Estimated price tier: <strong>{priceTier}</strong>
-              </span>
-            </div>
-            {menuItems.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Parsed {menuItems.length} menu item{menuItems.length === 1 ? '' : 's'} for display and competition matching.
+                {menuNotice}
               </p>
             )}
+
+            {draft.menu.raw.trim() && (
+              <div className="rounded-md border border-border bg-white">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-2 px-4 py-2 text-left text-sm font-semibold text-foreground"
+                  aria-expanded={menuViewOpen}
+                  onClick={() => setMenuViewOpen((open) => !open)}
+                >
+                  <span>
+                    View extracted menu ({menuItems.length} item{menuItems.length === 1 ? '' : 's'})
+                  </span>
+                  <ChevronIcon
+                    className={`h-4 w-4 transition ${menuViewOpen ? 'rotate-90' : ''}`}
+                  />
+                </button>
+                {menuViewOpen && (
+                  <pre className="max-h-48 overflow-auto whitespace-pre-wrap border-t border-border px-4 py-3 font-mono text-xs text-muted-foreground">
+                    {draft.menu.raw}
+                  </pre>
+                )}
+              </div>
+            )}
+
+            <span className="w-fit rounded-md bg-muted px-3 py-1.5 text-sm text-foreground">
+              Estimated price tier: <strong>{priceTier}</strong>
+            </span>
           </section>
 
           <section className="form-section">
             <h2 className="section-title">Travel & schedule</h2>
-            <Field label="Home base or neighborhood" required>
-              <input
-                className={fieldClass}
-                value={draft.home_base.label}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    home_base: { ...current.home_base, label: event.target.value },
-                  }))
-                }
-                placeholder="Mission District"
-              />
-            </Field>
             <div className="grid grid-cols-[1fr_1.2fr] gap-3">
               <Field label="Maximum travel" required>
                 <input
@@ -314,27 +410,6 @@ export default function ProfileEditor() {
                 </select>
               </Field>
             </div>
-            <fieldset>
-              <legend className="text-sm font-semibold">Operating windows</legend>
-              <p className="mt-1 text-xs text-muted-foreground">
-                These align with restaurant competition day, time_from, and time_to.
-              </p>
-              <div className="mt-2 space-y-2">
-                {draft.operating_windows.map((window, index) => (
-                  <div key={index} className="grid grid-cols-3 gap-2 rounded-xl bg-muted p-2">
-                    <select className={fieldClass} aria-label={`Operating day ${index + 1}`} value={window.day} onChange={(e) => setWindow(index, { day: e.target.value as DayCode })}>
-                      {(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as DayCode[]).map((day) => <option key={day} value={day}>{day.toUpperCase()}</option>)}
-                    </select>
-                    <input className={fieldClass} aria-label={`Start time ${index + 1}`} type="time" value={window.time_from} onChange={(e) => setWindow(index, { time_from: e.target.value })} />
-                    <input className={fieldClass} aria-label={`End time ${index + 1}`} type="time" value={window.time_to} onChange={(e) => setWindow(index, { time_to: e.target.value })} />
-                  </div>
-                ))}
-              </div>
-              <div className="mt-2 flex gap-2">
-                <button type="button" className="secondary-button" onClick={() => setDraft((current) => ({ ...current, operating_windows: [...current.operating_windows, DEFAULT_WINDOW] }))}>Add window</button>
-                {draft.operating_windows.length > 1 && <button type="button" className="secondary-button" onClick={() => setDraft((current) => ({ ...current, operating_windows: current.operating_windows.slice(0, -1) }))}>Remove last</button>}
-              </div>
-            </fieldset>
             <Field label="Permit status" required>
               <select className={fieldClass} value={draft.permit_status} onChange={(event) => setDraft((current) => ({ ...current, permit_status: event.target.value as VendorProfile['permit_status'] }))}>
                 <option value="not_started">Not started</option>
@@ -346,13 +421,29 @@ export default function ProfileEditor() {
           </section>
 
           <section className="form-section">
-            <h2 className="section-title">EasyApply details</h2>
+            <h2 className="section-title">User info</h2>
             <p className="text-sm text-muted-foreground">We use these to pre-fill reviewable drafts. Rollaway never submits a binding application automatically.</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Owner / contact name" required><input className={fieldClass} autoComplete="name" value={draft.autofill_profile.owner_name} onChange={(e) => setContact('owner_name', e.target.value)} /></Field>
               <Field label="Business name" required><input className={fieldClass} autoComplete="organization" value={draft.autofill_profile.business_name} onChange={(e) => setContact('business_name', e.target.value)} /></Field>
-              <Field label="Email" required><input className={fieldClass} type="email" autoComplete="email" value={draft.autofill_profile.email} onChange={(e) => setContact('email', e.target.value)} /></Field>
-              <Field label="Phone" required><input className={fieldClass} type="tel" autoComplete="tel" value={draft.autofill_profile.phone} onChange={(e) => setContact('phone', e.target.value)} /></Field>
+              <Field label="Email" required><input className={fieldClass} type="text" inputMode="email" autoComplete="email" value={draft.autofill_profile.email} onChange={(e) => setContact('email', e.target.value)} /></Field>
+              <Field label="Phone" required>
+                <div className="mt-1 flex min-h-11 items-center rounded-md border border-border bg-white pl-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                  <span className="select-none pr-1 text-base font-semibold text-muted-foreground" aria-hidden="true">
+                    +1
+                  </span>
+                  <input
+                    ref={phoneRef}
+                    className="min-h-11 w-full border-0 bg-transparent px-1 text-base text-foreground outline-none"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel-national"
+                    placeholder="(415) 555-0132"
+                    value={formatUsPhoneLocal(draft.autofill_profile.phone.replace(/^\+1\s*/, ''))}
+                    onChange={(e) => setContact('phone', formatUsPhone(e.target.value))}
+                  />
+                </div>
+              </Field>
             </div>
             <Field label="Mailing address" required><input className={fieldClass} autoComplete="street-address" value={draft.autofill_profile.address} onChange={(e) => setContact('address', e.target.value)} /></Field>
             <div className="grid grid-cols-[1.5fr_.6fr_1fr] gap-2">
@@ -364,7 +455,7 @@ export default function ProfileEditor() {
 
           <div className="sticky bottom-0 -mx-5 mt-6 border-t border-border bg-background/95 px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur">
             <button type="submit" className="primary-button w-full">
-              {existing ? 'Save profile changes' : 'Continue to session setup'}
+              {existing ? 'Save profile changes' : 'Find my spots'}
             </button>
           </div>
         </form>

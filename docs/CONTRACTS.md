@@ -308,6 +308,18 @@ Consumers must not describe `recommended` as guaranteed legal parking. Posted cu
 signs, temporary restrictions, and current street conditions still require on-site
 verification.
 
+## Additive spot address + image (issue #17)
+
+`recommend_spots` adds two additive per-spot fields (contract_version unchanged):
+
+- `address` — reverse-geocoded street address for `point` (server-side Google
+  Geocoding), or `null` when geocoding is unavailable. Display-only.
+- `image_url` — optional. Usually omitted/`null`; the frontend derives a
+  referrer-restricted Google Street View Static URL from `point` with the browser
+  key. A backend may populate it if it has a preferred image source.
+
+Both are additive: existing consumers that ignore them keep working.
+
 ## Additive raw-menu parsing contract
 
 `agents/menu_rag/parse.mjs` accepts untrusted raw menu text and produces the existing menu-ingest

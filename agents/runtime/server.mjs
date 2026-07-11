@@ -14,6 +14,7 @@ import { toolBase } from "./tools.mjs";
 import { runSpotScoutSingleTurn, runPermitCopilot, runFormFill, resolveFormPdfUrl } from "./agents.mjs";
 import { validateEnvelope } from "../evals/lib/schema.mjs";
 import { competitionOverlap } from "../menu_rag/query.mjs";
+import { extractMenu } from "../menu_rag/extract.mjs";
 
 const PORT = process.env.PORT || 8080;
 
@@ -25,7 +26,8 @@ const send = (res, code, obj) => {
 
 const readBody = (req) => new Promise((resolve, reject) => {
   let raw = "";
-  req.on("data", (d) => { raw += d; if (raw.length > 1e6) req.destroy(); });
+  // 8MB cap: menu-image data URLs (base64) can exceed the default 1MB.
+  req.on("data", (d) => { raw += d; if (raw.length > 8e6) req.destroy(); });
   req.on("end", () => { try { resolve(raw ? JSON.parse(raw) : {}); } catch (e) { reject(e); } });
 });
 
@@ -37,7 +39,7 @@ const server = createServer((req, res) => {
     return send(res, 200, {
       service: "rollaway-agents-runtime", model: config.MODEL, inference: config.URL,
       tool_base_url: toolBase, key_present: haveKey(),
-      routes: ["GET /", "POST /chat (legacy, router)", "POST /spot_scout (single-turn, no router)", "POST /permit_copilot (direct)", "POST /menu_overlap", "POST /form_fill (doc ingestion)", "GET /form_pdf?source= (verified PDF proxy)"]
+      routes: ["GET /", "POST /chat (legacy, router)", "POST /spot_scout (single-turn, no router)", "POST /permit_copilot (direct)", "POST /menu_extract", "POST /menu_overlap", "POST /form_fill (doc ingestion)", "GET /form_pdf?source= (verified PDF proxy)"]
     });
   }
 
@@ -78,6 +80,20 @@ const server = createServer((req, res) => {
         send(res, 200, debug ? { envelope: env, meta: { direct: true, tool_calls: trace.length, valid: errors.length === 0, errors } } : env);
       } catch (e) {
         send(res, 500, { agent: "permit_copilot", reply_markdown: `error: ${e.message}`, citations: [], map_actions: [], checklist: null });
+      }
+    }).catch(() => send(res, 400, { error: "invalid JSON" }));
+    return;
+  }
+
+  // Menu extraction (sign-up) — { input_type, text|url|image_data_url, vendor_id, vendor_type }.
+  // Uses Gradient serverless inference (text/url via parseMenuText, images via the vision model).
+  if (req.method === "POST" && url.pathname === "/menu_extract") {
+    readBody(req).then(async (payload) => {
+      try {
+        const r = await extractMenu(payload);
+        send(res, 200, r);
+      } catch (e) {
+        send(res, 200, { ok: false, error: e.message });
       }
     }).catch(() => send(res, 400, { error: "invalid JSON" }));
     return;

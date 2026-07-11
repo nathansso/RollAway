@@ -5,10 +5,8 @@ import RecommendationTray from './components/map/RecommendationTray'
 import SpotPanel from './components/spot/SpotPanel'
 import PermitChecklist from './components/permits/PermitChecklist'
 import AppHeader from './components/shell/AppHeader'
-import BottomNav from './components/shell/BottomNav'
 import OfflineGate from './components/shell/OfflineGate'
 import ProfileEditor from './components/onboarding/ProfileEditor'
-import SessionSetup from './components/onboarding/SessionSetup'
 import FullScreenLoader from './components/common/FullScreenLoader'
 import { useAppStore } from './store'
 
@@ -22,6 +20,8 @@ export default function App() {
   const selectedSpotId = useAppStore((state) => state.selectedSpotId)
   const recommendationStatus = useAppStore((state) => state.recommendationStatus)
   const loadBaseData = useAppStore((state) => state.loadBaseData)
+  const requestLocation = useAppStore((state) => state.requestLocation)
+  const startRecommendations = useAppStore((state) => state.startRecommendations)
   const [mapViewReady, setMapViewReady] = useState(false)
   const [fontsReady, setFontsReady] = useState(false)
   const [mapRevealed, setMapRevealed] = useState(false)
@@ -60,12 +60,28 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (appPhase === 'session' || appPhase === 'profile') {
+    if (appPhase === 'profile') {
       setMapRevealed(false)
       setMapViewReady(false)
     }
     if (appPhase === 'loading_recommendations') setMapRevealed(false)
   }, [appPhase])
+
+  // #14: once past the profile step, land on the recommendation map without a
+  // separate setup page. Request geolocation once and auto-run the FIRST search
+  // (the initial loading_recommendations phase). On the map, changing the time
+  // or location does NOT auto-run — the user taps "Find spots", which re-runs
+  // inline without the full-screen loader.
+  useEffect(() => {
+    if (appPhase !== 'loading_recommendations') return
+    if (recommendationStatus !== 'idle') return
+    if (locationStatus === 'idle') {
+      requestLocation()
+      return
+    }
+    if (locationStatus === 'requesting') return
+    void startRecommendations()
+  }, [appPhase, recommendationStatus, locationStatus, requestLocation, startRecommendations])
 
   useEffect(() => {
     if (
@@ -100,14 +116,13 @@ export default function App() {
             <SessionControls />
           </div>
           {!recommendationRevealPending && (
-            <div className="absolute inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20">
+            <div className="absolute inset-x-0 bottom-[calc(1.25rem+env(safe-area-inset-bottom))] z-20">
               <RecommendationTray />
             </div>
           )}
         </div>
 
         {activeTab === 'permits' && <PermitChecklist />}
-        <BottomNav />
       </div>
       {activeTab === 'map' && <SpotPanel />}
       <ProfileEditor />
@@ -118,21 +133,6 @@ export default function App() {
   if (appPhase === 'profile') {
     return (
       <OfflineGate>
-        <ProfileEditor />
-      </OfflineGate>
-    )
-  }
-
-  if (appPhase === 'session') {
-    return (
-      <OfflineGate>
-        <div
-          className="contents"
-          inert={profileEditorOpen ? true : undefined}
-          aria-hidden={profileEditorOpen}
-        >
-          <SessionSetup />
-        </div>
         <ProfileEditor />
       </OfflineGate>
     )

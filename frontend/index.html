@@ -19,6 +19,13 @@
     <link rel="preconnect" href="https://events.mapbox.com" />
     <link rel="apple-touch-icon" href="/pwa-192x192.png" />
     <title>Rollaway — Find your next block</title>
+    <!-- Critical first-paint background so the brand cream shows before the
+         bundled stylesheet loads (no white flash on landing or app). -->
+    <style>
+      html {
+        background: #fff7ed;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

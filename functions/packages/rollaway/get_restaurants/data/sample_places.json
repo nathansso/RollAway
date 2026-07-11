@@ -1,0 +1,22 @@
+{
+  "_synthetic": true,
+  "_note": "TODO(real-key) — fixture used only when GOOGLE_PLACES_KEY is unset or Places is unreachable. Hand-placed food establishments approximating the real SoMa/downtown SF mix so bucketing/saturation logic is exercised.",
+  "places": [
+    { "name": "SoMa Taqueria", "types": ["restaurant", "mexican_restaurant"], "price_level": 1, "lat": 37.7803, "lng": -122.3999 },
+    { "name": "Burrito Bandito", "types": ["restaurant", "mexican_restaurant"], "price_level": 1, "lat": 37.7811, "lng": -122.4008 },
+    { "name": "Patty Palace Burgers", "types": ["hamburger_restaurant"], "price_level": 2, "lat": 37.7794, "lng": -122.4013 },
+    { "name": "Third St Coffee", "types": ["coffee_shop", "cafe"], "price_level": 1, "lat": 37.7808, "lng": -122.3992 },
+    { "name": "Ritual Grind Cafe", "types": ["cafe"], "price_level": 2, "lat": 37.7786, "lng": -122.4021 },
+    { "name": "Bayside Espresso", "types": ["coffee_shop"], "price_level": 1, "lat": 37.7815, "lng": -122.3986 },
+    { "name": "Golden Wok", "types": ["chinese_restaurant"], "price_level": 2, "lat": 37.7799, "lng": -122.4029 },
+    { "name": "Sushi Ichiban", "types": ["japanese_restaurant", "sushi_restaurant"], "price_level": 3, "lat": 37.7822, "lng": -122.4005 },
+    { "name": "Pho Harbor", "types": ["vietnamese_restaurant"], "price_level": 1, "lat": 37.7779, "lng": -122.3998 },
+    { "name": "Slice House Pizza", "types": ["pizza_restaurant"], "price_level": 1, "lat": 37.7806, "lng": -122.4018 },
+    { "name": "The Codfather Seafood", "types": ["seafood_restaurant"], "price_level": 3, "lat": 37.7791, "lng": -122.3979 },
+    { "name": "Sweet Tooth Desserts", "types": ["dessert_shop", "bakery"], "price_level": 2, "lat": 37.7817, "lng": -122.4024 },
+    { "name": "Boba Bliss", "types": ["tea_house"], "price_level": 1, "lat": 37.7801, "lng": -122.3985 },
+    { "name": "Deli on Howard", "types": ["sandwich_shop", "deli"], "price_level": 1, "lat": 37.7788, "lng": -122.4041 },
+    { "name": "Smokehouse BBQ Co", "types": ["barbecue_restaurant"], "price_level": 2, "lat": 37.7826, "lng": -122.3993 },
+    { "name": "Halal Guys SoMa", "types": ["restaurant"], "price_level": 1, "lat": 37.7797, "lng": -122.4046 }
+  ]
+}

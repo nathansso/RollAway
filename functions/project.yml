@@ -20,6 +20,10 @@ packages:
       FUNCTIONS_BASE_URL: "${FUNCTIONS_BASE_URL}"
       SPOT_SCOUT_URL: "${SPOT_SCOUT_URL}"
       MENU_RAG_URL: "${MENU_RAG_URL}"
+      # Phase 2 (Supabase): get_foot_traffic reads station_hourly via PostgREST
+      # (anon key, read-only tables). Empty => bundled station_hourly.json.
+      SUPABASE_URL: "${SUPABASE_URL}"
+      SUPABASE_ANON_KEY: "${SUPABASE_ANON_KEY}"
     functions:
       - name: get_vendors
         runtime: "nodejs:18"

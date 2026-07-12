@@ -43,6 +43,49 @@ const HOURLY = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'data', 'station_hourly.json'), 'utf8')
 );
 
+// Phase 2 (docs/MIGRATION-PLAN.md §2a.3): station_hourly lives in Supabase so
+// loading a new Bay Wheels month is a data operation, not a redeploy. The
+// bundled station_hourly.json stays as the offline fallback; the §B.3 output
+// contract is unchanged either way.
+const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
+const DAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+const SB_META_TTL_MS = 60 * 60 * 1000;
+
+/**
+ * Sum of avg events/hour at the nearby stations for day+hour, read from
+ * Supabase station_hourly. Returns { historical_avg, p95 } or null so the
+ * caller falls back to the bundled JSON (no Supabase env, table empty, or a
+ * transient error).
+ */
+async function supabaseHourly(shortIds, day, hour) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || shortIds.length === 0) return null;
+  const headers = {
+    apikey: SUPABASE_ANON_KEY,
+    authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+  };
+  const meta = await cache.getOrSet('sb_meta', SB_META_TTL_MS, () =>
+    fetchJSON(`${SUPABASE_URL}/rest/v1/station_hourly_meta?select=*`, {
+      timeoutMs: 4000, retries: 1, headers,
+    })
+  );
+  if (!Array.isArray(meta) || meta.length === 0) return null; // not loaded yet
+  const inList = shortIds.map((id) => `"${id}"`).join(',');
+  const rows = await fetchJSON(
+    `${SUPABASE_URL}/rest/v1/station_hourly` +
+      `?station_short_id=in.(${encodeURIComponent(inList)})` +
+      `&day_of_week=eq.${DAY_INDEX[day]}&hour=eq.${hour}` +
+      '&select=station_short_id,avg_events',
+    { timeoutMs: 4000, retries: 1, headers }
+  );
+  let sum = 0;
+  for (const row of rows) sum += row.avg_events || 0;
+  return {
+    historical_avg: Math.round(sum * 10) / 10,
+    p95: meta[0].p95_events_per_station_hour || 1,
+  };
+}
+
 function sfNow() {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Los_Angeles', weekday: 'short', hour: '2-digit', hour12: false,
@@ -69,13 +112,28 @@ exports.main = guard(async (args) => {
       (s) => haversineMeters(lat, lng, s.lat, s.lon) <= radius_m
     );
 
-    // historical: precomputed avg events/hour for the requested day+hour
+    // historical: precomputed avg events/hour for the requested day+hour —
+    // Supabase station_hourly first, bundled JSON as the offline fallback.
     let historical_avg = 0;
-    for (const s of nearby) {
-      const rec = HOURLY.stations[s.short_name] || HOURLY.stations[s.station_id];
-      if (rec && rec[day]) historical_avg += rec[day][hour] || 0;
+    let p95Override = null;
+    let fromSupabase = null;
+    try {
+      fromSupabase = await supabaseHourly(
+        nearby.map((s) => s.short_name || s.station_id), day, hour
+      );
+    } catch (err) {
+      console.error('supabase station_hourly degraded (bundled JSON):', err.message);
     }
-    historical_avg = Math.round(historical_avg * 10) / 10;
+    if (fromSupabase) {
+      historical_avg = fromSupabase.historical_avg;
+      p95Override = fromSupabase.p95;
+    } else {
+      for (const s of nearby) {
+        const rec = HOURLY.stations[s.short_name] || HOURLY.stations[s.station_id];
+        if (rec && rec[day]) historical_avg += rec[day][hour] || 0;
+      }
+      historical_avg = Math.round(historical_avg * 10) / 10;
+    }
 
     // live: degrade to historical-only scoring if station_status is down
     let live_activity = 0;
@@ -104,7 +162,7 @@ exports.main = guard(async (args) => {
     }
 
     // score: historical percentile vs citywide p95 activity for this many stations
-    const p95 = HOURLY.meta.p95_events_per_station_hour || 1;
+    const p95 = p95Override || HOURLY.meta.p95_events_per_station_hour || 1;
     const histScore = nearby.length === 0
       ? 0
       : Math.min(1, historical_avg / (p95 * nearby.length));

@@ -1,12 +1,11 @@
 import { PDFDocument } from 'pdf-lib'
 import { PDF_FIELD_MAPS } from './pdfFieldMaps'
+import { endpointUrl } from './config'
 import type { VendorType } from '../types/contract'
 
-const FORM_PDF_BASE =
-  (import.meta.env.VITE_FORM_PDF_URL as string | undefined) ?? 'http://localhost:8091/form_pdf'
-
 export function formPdfProxyUrl(source: string): string {
-  return `${FORM_PDF_BASE}?source=${encodeURIComponent(source)}`
+  const base = endpointUrl('FORM_PDF_URL') || 'http://localhost:8091/form_pdf'
+  return `${base}?source=${encodeURIComponent(source)}`
 }
 
 // Fetch the verified agency PDF through our same-origin-friendly runtime proxy (the agency hosts

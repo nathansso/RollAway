@@ -1,0 +1,37 @@
+# Rollaway frontend — Railway static container (docs/MIGRATION-PLAN.md §1.2).
+# Build stage compiles the Vite bundle; runtime stage is Caddy serving dist/
+# with /config.json written from env at startup (see docker-entrypoint.sh).
+#
+# Railway: set the service Root Directory to `frontend` and the Dockerfile
+# path to `Dockerfile.railway`. Backend endpoint URLs are RUNTIME env vars
+# (no rebuild to change); only the toggles/keys below are baked at build time.
+
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+
+# Build-time variables (dev/demo toggles + public browser keys). Railway
+# exposes service variables to Docker builds as build args automatically.
+ARG VITE_USE_FIXTURES=false
+ARG VITE_FIXTURE_DELAY_MS=1100
+ARG VITE_FORCE_FIRST_TIME_USER=
+ARG VITE_MAPBOX_TOKEN=
+ARG VITE_GOOGLE_MAPS_BROWSER_KEY=
+ENV VITE_USE_FIXTURES=$VITE_USE_FIXTURES \
+    VITE_FIXTURE_DELAY_MS=$VITE_FIXTURE_DELAY_MS \
+    VITE_FORCE_FIRST_TIME_USER=$VITE_FORCE_FIRST_TIME_USER \
+    VITE_MAPBOX_TOKEN=$VITE_MAPBOX_TOKEN \
+    VITE_GOOGLE_MAPS_BROWSER_KEY=$VITE_GOOGLE_MAPS_BROWSER_KEY
+
+RUN npm run build
+
+FROM caddy:2-alpine
+COPY --from=build /app/dist /srv
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+EXPOSE 8080
+ENTRYPOINT ["/docker-entrypoint.sh"]

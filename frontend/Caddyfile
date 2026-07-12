@@ -1,0 +1,30 @@
+# Rollaway frontend — Railway static container (docs/MIGRATION-PLAN.md §1.2).
+# Serves the Vite build from /srv with SPA routing. index.html and config.json
+# must never be cached (service-worker + runtime-config safety); hashed assets
+# are immutable.
+
+{
+	admin off
+	auto_https off
+	persist_config off
+}
+
+:{$PORT:8080} {
+	root * /srv
+	encode zstd gzip
+
+	# Runtime config + app shell: always revalidate.
+	header /config.json Cache-Control "no-cache, must-revalidate"
+	header /index.html Cache-Control "no-cache, must-revalidate"
+	# Service worker files must revalidate so updates roll out promptly.
+	header /sw.js Cache-Control "no-cache, must-revalidate"
+	header /registerSW.js Cache-Control "no-cache, must-revalidate"
+	header /manifest.webmanifest Cache-Control "no-cache, must-revalidate"
+
+	# Vite emits content-hashed filenames under /assets — cache forever.
+	header /assets/* Cache-Control "public, max-age=31536000, immutable"
+
+	# SPA catch-all: unknown paths serve the app shell.
+	try_files {path} /index.html
+	file_server
+}

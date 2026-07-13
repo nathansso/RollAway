@@ -12,10 +12,13 @@ packages:
       # + Geocoding (issue #17). Not referrer-restricted; keep server-only.
       GOOGLE_MAPS_SERVER_KEY: "${GOOGLE_MAPS_SERVER_KEY}"
       TICKETMASTER_KEY: "${TICKETMASTER_KEY}"
-      SFMTA_EVENTS_URL: "${SFMTA_EVENTS_URL}"
-      # Demo-reliability + orchestrator (recommend_spots) vars. All must EXIST in
-      # functions/.env (empty is fine — each has a documented fallback).
-      DEMO_DATA_MODE: "${DEMO_DATA_MODE}"
+      # doctl 1.163 refuses to substitute vars whose .env value is EMPTY, and
+      # these two are intentionally empty in production (empty = bundled SFMTA
+      # sample / live-data mode). Hardcoded ""; restore the dollar-brace
+      # substitution (it scans comments too!) if you ever set a real value
+      # in functions/.env.
+      SFMTA_EVENTS_URL: ""
+      DEMO_DATA_MODE: ""
       MAPBOX_TOKEN: "${MAPBOX_TOKEN}"
       FUNCTIONS_BASE_URL: "${FUNCTIONS_BASE_URL}"
       SPOT_SCOUT_URL: "${SPOT_SCOUT_URL}"

@@ -1,8 +1,21 @@
 # Rollaway
 
-Rollaway is a **map-first location-intelligence and permit-planning PWA for mobile food vendors in San Francisco**. It ranks legal, low-competition places to set up for a chosen time window, explains the reasoning, and turns the city's four-agency permit maze into a single guided checklist.
+Rollaway is a **map-first location-intelligence and permit-planning PWA for mobile food vendors — built exclusively for San Francisco**. It ranks legal, low-competition places to set up for a chosen time window, explains the reasoning, and turns the city's four-agency permit maze into a single guided checklist.
 
-The core scoring, hard constraints (setbacks, closures), travel time, and legality are computed **deterministically** in DigitalOcean Functions — never inside an LLM. Language models are used only to phrase explanations and to read menus/forms, always grounded in precomputed signals and cited sources.
+The core scoring, hard constraints (setbacks, closures), travel time, and legality are computed **deterministically in code — never inside an LLM**. Language models are used only to phrase explanations and to read menus/forms, always grounded in precomputed signals and cited sources.
+
+---
+
+## Bound to San Francisco, on purpose
+
+Rollaway is not a multi-city platform with an SF skin — the city is baked into every layer, and that locality is where the correctness comes from:
+
+- **The law is SF law.** Setback rules (75 ft from restaurant entrances, 500 ft from schools, hydrant clearance, sidewalk width) are encoded from **SF Public Works Order 182101** and related city rules, and every legality check cites its source document (`agents/kb/dpw-182101.md` and friends).
+- **The permit maze is SF's, agency by agency.** The Permit Copilot walks the real four-agency flow — **SF Public Works** (Mobile Food Facility permit), **SF Dept. of Public Health**, **SF Fire Department**, and the **SF Treasurer & Tax Collector** (business registration) — with the actual agency forms, fees, and ordering constraints.
+- **The data feeds are city feeds.** Vendor permits and competition come from **DataSF** (Socrata), street/event closures from **SFMTA**, foot traffic from a full year of **Bay Wheels** trip history aggregated per station/day-of-week/hour, and events from venue listings inside city limits.
+- **The geography is assumed.** Candidate spots, travel estimates, the schematic fallback map, even the demo fixtures — all San Francisco. There is no city switch.
+
+Porting Rollaway elsewhere would mean re-encoding another city's vending ordinances, permit agencies, and open-data feeds — by design, the app would rather be exactly right about one city than vaguely right about many.
 
 ---
 
@@ -18,60 +31,44 @@ The core scoring, hard constraints (setbacks, closures), travel time, and legali
 
 ---
 
-## Tech stack
+## Production stack
 
-**Frontend** (`frontend/`)
-- React 19 + TypeScript, built with Vite 8 (Rolldown)
-- Tailwind CSS v4 (`@theme` design tokens in `src/index.css`)
-- Zustand state machine (no router library; path-based routing in `main.tsx`)
-- Mapbox GL JS (code-split so it never ships with the landing page)
-- shadcn-style UI primitives under `src/components/ui/` with the `@/` path alias and `src/lib/utils.ts` (`cn`); framer-motion for motion
-- `vite-plugin-pwa` (Workbox) for the installable app
-- Tooling: Vitest + Testing Library (unit), Playwright (e2e + Mapbox), oxlint, Prettier
+Four managed pieces, each doing the one thing it's good at:
 
-**Agents runtime** (`agents/`)
-- A dependency-free Node `http` server (`agents/runtime/server.mjs`) on **DigitalOcean Gradient** serverless inference
-- Routes: `GET /`, `POST /chat`, `POST /spot_scout`, `POST /permit_copilot`, `POST /menu_extract`, `POST /menu_overlap`, `POST /form_fill`, `GET /form_pdf`
-- Menu-RAG extraction/overlap and grounded form-fill; a §A response envelope validated by evals
+| Layer | Runs on | What it does |
+| --- | --- | --- |
+| **Frontend** | **Railway** (Caddy container) | Vite/React PWA. Endpoint URLs come from a runtime `/config.json` written from env vars at container start — repointing the backend is a restart, not a rebuild. |
+| **Agents backend** | **Railway** (FastAPI) | Spot Scout, Permit Copilot, menu extract/overlap, grounded form-fill, verified PDF proxy, plus an `/api/*` gateway in front of the Functions. Python port of the original Node runtime; same §A envelope, guardrails, and citation rules, pinned by the eval suite. |
+| **Data** | **Supabase** (Postgres) | pgvector knowledge base (rule docs, HNSW cosine index) for semantic retrieval; `station_hourly` — one year of Bay Wheels trips folded to per-station/day-of-week/hour averages — read live by `get_foot_traffic`; user profiles/menus with row-level security. |
+| **Signals & scoring** | **DigitalOcean Functions** | Seven functions: `recommend_spots` (the deterministic orchestrator: base signals → ranking/legality/travel → one Spot Scout call for prose) plus `get_vendors`, `get_closures`, `get_events`, `get_foot_traffic`, `get_restaurants`, `check_clearance`. |
+| **Inference** | **DigitalOcean Gradient** | `anthropic-claude-haiku-4.5` for chat, `bge-m3` (1024-dim) for embeddings. The only place an LLM runs — and it never does math or law. |
 
-**Serverless data & scoring** (`functions/`)
-- Seven DigitalOcean Functions: `recommend_spots`, `get_vendors`, `get_closures`, `get_events`, `get_foot_traffic`, `get_restaurants`, `check_clearance`
-- `recommend_spots` is the orchestrator: base signals → deterministic ranking/legality/travel → Spot Scout explanation
-- `functions/scripts/local_gateway.mjs` is a CORS proxy for local live testing
+```text
+React PWA (Railway / Caddy)          reads /config.json at boot (runtime env)
+  |-- POST /api/recommend_spots --> FastAPI backend (Railway)
+  |-- GET  /api/vendors            |-- gateway --> DO Function recommend_spots
+  |-- GET  /api/closures           |                 |-- six signal Functions
+  |-- POST /permit_copilot         |                 |-- get_foot_traffic --> Supabase station_hourly
+  |-- POST /menu_extract           |                 `-- POST back to FastAPI /spot_scout (why-lines)
+  `-- GET  /form_pdf               |-- pgvector KB retrieval --> Supabase
+                                   `-- chat + embeddings --> DO Gradient inference
+```
 
-**External data sources**
-- SF open data (DataSF / Socrata), Bay Wheels (foot-traffic proxy), Google Places & Street View, Ticketmaster (events), Mapbox (tiles + Matrix travel times), DigitalOcean Gradient (inference)
+The frontend normalizes every backend envelope in `frontend/src/lib/apiClient.ts` and re-derives display verdicts by relative quality in `frontend/src/lib/recommendations.ts`. Pinned request/response shapes live in `docs/ARCHITECTURE.md` and `docs/CONTRACTS.md`; the migration itself is documented in `docs/MIGRATION-PLAN.md` and the cutover runbook `docs/DEPLOY-RAILWAY-SUPABASE.md`.
 
 ---
 
 ## Repository layout
 
 ```text
-frontend/    React 19 + Vite PWA (the app at /app, marketing landing at /)
+frontend/    React 19 + Vite PWA (app at /app, landing at /) + Dockerfile.railway/Caddyfile
+backend/     FastAPI agents backend (Railway) — app code, tests, KB ingest script
+supabase/    SQL migrations (pgvector KB, Bay Wheels, users/RLS) + Bay Wheels import script
 functions/   DigitalOcean Functions (recommend_spots + six signal functions) + local gateway
-agents/      Gradient runtime (spot scout, permit copilot, menu RAG, form fill) + evals + KB
-docs/        ARCHITECTURE.md, CONTRACTS.md, and implementation notes
-.do/         DigitalOcean App Platform frontend spec
+agents/      Instructions, knowledge base, menu-RAG corpora, and the eval suite
+docs/        ARCHITECTURE.md, CONTRACTS.md, MIGRATION-PLAN.md, deploy runbook
 ISSUE.md     Issue-resolution workflow for collaborators/agents
 ```
-
----
-
-## Architecture
-
-```text
-React PWA (frontend/)
-  |-- POST VITE_RECOMMEND_SPOTS_URL --> recommend_spots Function
-  |                                      |-- base signal Functions (vendors, closures, foot traffic, ...)
-  |                                      |-- POST MENU_RAG_URL --> agents /menu_overlap
-  |                                      `-- POST SPOT_SCOUT_URL --> agents /spot_scout
-  |-- GET  VITE_VENDORS_URL ----------> get_vendors Function
-  |-- GET  VITE_CLOSURES_URL ---------> get_closures Function
-  |-- POST VITE_PERMIT_CHECKLIST_URL -> agents /permit_copilot
-  `-- POST VITE_MENU_EXTRACT_URL -----> agents /menu_extract
-```
-
-The frontend normalizes every backend envelope in `frontend/src/lib/apiClient.ts`, and re-derives display verdicts by relative quality in `frontend/src/lib/recommendations.ts`. See `docs/ARCHITECTURE.md` and `docs/CONTRACTS.md` for the pinned request/response shapes.
 
 ---
 
@@ -90,72 +87,88 @@ npm run dev            # http://localhost:5173  (landing at /, app at /app)
 
 `VITE_MAPBOX_TOKEN` is optional — without it the app falls back to the schematic SF map.
 
-### Live mode (full local stack)
-
-Point the frontend at the local gateway, which proxies to the deployed Functions and a local agents runtime. See `RUN-LOCAL-LIVE.md` for the full walkthrough.
+### Live mode (local frontend, real backend)
 
 ```bash
-# 1. Agents runtime (Gradient inference) on :8080
-GRADIENT_API_KEY=<model key> TOOL_BASE_URL=http://localhost:8787 node agents/runtime/server.mjs
+# 1. FastAPI backend on :8000 (see backend/README.md)
+cd backend && pip install -r requirements.txt
+GRADIENT_API_KEY=<model key> uvicorn app.main:app --port 8000
 
-# 2. CORS gateway on :8090 (proxies Functions + runtime)
-node functions/scripts/local_gateway.mjs
-
-# 3. frontend/.env.local
+# 2. frontend/.env.local
 #    VITE_USE_FIXTURES=false
-#    VITE_RECOMMEND_SPOTS_URL=http://localhost:8090/recommend_spots
-#    VITE_VENDORS_URL=http://localhost:8090/get_vendors
-#    VITE_CLOSURES_URL=http://localhost:8090/get_closures
-#    VITE_PERMIT_CHECKLIST_URL=http://localhost:8090/permit_copilot
-#    VITE_MENU_EXTRACT_URL=http://localhost:8090/menu_extract
+#    VITE_RECOMMEND_SPOTS_URL=http://localhost:8000/api/recommend_spots
+#    VITE_VENDORS_URL=http://localhost:8000/api/vendors
+#    VITE_CLOSURES_URL=http://localhost:8000/api/closures
+#    VITE_PERMIT_CHECKLIST_URL=http://localhost:8000/permit_copilot
+#    VITE_MENU_EXTRACT_URL=http://localhost:8000/menu_extract
 cd frontend && npm run dev
 ```
 
-Deploying for real? See `functions/DEPLOY.md`, `agents/RUNBOOK.md`, and `DEPLOY-recommend_spots-handoff.md`. Do not disable fixture mode until the live URLs are populated — missing endpoints surface recoverable configuration errors rather than passing fixtures off as live data.
+Deploying for real? `docs/DEPLOY-RAILWAY-SUPABASE.md` is the runbook (Railway services, Supabase migrations, data loads, DO Functions redeploy). Do not disable fixture mode until live URLs are populated — missing endpoints surface recoverable configuration errors rather than passing fixtures off as live data.
 
 ---
 
 ## Environment variables
 
-**Frontend** (`frontend/.env.local`, build-time — Vite embeds these; see `frontend/.env.example`)
+**Frontend — runtime** (Railway service vars, written to `/config.json` at container start; change = restart, no rebuild)
+
+| Variable | Purpose |
+| --- | --- |
+| `RECOMMEND_SPOTS_URL` / `VENDORS_URL` / `CLOSURES_URL` | Recommendation + map seed endpoints. |
+| `PERMIT_CHECKLIST_URL` / `MENU_EXTRACT_URL` / `FORM_PDF_URL` | Permit Copilot, menu ingestion, verified PDF proxy. |
+
+**Frontend — build-time** (Vite embeds these; local `.env.local` or Railway build args)
 
 | Variable | Purpose |
 | --- | --- |
 | `VITE_MAPBOX_TOKEN` | Public Mapbox token (`pk.*`). Blank ⇒ schematic map. Restrict to your origins. |
-| `VITE_USE_FIXTURES` | `true` = bundled data, no business-API calls. `false` = live endpoints below. |
-| `VITE_FIXTURE_DELAY_MS` | Artificial fixture latency (demonstrates the loader). |
 | `VITE_GOOGLE_MAPS_BROWSER_KEY` | Browser key for Street View + Places (New). HTTP-referrer restricted; never the server key. |
-| `VITE_RECOMMEND_SPOTS_URL` / `VITE_VENDORS_URL` / `VITE_CLOSURES_URL` / `VITE_PERMIT_CHECKLIST_URL` / `VITE_MENU_EXTRACT_URL` | Live endpoints used only when fixtures are off. |
+| `VITE_USE_FIXTURES` / `VITE_FIXTURE_DELAY_MS` | Fixture mode toggle + artificial latency. |
+| `VITE_*_URL` fallbacks | Used only when `/config.json` is absent (local dev). |
 
-**Backend** (agents runtime / Functions — never committed)
+**Backend (FastAPI on Railway)**
 
 | Variable | Purpose |
 | --- | --- |
-| `GRADIENT_API_KEY` / DO model access keys | Gradient serverless inference. |
-| `TOOL_BASE_URL` | Agent runtime tool base (default `http://localhost:8787`). |
-| `SOCRATA_APP_TOKEN` | SF open data (DataSF). |
-| `GOOGLE_PLACES_KEY` / `GOOGLE_MAPS_SERVER_KEY` | Server-side Places / Routes / Geocoding. |
+| `GRADIENT_API_KEY` | DO Gradient inference (chat + embeddings). |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` | pgvector KB retrieval + menu persistence. |
+| `FUNCTIONS_BASE_URL` | DO Functions namespace base for the `/api/*` gateway. |
+| `CORS_ORIGIN` | The Railway frontend origin. |
+
+**Functions (`functions/.env`, substituted into `project.yml` at deploy)**
+
+| Variable | Purpose |
+| --- | --- |
+| `SOCRATA_APP_TOKEN` | DataSF open data. |
+| `GOOGLE_PLACES_KEY` / `GOOGLE_MAPS_SERVER_KEY` | Server-side Places / Distance Matrix / Geocoding. |
 | `TICKETMASTER_KEY` | Event opportunities. |
 | `MAPBOX_TOKEN` | Server-side Matrix API for live travel times. |
-| `FUNCTIONS_BASE_URL` / `SPOT_SCOUT_URL` / `MENU_RAG_URL` | Wiring for `recommend_spots`. |
+| `SPOT_SCOUT_URL` / `MENU_RAG_URL` / `FUNCTIONS_BASE_URL` | Wiring from `recommend_spots` to the FastAPI backend. |
+| `SUPABASE_URL` / `SUPABASE_ANON_KEY` | `get_foot_traffic` reads `station_hourly` live (empty ⇒ bundled snapshot). |
 
 ---
 
 ## Development & testing
 
-All commands run from `frontend/`:
-
 ```bash
+# frontend/
 npm run dev         # Vite dev server (HMR)
 npm run build       # tsc -b && vite build
 npm run lint        # oxlint
-npm test            # Vitest unit suite (fixture mode pinned via vitest.config.ts)
-npm run test:e2e    # Playwright end-to-end (project: mobile-chromium)
+npm test            # Vitest unit suite
+npm run test:e2e    # Playwright end-to-end (mobile-chromium)
 npm run test:mapbox # Playwright Mapbox-specific suite
 npm run test:pwa    # build + offline PWA test
+
+# backend/
+python -m pytest    # FastAPI agents backend suite
+
+# agents evals — the release gate
+node agents/evals/run.mjs           # offline, fixture-grounded
+node agents/evals/run.mjs --live    # replays every seed against a live backend
 ```
 
-Function suites live beside each function (e.g. `functions/packages/rollaway/recommend_spots && npm test`); agent evals run via `node agents/evals/run.mjs`. Conventions for picking up GitHub issues are in `ISSUE.md`.
+The `--live` eval gate pins the §A response envelope, guardrails (jailbreak refusal, PII handling), and §E citation behavior against real Gradient inference — it must be GREEN before any cutover. Function suites live beside each function (e.g. `functions/packages/rollaway/recommend_spots && npm test`). Conventions for picking up GitHub issues are in `ISSUE.md`.
 
 ---
 
@@ -170,4 +183,4 @@ Function suites live beside each function (e.g. `functions/packages/rollaway/rec
 
 ## Status
 
-All three layers — frontend, Functions, and agents runtime — are integrated on `main`, with unit, e2e, Mapbox, and offline-PWA coverage plus agent evals. The checked-in default is demo-safe: `VITE_USE_FIXTURES=true`, so the app is code-connected to the backend contracts but calls no deployed service until endpoints are configured and fixtures are disabled.
+Deployed and verified in production: frontend and FastAPI backend on Railway, Supabase carrying the pgvector KB and a full year of Bay Wheels foot-traffic aggregates (2025-07 → 2026-06), all seven DO Functions repointed at the new backend. The live eval gate is GREEN against production, and the full user flow — landing → onboarding (real Gradient menu extraction) → map with ranked spots and LLM why-lines — passes a browser smoke test with zero console errors. The checked-in default remains demo-safe (`VITE_USE_FIXTURES=true`), so a fresh clone calls no deployed service until endpoints are configured.

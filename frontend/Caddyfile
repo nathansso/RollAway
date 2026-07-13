@@ -1,7 +1,8 @@
 # Rollaway frontend — Railway static container (docs/MIGRATION-PLAN.md §1.2).
-# Serves the Vite build from /srv with SPA routing. index.html and config.json
-# must never be cached (service-worker + runtime-config safety); hashed assets
-# are immutable.
+# Serves the Vite build from /srv with SPA routing. Everything except the
+# content-hashed /assets bundle revalidates on every load (service-worker +
+# runtime-config safety: index.html, config.json, sw.js, manifest all reach
+# the SPA catch-all or root, so a path-list matcher would miss rewrites).
 
 {
 	admin off
@@ -13,16 +14,14 @@
 	root * /srv
 	encode zstd gzip
 
-	# Runtime config + app shell: always revalidate.
-	header /config.json Cache-Control "no-cache, must-revalidate"
-	header /index.html Cache-Control "no-cache, must-revalidate"
-	# Service worker files must revalidate so updates roll out promptly.
-	header /sw.js Cache-Control "no-cache, must-revalidate"
-	header /registerSW.js Cache-Control "no-cache, must-revalidate"
-	header /manifest.webmanifest Cache-Control "no-cache, must-revalidate"
-
 	# Vite emits content-hashed filenames under /assets — cache forever.
-	header /assets/* Cache-Control "public, max-age=31536000, immutable"
+	@immutable path /assets/*
+	header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+	# App shell, config.json, service worker, manifest, SPA routes: always
+	# revalidate so new deploys and runtime-config changes surface promptly.
+	@mutable not path /assets/*
+	header @mutable Cache-Control "no-cache, must-revalidate"
 
 	# SPA catch-all: unknown paths serve the app shell.
 	try_files {path} /index.html

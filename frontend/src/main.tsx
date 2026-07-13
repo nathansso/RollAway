@@ -1,6 +1,7 @@
 import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import { initRuntimeConfig } from './lib/config'
 import LandingPage from './components/landing/LandingPage'
 
 // The map app (and its Mapbox bundle) is code-split so it only downloads when a
@@ -22,14 +23,19 @@ const appBootSplash = (
   />
 )
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    {isAppRoute ? (
-      <Suspense fallback={appBootSplash}>
-        <App />
-      </Suspense>
-    ) : (
-      <LandingPage />
-    )}
-  </StrictMode>,
-)
+// Runtime config (/config.json) resolves before any component can issue an API
+// call. initRuntimeConfig never rejects — absent/malformed config falls back to
+// the build-time VITE_* env, so dev/test/e2e boot exactly as before.
+void initRuntimeConfig().then(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      {isAppRoute ? (
+        <Suspense fallback={appBootSplash}>
+          <App />
+        </Suspense>
+      ) : (
+        <LandingPage />
+      )}
+    </StrictMode>,
+  )
+})

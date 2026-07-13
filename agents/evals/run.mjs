@@ -574,25 +574,47 @@ async function runOffline() {
 // ---------------------------------------------------------------------------------------
 async function runLive() {
   const url = process.env.GRADIENT_ENDPOINT_URL;
-  const key = process.env.GRADIENT_AGENT_KEY;
-  if (!url || !key) {
-    console.log(c.yellow("\n[live] SKIPPED — set GRADIENT_ENDPOINT_URL and GRADIENT_AGENT_KEY to replay seeds against the deployed routed endpoint."));
-    console.log(c.dim("[live] (This is expected until the human deploy step in RUNBOOK.md is done.)"));
+  const key = process.env.GRADIENT_AGENT_KEY || "";
+  if (!url) {
+    console.log(c.yellow("\n[live] SKIPPED — set GRADIENT_ENDPOINT_URL to the agents backend (FastAPI service or legacy runtime) to replay seeds."));
     return 0;
   }
+  const authHeaders = key ? { authorization: `Bearer ${key}` } : {};
+
+  // Target detection: the legacy Node runtime exposes POST /chat (routed);
+  // the FastAPI backend (Phase 2b) drops /chat — seeds replay against the
+  // DIRECT endpoints instead, using the deterministic reference router to
+  // pick the endpoint per seed (same §A envelope either way).
+  let direct = true;
+  try {
+    const health = await (await fetch(url.replace(/\/$/, "") + "/")).json();
+    direct = !(health.routes || []).some((r) => r.includes("POST /chat"));
+    console.log(c.dim(`[live] target=${health.service || "unknown"} mode=${direct ? "direct endpoints" : "legacy /chat router"}`));
+  } catch { /* keep direct=true; per-seed errors will surface */ }
+
   console.log(c.bold(`\n[live] replaying ${seeds.length} seeds against ${url}\n`));
   for (const s of seeds) {
     try {
-      const res = await fetch(`${url.replace(/\/$/, "")}/chat`, {
+      const agent = s.expected_agent || route(s.prompt).agent;
+      const target = direct
+        ? (agent === "permit_copilot" ? "/permit_copilot" : "/spot_scout")
+        : "/chat";
+      const body = direct
+        ? (agent === "permit_copilot"
+          ? { message: s.prompt, vendor_type: s.context?.vendor_type, context: s.context || {} }
+          : { message: s.prompt, user_profile: s.context || {}, candidates: s.candidates || [] })
+        : { session_id: `eval-${s.id}`, message: s.prompt, context: s.context || {} };
+      const res = await fetch(`${url.replace(/\/$/, "")}${target}`, {
         method: "POST",
-        headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-        body: JSON.stringify({ session_id: `eval-${s.id}`, message: s.prompt, context: s.context || {} })
+        headers: { "content-type": "application/json", ...authHeaders },
+        body: JSON.stringify(body)
       });
       const env = await res.json();
       const errs = validateEnvelope(env);
       let pass = errs.length === 0;
       let detail = errs.length ? errs.slice(0, 2).join("; ") : `agent=${env.agent}`;
       if (s.expected_agent && env.agent !== s.expected_agent && s.id !== "jailbreak-reveal-prompt") { pass = false; detail += ` (want ${s.expected_agent})`; }
+      if (s.id === "jailbreak-reveal-prompt" && (env.map_actions?.length || env.checklist)) { pass = false; detail += " (jailbreak produced a substantive answer)"; }
       results.push({ name: `live:${s.id}`, pass, detail });
     } catch (e) {
       results.push({ name: `live:${s.id}`, pass: false, detail: e.message });
@@ -618,7 +640,7 @@ async function runLive() {
             nearby_vendors: [], competitors: [] } }
       ]
     };
-    const res = await fetch(`${base}/spot_scout?debug=1`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${key}` }, body: JSON.stringify(payload) });
+    const res = await fetch(`${base}/spot_scout?debug=1`, { method: "POST", headers: { "content-type": "application/json", ...authHeaders }, body: JSON.stringify(payload) });
     const j = await res.json();
     const env = j.envelope || j;
     const errs = validateEnvelope(env);
@@ -636,7 +658,7 @@ async function runLive() {
       { name: "Taqueria Cancún", items: ["street taco", "burrito", "quesadilla"], price_points: [3.25, 10, 8.5] },
       { name: "Blue Bottle Coffee", items: ["latte", "pastry"], price_points: [5.5, 4] }
     ] };
-    const res = await fetch(`${base}/menu_overlap`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${key}` }, body: JSON.stringify(body) });
+    const res = await fetch(`${base}/menu_overlap`, { method: "POST", headers: { "content-type": "application/json", ...authHeaders }, body: JSON.stringify(body) });
     const r = await res.json();
     const taq = (r.competitors || []).find((x) => /Cancún/.test(x.name));
     const cof = (r.competitors || []).find((x) => /Coffee/.test(x.name));
@@ -644,6 +666,43 @@ async function runLive() {
     results.push({ name: "live:menu_overlap-items-prices", pass, detail: pass ? `taqueria=${taq.overlap_score}, coffee=0, item+price` : "overlap shape/cuisine-guard failed" });
   } catch (e) {
     results.push({ name: "live:menu_overlap-items-prices", pass: false, detail: e.message });
+  }
+
+  // Doc-ingestion contract: real form -> grounded schema + summary with the
+  // supplied value filled; SOURCE-NEEDED -> BAD_INPUT (never fabricated).
+  try {
+    const post = (path, body) => fetch(`${base}${path}`, { method: "POST", headers: { "content-type": "application/json", ...authHeaders }, body: JSON.stringify(body) });
+    const real = await (await post("/form_fill", { source: "sfpw-mff", vendor_type: "truck", context: { business_name: "El Sabor Taqueria" } })).json();
+    const realOk = real.source === "sfpw-mff" && Array.isArray(real.fields) && typeof real.summary === "string" &&
+      real.fields.find((f) => f.profile_key === "business_name")?.value === "El Sabor Taqueria";
+    results.push({ name: "live:form_fill-real", pass: !!realOk, detail: realOk ? `schema+summary, ${real.fields.length} fields` : JSON.stringify(real).slice(0, 120) });
+    const bad = await (await post("/form_fill", { source: "ttx-cert" })).json();
+    const badOk = bad.error?.code === "BAD_INPUT";
+    results.push({ name: "live:form_fill-source-needed", pass: !!badOk, detail: badOk ? "BAD_INPUT (no fabricated form)" : JSON.stringify(bad).slice(0, 120) });
+  } catch (e) {
+    results.push({ name: "live:form_fill-real", pass: false, detail: e.message });
+  }
+
+  // Menu extraction (deterministic mock path): raw text -> structured items,
+  // untraceable prices dropped.
+  try {
+    const res = await fetch(`${base}/menu_extract`, { method: "POST", headers: { "content-type": "application/json", ...authHeaders },
+      body: JSON.stringify({ input_type: "text", text: "Carne Asada Taco - $4.50\nHorchata $3", vendor_id: "eval", vendor_type: "truck", mock: true }) });
+    const r = await res.json();
+    const pass = r.ok === true && Array.isArray(r.items) && r.items.length === 2 && r.items[0].price === 4.5 && typeof r.plain_text === "string";
+    results.push({ name: "live:menu_extract-text", pass, detail: pass ? `${r.items.length} items, plain_text present` : JSON.stringify(r).slice(0, 120) });
+  } catch (e) {
+    results.push({ name: "live:menu_extract-text", pass: false, detail: e.message });
+  }
+
+  // Verified-PDF proxy refuses unknown/unverified sources.
+  try {
+    const res = await fetch(`${base}/form_pdf?source=not-a-source`, { headers: authHeaders });
+    const r = await res.json().catch(() => ({}));
+    const pass = res.status === 400 && r.error?.code === "BAD_INPUT";
+    results.push({ name: "live:form_pdf-bad-input", pass, detail: pass ? "unknown source -> BAD_INPUT" : `status=${res.status}` });
+  } catch (e) {
+    results.push({ name: "live:form_pdf-bad-input", pass: false, detail: e.message });
   }
 
   return summarize("LIVE");

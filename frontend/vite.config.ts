@@ -52,7 +52,15 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: 'index.html',
         globPatterns: ['**/*.{js,css,html,svg,png,json,geojson,woff2}'],
+        // /config.json is written by the container entrypoint AFTER build, so
+        // it is never precached — but the service worker must also never serve
+        // a stale/HTML fallback for it: always hit the network.
+        navigateFallbackDenylist: [/^\/config\.json$/],
         runtimeCaching: [
+          {
+            urlPattern: /\/config\.json$/,
+            handler: 'NetworkOnly',
+          },
           {
             // Mapbox tiles + styles: best-effort cache so revisits are fast
             urlPattern: /^https:\/\/(api|events)\.mapbox\.com\/.*/,

@@ -1,0 +1,4 @@
+# Container files must stay LF (sh/caddy parse them inside Linux images)
+frontend/docker-entrypoint.sh text eol=lf
+frontend/Caddyfile text eol=lf
+*.sql text eol=lf

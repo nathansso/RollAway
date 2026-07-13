@@ -25,16 +25,11 @@ import permitFixture from '../fixtures/permit_checklist.json'
 import { isWithinSanFrancisco } from './sfBounds'
 import { parseMenu } from './profile'
 import { footTrafficSummary } from './recommendations'
+import { endpointUrl } from './config'
 import type { MenuItem } from '../types/contract'
 
 const USE_FIXTURES =
   String(import.meta.env.VITE_USE_FIXTURES ?? 'true').toLowerCase() !== 'false'
-const RECOMMEND_URL = String(import.meta.env.VITE_RECOMMEND_SPOTS_URL ?? '')
-const VENDORS_URL = String(import.meta.env.VITE_VENDORS_URL ?? '')
-const CLOSURES_URL = String(import.meta.env.VITE_CLOSURES_URL ?? '')
-const PERMIT_URL = String(import.meta.env.VITE_PERMIT_CHECKLIST_URL ?? '')
-// Gradient-backed menu extraction (agents runtime POST /menu_extract).
-const MENU_EXTRACT_URL = String(import.meta.env.VITE_MENU_EXTRACT_URL ?? '')
 const DEFAULT_DELAY = Math.max(
   0,
   Number(import.meta.env.VITE_FIXTURE_DELAY_MS ?? 1100) || 0,
@@ -865,7 +860,7 @@ export const apiClient = {
       await wait(options.delayMs ?? DEFAULT_DELAY)
       return fixtureRecommendations(request)
     }
-    const body = await requestJson(RECOMMEND_URL, {
+    const body = await requestJson(endpointUrl('RECOMMEND_SPOTS_URL'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
@@ -894,7 +889,8 @@ export const apiClient = {
     url?: string
     vendor_type?: string
   }): Promise<{ items: MenuItem[]; plain_text: string }> {
-    if (!MENU_EXTRACT_URL) {
+    const menuExtractUrl = endpointUrl('MENU_EXTRACT_URL')
+    if (!menuExtractUrl) {
       if (payload.input_type === 'text' && payload.text?.trim()) {
         const text = payload.text.trim()
         return { items: parseMenu(text), plain_text: text }
@@ -904,7 +900,7 @@ export const apiClient = {
         'Menu extraction service is not connected. Images, PDFs, and links need the live Gradient extractor.',
       )
     }
-    const body = await requestJson(MENU_EXTRACT_URL, {
+    const body = await requestJson(menuExtractUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify(payload),
@@ -929,7 +925,7 @@ export const apiClient = {
     if (USE_FIXTURES) return structuredClone(vendorFixture) as VendorCollection
     const normalized = normalizeVendors(
       await requestJson(
-        buildFunctionUrl(VENDORS_URL, {
+        buildFunctionUrl(endpointUrl('VENDORS_URL'), {
           lat: location.lat,
           lng: location.lng,
           radius_m: 1500,
@@ -946,7 +942,7 @@ export const apiClient = {
     if (USE_FIXTURES) return fixtureClosures(when)
     const closures = validateClosuresResponse(
       await requestJson(
-        buildFunctionUrl(CLOSURES_URL, {
+        buildFunctionUrl(endpointUrl('CLOSURES_URL'), {
           lat: location.lat,
           lng: location.lng,
           radius_m: 1800,
@@ -969,7 +965,7 @@ export const apiClient = {
       await wait(options.delayMs ?? DEFAULT_DELAY)
       return withVendorType(permitFixture as PermitChecklist, vendorType)
     }
-    const body = await requestJson(PERMIT_URL, {
+    const body = await requestJson(endpointUrl('PERMIT_CHECKLIST_URL'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ vendor_type: vendorType }),

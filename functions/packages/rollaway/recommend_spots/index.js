@@ -254,7 +254,13 @@ function buildContext(args) {
   const max_travel_minutes = up.max_travel_minutes !== undefined
     ? Number(up.max_travel_minutes)
     : Number.isFinite(nestedTravel) ? nestedTravel : SCENARIO.max_travel_minutes;
-  const travel_mode = up.travel_mode || 'driving';
+  // #8: when the caller doesn't specify a mode, short-radius (in-neighborhood)
+  // searches default to walking. Driving routing from an anchor that snaps to a
+  // freeway on-ramp (e.g. the 37.78,-122.40 demo anchor near the Bay Bridge)
+  // can report ~20 min to reach a spot ~120 m away and wrongly eliminate it;
+  // for a few-hundred-metre search that travel is really a walk. Wider searches
+  // still default to driving. Callers may always pass an explicit travel_mode.
+  const travel_mode = up.travel_mode || (radius_m <= 1500 ? 'walking' : 'driving');
 
   return {
     vendor_type,

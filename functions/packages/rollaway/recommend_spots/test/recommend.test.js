@@ -126,7 +126,12 @@ test('snapshot determinism: a base Function returns byte-identical output twice'
 test('defaults from scenario.json when when/location omitted', async () => {
   const res = await main({ user_profile: { vendor_type: 'truck' } });
   assert.equal(res.statusCode, 200);
-  assert.equal(res.body.spots.length, 3);
+  // #8: with no explicit travel_mode, a short-radius (in-neighborhood) search
+  // now defaults to walking instead of driving. Offline (frozen, all-estimated
+  // travel matrix) nothing is ever eliminated, so the range sampler returns the
+  // full K_SPOTS=5. With live keys the old driving default snapped to a freeway
+  // on-ramp and eliminated near candidates down to 3; walking keeps all 5.
+  assert.equal(res.body.spots.length, 5);
 });
 
 test('rejects an invalid vendor_type with BAD_INPUT', async () => {

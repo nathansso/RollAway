@@ -4,6 +4,9 @@ import BrandMark from '../common/BrandMark'
 import { SAMPLE_MENUS } from '../../fixtures/sampleMenus'
 import { derivePriceTier, formatUsPhone, formatUsPhoneLocal, parseMenu } from '../../lib/profile'
 import { apiClient, ApiClientError } from '../../lib/apiClient'
+import { extractPdfText, renderPdfFirstPageToPng } from '../../lib/pdfText'
+import AddressAutocomplete from '../common/AddressAutocomplete'
+import type { AddressParts } from '../../lib/places'
 import { useDialogFocus } from '../../lib/useDialogFocus'
 import { useAppStore } from '../../store'
 import type { CuisineId } from '../../fixtures/sampleMenus'
@@ -123,6 +126,20 @@ export default function ProfileEditor() {
       autofill_profile: { ...current.autofill_profile, [key]: value },
     }))
 
+  // #46: fill mailing address + city/state/ZIP together from a chosen Google
+  // Places result. Only overwrite a component when Places actually returned one.
+  const setAddressParts = (parts: AddressParts) =>
+    setDraft((current) => ({
+      ...current,
+      autofill_profile: {
+        ...current.autofill_profile,
+        address: parts.line1 || current.autofill_profile.address,
+        city: parts.city || current.autofill_profile.city,
+        state: parts.state || current.autofill_profile.state,
+        postal_code: parts.postal_code || current.autofill_profile.postal_code,
+      },
+    }))
+
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
     const profile: VendorProfile = {
@@ -173,9 +190,26 @@ export default function ProfileEditor() {
       return
     }
     const isText = file.type.startsWith('text/') || /\.(txt|csv|md)$/i.test(file.name)
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name)
     if (isText) {
       const text = await file.text().catch(() => '')
       await applyExtraction({ input_type: 'text', text })
+    } else if (isPdf) {
+      // #47: a raw application/pdf data URL is not a valid vision input and 400s.
+      // Pull the PDF's text in-browser and send that; for scanned/image-only
+      // PDFs (no embedded text) fall back to rasterizing page 1 to a PNG.
+      const text = await extractPdfText(file).catch(() => '')
+      if (text.trim().length >= 8) {
+        await applyExtraction({ input_type: 'text', text })
+      } else {
+        const image_data_url = await renderPdfFirstPageToPng(file).catch(() => '')
+        if (!image_data_url) {
+          setMenuStatus('error')
+          setMenuNotice('That PDF could not be read. Try an image or paste the menu text.')
+          return
+        }
+        await applyExtraction({ input_type: 'image', image_data_url })
+      }
     } else {
       const image_data_url = await fileToDataUrl(file).catch(() => '')
       if (!image_data_url) {
@@ -410,14 +444,9 @@ export default function ProfileEditor() {
                 </select>
               </Field>
             </div>
-            <Field label="Permit status" required>
-              <select className={fieldClass} value={draft.permit_status} onChange={(event) => setDraft((current) => ({ ...current, permit_status: event.target.value as VendorProfile['permit_status'] }))}>
-                <option value="not_started">Not started</option>
-                <option value="researching">Researching requirements</option>
-                <option value="in_progress">Applications in progress</option>
-                <option value="permitted">Currently permitted</option>
-              </select>
-            </Field>
+            {/* #45: permit-status is no longer asked during onboarding. The field
+                stays on the profile (defaulted to 'not_started') for the permit
+                checklist/markers; the checklist tracks real status downstream. */}
           </section>
 
           <section className="form-section">
@@ -445,7 +474,15 @@ export default function ProfileEditor() {
                 </div>
               </Field>
             </div>
-            <Field label="Mailing address" required><input className={fieldClass} autoComplete="street-address" value={draft.autofill_profile.address} onChange={(e) => setContact('address', e.target.value)} /></Field>
+            <Field label="Mailing address" required>
+              <AddressAutocomplete
+                className={fieldClass}
+                autoComplete="street-address"
+                value={draft.autofill_profile.address}
+                onChange={(value) => setContact('address', value)}
+                onResolved={(place) => setAddressParts(place.parts)}
+              />
+            </Field>
             <div className="grid grid-cols-[1.5fr_.6fr_1fr] gap-2">
               <Field label="City"><input className={fieldClass} autoComplete="address-level2" value={draft.autofill_profile.city} onChange={(e) => setContact('city', e.target.value)} /></Field>
               <Field label="State"><input className={fieldClass} autoComplete="address-level1" value={draft.autofill_profile.state} onChange={(e) => setContact('state', e.target.value)} /></Field>

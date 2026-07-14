@@ -36,6 +36,10 @@ export async function fillFormPdf(
   source: string,
   values: Record<string, string>,
   bytes: Uint8Array,
+  // #48.2: values the user typed directly into PDF fields we don't autofill,
+  // keyed by the raw AcroForm field name. Applied after the mapped fills so a
+  // manual entry always wins, and persisted into the downloaded PDF.
+  rawValues: Record<string, string> = {},
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false })
   const form = doc.getForm()
@@ -57,6 +61,16 @@ export async function fillFormPdf(
       } catch {
         /* ignore */
       }
+    }
+  }
+  // Manual entries on any (mapped or unmapped) field, by raw AcroForm name.
+  for (const [pdfField, raw] of Object.entries(rawValues)) {
+    const value = (raw ?? '').trim()
+    if (!value) continue
+    try {
+      form.getTextField(pdfField).setText(value)
+    } catch {
+      /* not a fillable text field on this PDF — skip */
     }
   }
   // Regenerate appearance streams so the filled values render in every viewer, WITHOUT flattening —

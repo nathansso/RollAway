@@ -87,4 +87,28 @@ describe('fillFormPdf keeps fields live (not flattened)', () => {
     field.setText('Corrected Name')
     expect(field.getText()).toBe('Corrected Name')
   })
+
+  // #48.2: manual entries typed into fields we don't autofill must persist into
+  // the downloaded PDF, keyed by raw AcroForm field name.
+  it('applies rawValues to an unmapped field by its raw name', async () => {
+    // "Notes" is not in any PDF_FIELD_MAPS entry — it can only be filled manually.
+    const blank = await blankFormPdf('Notes')
+    const filled = await fillFormPdf('sfpw-mff', {}, blank, { Notes: 'Weekends only, lot B' })
+
+    const field = (await PDFDocument.load(filled)).getForm().getTextField('Notes')
+    expect(field.getText()).toBe('Weekends only, lot B')
+    expect(field.isReadOnly()).toBe(false)
+  })
+
+  it('lets a rawValues entry override a mapped autofill on the same field', async () => {
+    const blank = await blankFormPdf('Business DBA Name')
+    const filled = await fillFormPdf(
+      'sfpw-mff',
+      { business_name: 'Autofilled Co' },
+      blank,
+      { 'Business DBA Name': 'User Corrected Co' },
+    )
+    const field = (await PDFDocument.load(filled)).getForm().getTextField('Business DBA Name')
+    expect(field.getText()).toBe('User Corrected Co')
+  })
 })

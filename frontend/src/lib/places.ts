@@ -71,14 +71,46 @@ export async function placesAutocomplete(
     }))
 }
 
+interface AddressComponent {
+  longText?: string
+  shortText?: string
+  types?: string[]
+}
+
 interface PlaceDetailsResponse {
   location?: { latitude?: number; longitude?: number }
   formattedAddress?: string
+  addressComponents?: AddressComponent[]
+}
+
+// Structured US mailing-address parts, parsed from Google addressComponents (#46).
+export interface AddressParts {
+  line1: string
+  city: string
+  state: string
+  postal_code: string
 }
 
 export interface ResolvedPlace {
   point: LatLng
   address: string
+  parts: AddressParts
+}
+
+function parseAddressParts(components: AddressComponent[] | undefined): AddressParts {
+  const pick = (type: string, short = false): string => {
+    const match = (components ?? []).find((component) => component.types?.includes(type))
+    return (short ? match?.shortText : match?.longText) ?? ''
+  }
+  const streetNumber = pick('street_number')
+  const route = pick('route')
+  return {
+    line1: [streetNumber, route].filter(Boolean).join(' ').trim(),
+    // locality is the usual city; some SF addresses only carry sublocality.
+    city: pick('locality') || pick('sublocality') || pick('postal_town'),
+    state: pick('administrative_area_level_1', true),
+    postal_code: pick('postal_code'),
+  }
 }
 
 export async function placeDetails(
@@ -92,7 +124,7 @@ export async function placeDetails(
     {
       headers: {
         'X-Goog-Api-Key': BROWSER_KEY,
-        'X-Goog-FieldMask': 'location,formattedAddress',
+        'X-Goog-FieldMask': 'location,formattedAddress,addressComponents',
       },
       signal,
     },
@@ -103,5 +135,9 @@ export async function placeDetails(
   const lat = body.location?.latitude
   const lng = body.location?.longitude
   if (typeof lat !== 'number' || typeof lng !== 'number') return null
-  return { point: { lat, lng }, address: body.formattedAddress ?? '' }
+  return {
+    point: { lat, lng },
+    address: body.formattedAddress ?? '',
+    parts: parseAddressParts(body.addressComponents),
+  }
 }

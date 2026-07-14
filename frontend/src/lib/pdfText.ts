@@ -16,7 +16,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
  */
 export async function extractPdfText(file: File): Promise<string> {
   const data = new Uint8Array(await file.arrayBuffer())
-  const doc = await pdfjsLib.getDocument({ data }).promise
+  const loadingTask = pdfjsLib.getDocument({ data })
+  const doc = await loadingTask.promise
   try {
     const lines: string[] = []
     for (let p = 1; p <= doc.numPages; p += 1) {
@@ -40,7 +41,7 @@ export async function extractPdfText(file: File): Promise<string> {
     }
     return lines.join('\n').replace(/[ \t]+/g, ' ').trim()
   } finally {
-    void doc.destroy()
+    void loadingTask.destroy()
   }
 }
 
@@ -51,7 +52,8 @@ export async function extractPdfText(file: File): Promise<string> {
  */
 export async function renderPdfFirstPageToPng(file: File): Promise<string> {
   const data = new Uint8Array(await file.arrayBuffer())
-  const doc = await pdfjsLib.getDocument({ data }).promise
+  const loadingTask = pdfjsLib.getDocument({ data })
+  const doc = await loadingTask.promise
   try {
     const page = await doc.getPage(1)
     const base = page.getViewport({ scale: 1 })
@@ -66,6 +68,6 @@ export async function renderPdfFirstPageToPng(file: File): Promise<string> {
     await page.render({ canvasContext, viewport, canvas }).promise
     return canvas.toDataURL('image/png')
   } finally {
-    void doc.destroy()
+    void loadingTask.destroy()
   }
 }

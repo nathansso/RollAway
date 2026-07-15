@@ -8,10 +8,13 @@ import AppHeader from './components/shell/AppHeader'
 import OfflineGate from './components/shell/OfflineGate'
 import ProfileEditor from './components/onboarding/ProfileEditor'
 import FullScreenLoader from './components/common/FullScreenLoader'
+import AuthPage from './components/auth/AuthPage'
 import { useAppStore } from './store'
 
 export default function App() {
   const appPhase = useAppStore((state) => state.appPhase)
+  const authStatus = useAppStore((state) => state.authStatus)
+  const initAuth = useAppStore((state) => state.initAuth)
   const activeTab = useAppStore((state) => state.activeTab)
   const location = useAppStore((state) => state.location)
   const locationStatus = useAppStore((state) => state.locationStatus)
@@ -25,6 +28,12 @@ export default function App() {
   const [mapViewReady, setMapViewReady] = useState(false)
   const [fontsReady, setFontsReady] = useState(false)
   const [mapRevealed, setMapRevealed] = useState(false)
+
+  // Wave 2: resolve the Supabase session once. When auth isn't configured this
+  // immediately sets authStatus to 'disabled' and the app runs as before.
+  useEffect(() => {
+    initAuth()
+  }, [initAuth])
 
   useEffect(() => {
     if (
@@ -129,6 +138,26 @@ export default function App() {
       {recommendationRevealPending && <FullScreenLoader operation="recommendations" />}
     </div>
   )
+
+  // Wave 2 auth gate. 'disabled' (no Supabase config) and 'signed_in' fall
+  // through to the normal app; 'unknown' shows a brief splash while the session
+  // resolves; 'signed_out' shows the sign-in / register page.
+  if (authStatus === 'unknown') {
+    return (
+      <div
+        aria-hidden="true"
+        className="h-dvh w-full"
+        style={{ background: 'var(--color-secondary)' }}
+      />
+    )
+  }
+  if (authStatus === 'signed_out') {
+    return (
+      <OfflineGate>
+        <AuthPage />
+      </OfflineGate>
+    )
+  }
 
   if (appPhase === 'profile') {
     return (

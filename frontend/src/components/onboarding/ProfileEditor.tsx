@@ -87,7 +87,22 @@ export default function ProfileEditor() {
   const saveProfile = useAppStore((state) => state.saveProfile)
   const setActiveTab = useAppStore((state) => state.setActiveTab)
   const appPhase = useAppStore((state) => state.appPhase)
-  const [draft, setDraft] = useState<VendorProfile>(() => existing ?? emptyProfile())
+  // Wave 2 (#39/#50): prefill from the auth identity (email) and, on first
+  // sign-in, from any pre-auth localStorage profile the user can import.
+  const authEmail = useAppStore((state) => state.authEmail)
+  const authImportProfile = useAppStore((state) => state.authImportProfile)
+  const dismissProfileImport = useAppStore((state) => state.dismissProfileImport)
+  const authStatus = useAppStore((state) => state.authStatus)
+  const authSignOut = useAppStore((state) => state.authSignOut)
+  const seedDraft = (): VendorProfile => {
+    if (existing) return existing
+    const base = authImportProfile ?? emptyProfile()
+    if (authEmail && !base.autofill_profile.email) {
+      return { ...base, autofill_profile: { ...base.autofill_profile, email: authEmail } }
+    }
+    return base
+  }
+  const [draft, setDraft] = useState<VendorProfile>(seedDraft)
   const [error, setError] = useState('')
   const [menuStatus, setMenuStatus] = useState<'idle' | 'extracting' | 'success' | 'error'>('idle')
   const [menuNotice, setMenuNotice] = useState('')
@@ -109,9 +124,10 @@ export default function ProfileEditor() {
 
   useEffect(() => {
     if (!open) return
-    setDraft(existing ?? emptyProfile())
+    setDraft(seedDraft())
     setError('')
-  }, [open, existing])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, existing, authEmail, authImportProfile])
 
   useDialogFocus(dialogRef, close, Boolean(existing), open)
 
@@ -257,14 +273,45 @@ export default function ProfileEditor() {
               Stored only on this device. Used to personalize spots and permit forms.
             </p>
           </div>
-          {existing && (
-            <button type="button" onClick={close} aria-label="Close profile editor" className="touch-button">
-              <CloseIcon className="h-5 w-5" />
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {authStatus === 'signed_in' && (
+              <button
+                type="button"
+                onClick={() => void authSignOut()}
+                className="text-xs font-semibold text-muted-foreground underline"
+              >
+                Sign out
+              </button>
+            )}
+            {existing && (
+              <button type="button" onClick={close} aria-label="Close profile editor" className="touch-button">
+                <CloseIcon className="h-5 w-5" />
+              </button>
+            )}
+          </div>
         </header>
 
         <form onSubmit={submit} className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+          {!existing && authImportProfile && (
+            <div className="mb-5 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 text-sm">
+              <p className="font-semibold text-foreground">Prefilled from your saved profile</p>
+              <p className="mt-0.5 text-muted-foreground">
+                We found a profile saved on this device and filled it in — edit anything below.
+              </p>
+              <button
+                type="button"
+                className="mt-2 text-xs font-semibold text-primary underline"
+                onClick={() => {
+                  const fresh = emptyProfile()
+                  if (authEmail) fresh.autofill_profile.email = authEmail
+                  setDraft(fresh)
+                  dismissProfileImport()
+                }}
+              >
+                Start fresh instead
+              </button>
+            </div>
+          )}
           {error && (
             <div role="alert" className="mb-5 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
               {error}

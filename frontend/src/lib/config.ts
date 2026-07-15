@@ -17,6 +17,10 @@ const RUNTIME_KEYS = [
   'PERMIT_CHECKLIST_URL',
   'MENU_EXTRACT_URL',
   'FORM_PDF_URL',
+  // Wave 2 auth (#39/#50): the Supabase client only initializes when both are
+  // present, so auth is off in dev/fixtures/e2e unless explicitly configured.
+  'SUPABASE_URL',
+  'SUPABASE_ANON_KEY',
 ] as const
 
 export type RuntimeConfigKey = (typeof RUNTIME_KEYS)[number]
@@ -30,6 +34,8 @@ const ENV_FALLBACKS: Record<RuntimeConfigKey, unknown> = {
   PERMIT_CHECKLIST_URL: import.meta.env.VITE_PERMIT_CHECKLIST_URL,
   MENU_EXTRACT_URL: import.meta.env.VITE_MENU_EXTRACT_URL,
   FORM_PDF_URL: import.meta.env.VITE_FORM_PDF_URL,
+  SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+  SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
 }
 
 let runtimeConfig: RuntimeConfig = {}

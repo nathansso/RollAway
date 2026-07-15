@@ -140,6 +140,7 @@ async function loadStore(withProfile: VendorProfile | null = null) {
 describe('guided app store phases', () => {
   beforeEach(() => {
     vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
     vi.stubGlobal('localStorage', createMemoryStorage())
     api.recommendSpots.mockReset().mockResolvedValue(recommendations)
     api.getPermitChecklist.mockReset().mockResolvedValue(permitChecklist)
@@ -293,6 +294,52 @@ describe('guided app store phases', () => {
       locationNotice:
         'Your location is outside San Francisco. Using the SoMa demo origin.',
     })
+  })
+
+  it('ignores a stale geolocation result so it cannot wipe a finished search', async () => {
+    const successCallbacks: Array<(position: unknown) => void> = []
+    const getCurrentPosition = vi.fn().mockImplementation((success) => {
+      successCallbacks.push(success)
+    })
+    vi.stubGlobal('navigator', { geolocation: { getCurrentPosition } })
+    const store = await loadStore(validProfile)
+
+    // Two location requests can be in flight at once: StrictMode re-runs the
+    // mount effect with the same render's values (so both see locationStatus
+    // 'idle'), and a double pin tap does it too.
+    store.getState().requestLocation()
+    store.getState().requestLocation()
+    expect(successCallbacks).toHaveLength(2)
+
+    // The newest request wins, and the search that follows it succeeds.
+    successCallbacks[1]({ coords: { latitude: 37.7793, longitude: -122.4013 } })
+    await store.getState().startRecommendations()
+    expect(store.getState().recommendationStatus).toBe('success')
+
+    // The first request resolving late must not clear those results: it used to
+    // reset them to 'idle', and appPhase is 'ready' by now, so the auto-search
+    // never re-fired and the map stayed empty.
+    successCallbacks[0]({ coords: { latitude: 37.8044, longitude: -122.2712 } })
+    expect(store.getState()).toMatchObject({
+      recommendationStatus: 'success',
+      locationStatus: 'granted',
+      location: { lat: 37.7793, lng: -122.4013 },
+    })
+  })
+
+  it('boots a returning vendor to the map, migrating a profile saved without cuisine', async () => {
+    vi.stubEnv('VITE_FORCE_FIRST_TIME_USER', 'false')
+    localStorage.clear()
+    // Written by a build that predates the cuisine field. Rejecting it would
+    // send a returning vendor back through onboarding as if they were new.
+    const { cuisine: _cuisine, ...profileSavedByOlderBuild } = validProfile
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileSavedByOlderBuild))
+    vi.resetModules()
+    const store = (await import('./store')).useAppStore
+
+    expect(store.getState().appPhase).toBe('loading_recommendations')
+    expect(store.getState().profile).toMatchObject({ cuisine: 'american' })
+    expect(store.getState().profileEditorOpen).toBe(false)
   })
 
   it('clears stale vendors and closures immediately when the session time changes', async () => {

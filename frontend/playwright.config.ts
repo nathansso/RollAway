@@ -22,6 +22,9 @@ export default defineConfig({
       VITE_FIXTURE_DELAY_MS: '1100',
       VITE_MAPBOX_TOKEN: '',
       VITE_USE_FIXTURES: 'true',
+      // Honor a seeded profile so the specs can drive the returning visitor
+      // (straight to the map). The app otherwise always opens on onboarding.
+      VITE_FORCE_FIRST_TIME_USER: 'false',
       VITE_RECOMMEND_SPOTS_URL: 'https://rollaway-business.invalid/recommendations',
       VITE_VENDORS_URL: 'https://rollaway-business.invalid/vendors',
       VITE_CLOSURES_URL: 'https://rollaway-business.invalid/closures',

@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:mapbox": "playwright test --config=playwright.mapbox.config.ts",
-    "build:pwa-test": "cross-env VITE_MAPBOX_TOKEN= VITE_USE_FIXTURES=true VITE_FIXTURE_DELAY_MS=0 VITE_RECOMMEND_SPOTS_URL=https://rollaway-business.invalid/recommendations VITE_VENDORS_URL=https://rollaway-business.invalid/vendors VITE_CLOSURES_URL=https://rollaway-business.invalid/closures VITE_PERMIT_CHECKLIST_URL=https://rollaway-business.invalid/permits npm run build",
+    "build:pwa-test": "cross-env VITE_MAPBOX_TOKEN= VITE_USE_FIXTURES=true VITE_FIXTURE_DELAY_MS=0 VITE_FORCE_FIRST_TIME_USER=false VITE_MENU_EXTRACT_URL= VITE_SUPABASE_URL= VITE_SUPABASE_ANON_KEY= VITE_RECOMMEND_SPOTS_URL=https://rollaway-business.invalid/recommendations VITE_VENDORS_URL=https://rollaway-business.invalid/vendors VITE_CLOSURES_URL=https://rollaway-business.invalid/closures VITE_PERMIT_CHECKLIST_URL=https://rollaway-business.invalid/permits npm run build",
     "test:pwa": "npm run build:pwa-test && playwright test --config=playwright.pwa.config.ts",
     "preview": "vite preview"
   },

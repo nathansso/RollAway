@@ -23,6 +23,8 @@ export default defineConfig({
       VITE_FIXTURE_DELAY_MS: '0',
       VITE_MAPBOX_TOKEN: FAKE_PUBLIC_MAPBOX_TOKEN,
       VITE_USE_FIXTURES: 'true',
+      // Honor the seeded profile so the spec boots straight to the map.
+      VITE_FORCE_FIRST_TIME_USER: 'false',
       VITE_RECOMMEND_SPOTS_URL: 'https://rollaway-business.invalid/recommendations',
       VITE_VENDORS_URL: 'https://rollaway-business.invalid/vendors',
       VITE_CLOSURES_URL: 'https://rollaway-business.invalid/closures',

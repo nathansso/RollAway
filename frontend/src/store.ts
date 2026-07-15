@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { apiClient, ApiClientError } from './lib/apiClient'
-import { PROFILE_STORAGE_KEY, validateProfile } from './lib/profile'
+import { PROFILE_STORAGE_KEY, readStoredProfile, validateProfile } from './lib/profile'
 import { isAuthConfigured, getSupabase } from './lib/supabase'
 import {
   AuthMessageError,
@@ -46,6 +46,7 @@ const PERMIT_FORMS_KEY = 'rollaway.permit-forms.v1'
 let latestRecommendationRequest = 0
 let latestPermitRequest = 0
 let latestBaseRequest = 0
+let latestLocationRequest = 0
 // Bind the Supabase auth listener exactly once (StrictMode double-invokes the
 // init effect, and initAuth may be called from more than one mount).
 let authListenerBound = false
@@ -72,8 +73,7 @@ function errorMessage(error: unknown, fallback: string): string {
 // of truth for the rich profile; the Supabase `profiles` row is only the
 // new/returning signal + a few reusable defaults).
 function loadStoredProfile(): VendorProfile | null {
-  const raw = loadJson<unknown>(PROFILE_STORAGE_KEY, null)
-  return raw && validateProfile(raw as VendorProfile) ? (raw as VendorProfile) : null
+  return readStoredProfile(loadJson<unknown>(PROFILE_STORAGE_KEY, null))
 }
 
 // disabled = Supabase not configured (dev/fixtures/e2e/pre-cutover): the app
@@ -142,11 +142,20 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set, get) => {
-  // Every launch starts as a brand-new, first-time user: ignore any previously
-  // stored profile so the app always opens on the onboarding/initialization page
-  // and walks through landing -> profile setup -> map from scratch.
-  const initialProfile: VendorProfile | null = null
-  const initialPhase: AppPhase = 'profile'
+  // Demo default: every launch starts as a brand-new, first-time user, ignoring
+  // any stored profile so the app always opens on onboarding and walks through
+  // profile setup -> map from scratch.
+  //
+  // Set VITE_FORCE_FIRST_TIME_USER=false to honor a stored profile and boot
+  // straight to the map instead. That is the auth-off stand-in for the
+  // returning-user routing resolveAuthRouting performs once Supabase is
+  // configured, and it is how the e2e specs exercise the returning visitor.
+  // It only applies when auth is off: with auth on, resolveAuthRouting decides
+  // the landing phase after the session resolves, whatever this computes.
+  const forceFirstTimeUser =
+    String(import.meta.env.VITE_FORCE_FIRST_TIME_USER ?? 'true').toLowerCase() !== 'false'
+  const initialProfile: VendorProfile | null = forceFirstTimeUser ? null : loadStoredProfile()
+  const initialPhase: AppPhase = initialProfile ? 'loading_recommendations' : 'profile'
 
   const startRecommendations = async () => {
     const { profile, location, when, recommendationStatus, locationStatus } = get()
@@ -410,6 +419,13 @@ export const useAppStore = create<AppState>((set, get) => {
         return
       }
       latestRecommendationRequest += 1
+      // Only the newest location request may apply its result. Two can be in
+      // flight at once (StrictMode re-runs the mount effect with the same
+      // render's values, so both see locationStatus 'idle'; a user can also tap
+      // the pin twice). Both callbacks clear recommendations, so a stale one
+      // landing after the search succeeded wiped the results and left an empty
+      // map: appPhase is 'ready' by then, so the auto-search never re-fires.
+      const locationRequestId = ++latestLocationRequest
       set({
         locationStatus: 'requesting',
         originLabel: null,
@@ -421,6 +437,7 @@ export const useAppStore = create<AppState>((set, get) => {
       })
       navigator.geolocation.getCurrentPosition(
         ({ coords }) => {
+          if (locationRequestId !== latestLocationRequest) return
           latestRecommendationRequest += 1
           const location = { lat: coords.latitude, lng: coords.longitude }
           const outsideSanFrancisco = !isWithinSanFrancisco(location)
@@ -437,6 +454,7 @@ export const useAppStore = create<AppState>((set, get) => {
           })
         },
         (error) => {
+          if (locationRequestId !== latestLocationRequest) return
           latestRecommendationRequest += 1
           set({
             appPhase: get().appPhase,

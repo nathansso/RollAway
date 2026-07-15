@@ -109,7 +109,11 @@ export default function FilledPdfView({
               if (annotation.fieldType !== 'Tx' || annotation.hidden || annotation.readOnly) continue
               const name: string = annotation.fieldName ?? ''
               if (!name) continue
-              const [rx1, ry1, rx2, ry2] = viewport.convertToViewportRectangle(annotation.rect)
+              // pdf.js v6 dropped viewport.convertToViewportRectangle(); convert
+              // the rect's two opposite corners instead (what it did internally).
+              const [x1, y1, x2, y2] = annotation.rect as [number, number, number, number]
+              const [rx1, ry1] = viewport.convertToViewportPoint(x1, y1)
+              const [rx2, ry2] = viewport.convertToViewportPoint(x2, y2)
               const left = Math.min(rx1, rx2)
               const top = Math.min(ry1, ry2)
               const w = Math.abs(rx2 - rx1)

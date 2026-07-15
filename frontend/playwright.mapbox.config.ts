@@ -27,6 +27,13 @@ export default defineConfig({
       VITE_VENDORS_URL: 'https://rollaway-business.invalid/vendors',
       VITE_CLOSURES_URL: 'https://rollaway-business.invalid/closures',
       VITE_PERMIT_CHECKLIST_URL: 'https://rollaway-business.invalid/permits',
+      // Pin the env the dev server would otherwise inherit from
+      // .env.development.local — see playwright.config.ts. Real Supabase
+      // credentials would raise the auth gate; a real MENU_EXTRACT_URL would
+      // send the menu step to the live extractor.
+      VITE_MENU_EXTRACT_URL: '',
+      VITE_SUPABASE_URL: '',
+      VITE_SUPABASE_ANON_KEY: '',
     },
     reuseExistingServer: false,
   },

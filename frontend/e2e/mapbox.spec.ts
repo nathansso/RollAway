@@ -132,7 +132,10 @@ test('fixture mode renders Mapbox with only intercepted fake-token traffic', asy
   await expect(page.getByRole('region', { name: 'Schematic map of SoMa' })).toHaveCount(0)
   await expect(page.locator('.mapboxgl-ctrl-zoom-in')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Recenter map on your origin' })).toBeVisible()
-  await expect(page.locator('.rank-marker')).toHaveCount(3)
+  // #31: every candidate in the pool draws a pin — the top 3 dominant, the rest
+  // smaller "minor" markers. Counts track the fixture pool (12).
+  await expect(page.locator('.rank-marker')).toHaveCount(12)
+  await expect(page.locator('.rank-marker--minor')).toHaveCount(9)
   expect(styleRequests.every((url) => url.includes('access_token=pk.'))).toBe(true)
   expect(businessRequests).toEqual([])
   expect(browserErrors).toEqual([])

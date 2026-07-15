@@ -249,7 +249,7 @@
       },
       "closure": {
         "active": true,
-        "detail": "5th Street fair closure, Friday 10:00\u00e2\u20ac\u201c18:00.",
+        "detail": "5th Street fair closure, Friday 10:00–18:00.",
         "source": "sfmta_event"
       },
       "travel_minutes": 7,
@@ -303,6 +303,864 @@
           },
           "mode": "driving",
           "minutes": 7,
+          "estimated": true
+        }
+      },
+      "event_opportunity": null,
+      "outreach_draft": null
+    },
+    {
+      "id": "spot-mission-fremont",
+      "rank": 4,
+      "point": {
+        "lat": 37.7897,
+        "lng": -122.3966
+      },
+      "block_label": "Mission & Fremont",
+      "address": "Mission St & Fremont St, San Francisco, CA 94105",
+      "score": 0.84,
+      "verdict": "good",
+      "why_one_line": "Transit Center crowds with only one direct menu rival.",
+      "foot_traffic": {
+        "level": "high",
+        "score": 0.88,
+        "basis": "bay_wheels",
+        "time_context": "Friday lunch",
+        "detail": "Transit Center commuters peak hard through the lunch hour."
+      },
+      "competition": {
+        "overlap_count": 1,
+        "saturation": "medium",
+        "menu_matches": [
+          "burritos"
+        ],
+        "price_tier": "$",
+        "detail": "One overlapping vendor; the rest of the block skews sit-down."
+      },
+      "legality": {
+        "pass": true,
+        "status": "pass",
+        "rule": "75 ft restaurant, 7 ft hydrant, and 500 ft school clearances",
+        "detail": "All measured placement checks pass at this point.",
+        "cite": "dpw-182101"
+      },
+      "closure": {
+        "active": false,
+        "detail": "No active closure intersects this block.",
+        "source": null
+      },
+      "travel_minutes": 9,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.7897,
+            "lng": -122.3966
+          },
+          "suitability": "recommended",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "Non-hydrant placement checks pass at this point. Verify posted curb and parking signs before stopping or operating."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "coffee",
+              "count": 5
+            },
+            {
+              "cuisine": "burritos",
+              "count": 2
+            },
+            {
+              "cuisine": "salads",
+              "count": 3
+            }
+          ],
+          "menu_overlap_count": 1,
+          "opportunity": "some_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.7897,
+            "lng": -122.3966
+          },
+          "mode": "driving",
+          "minutes": 9,
+          "estimated": true
+        }
+      },
+      "event_opportunity": null,
+      "outreach_draft": null
+    },
+    {
+      "id": "spot-3rd-mission",
+      "rank": 5,
+      "point": {
+        "lat": 37.7857,
+        "lng": -122.4011
+      },
+      "block_label": "3rd & Mission",
+      "address": "3rd St & Mission St, San Francisco, CA 94103",
+      "score": 0.64,
+      "verdict": "caution",
+      "why_one_line": "Busy museum block, but the food supply is already dense.",
+      "foot_traffic": {
+        "level": "high",
+        "score": 0.79,
+        "basis": "bay_wheels",
+        "time_context": "Friday lunch",
+        "detail": "Museum and hotel foot traffic holds steady midday."
+      },
+      "competition": {
+        "overlap_count": 2,
+        "saturation": "high",
+        "menu_matches": [
+          "tacos"
+        ],
+        "price_tier": "$",
+        "detail": "A dense restaurant block with two menus close to yours."
+      },
+      "legality": {
+        "pass": true,
+        "status": "conditional",
+        "rule": "Keep the crosswalk and museum entrance clear",
+        "detail": "Distance checks pass; the plaza edge is tightly signed.",
+        "cite": "dpw-182101"
+      },
+      "closure": {
+        "active": false,
+        "detail": "No active closure intersects this block.",
+        "source": null
+      },
+      "travel_minutes": 6,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.7857,
+            "lng": -122.4011
+          },
+          "suitability": "verify",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "Non-hydrant placement checks pass at this point. Verify posted curb and parking signs before stopping or operating."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "tacos",
+              "count": 3
+            },
+            {
+              "cuisine": "coffee",
+              "count": 4
+            },
+            {
+              "cuisine": "pizza",
+              "count": 2
+            }
+          ],
+          "menu_overlap_count": 2,
+          "opportunity": "some_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.7857,
+            "lng": -122.4011
+          },
+          "mode": "driving",
+          "minutes": 6,
+          "estimated": true
+        }
+      },
+      "event_opportunity": null,
+      "outreach_draft": null
+    },
+    {
+      "id": "spot-brannan-4th",
+      "rank": 6,
+      "point": {
+        "lat": 37.7776,
+        "lng": -122.3966
+      },
+      "block_label": "Brannan & 4th",
+      "address": "Brannan St & 4th St, San Francisco, CA 94107",
+      "score": 0.66,
+      "verdict": "good",
+      "why_one_line": "Clear runway — no direct competition on this block.",
+      "foot_traffic": {
+        "level": "moderate",
+        "score": 0.61,
+        "basis": "bay_wheels",
+        "time_context": "Friday lunch",
+        "detail": "Office blocks feed a reliable but unspectacular lunch rush."
+      },
+      "competition": {
+        "overlap_count": 0,
+        "saturation": "low",
+        "menu_matches": [],
+        "price_tier": "$",
+        "detail": "Nothing nearby overlaps your menu."
+      },
+      "legality": {
+        "pass": true,
+        "status": "pass",
+        "rule": "75 ft restaurant, 7 ft hydrant, and 500 ft school clearances",
+        "detail": "All measured placement checks pass at this point.",
+        "cite": "dpw-182101"
+      },
+      "closure": {
+        "active": false,
+        "detail": "No active closure intersects this block.",
+        "source": null
+      },
+      "travel_minutes": 10,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.7776,
+            "lng": -122.3966
+          },
+          "suitability": "recommended",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "Non-hydrant placement checks pass at this point. Verify posted curb and parking signs before stopping or operating."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "coffee",
+              "count": 2
+            },
+            {
+              "cuisine": "sandwiches",
+              "count": 2
+            }
+          ],
+          "menu_overlap_count": 0,
+          "opportunity": "low_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.7776,
+            "lng": -122.3966
+          },
+          "mode": "driving",
+          "minutes": 10,
+          "estimated": true
+        }
+      },
+      "event_opportunity": null,
+      "outreach_draft": null
+    },
+    {
+      "id": "spot-townsend-4th",
+      "rank": 7,
+      "point": {
+        "lat": 37.7766,
+        "lng": -122.3947
+      },
+      "block_label": "Townsend & 4th",
+      "address": "Townsend St & 4th St, San Francisco, CA 94107",
+      "score": 0.75,
+      "verdict": "good",
+      "why_one_line": "Caltrain crowds arrive in waves you can time your service to.",
+      "foot_traffic": {
+        "level": "high",
+        "score": 0.77,
+        "basis": "bay_wheels",
+        "time_context": "Friday lunch",
+        "detail": "Caltrain arrivals surge on a predictable timetable."
+      },
+      "competition": {
+        "overlap_count": 1,
+        "saturation": "medium",
+        "menu_matches": [
+          "burritos"
+        ],
+        "price_tier": "$",
+        "detail": "One overlapping vendor works the station plaza."
+      },
+      "legality": {
+        "pass": true,
+        "status": "pass",
+        "rule": "75 ft restaurant, 7 ft hydrant, and 500 ft school clearances",
+        "detail": "All measured placement checks pass at this point.",
+        "cite": "dpw-182101"
+      },
+      "closure": {
+        "active": false,
+        "detail": "No active closure intersects this block.",
+        "source": null
+      },
+      "travel_minutes": 12,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.7766,
+            "lng": -122.3947
+          },
+          "suitability": "recommended",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "Non-hydrant placement checks pass at this point. Verify posted curb and parking signs before stopping or operating."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "burritos",
+              "count": 2
+            },
+            {
+              "cuisine": "coffee",
+              "count": 4
+            }
+          ],
+          "menu_overlap_count": 1,
+          "opportunity": "some_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.7766,
+            "lng": -122.3947
+          },
+          "mode": "driving",
+          "minutes": 12,
+          "estimated": true
+        }
+      },
+      "event_opportunity": null,
+      "outreach_draft": null
+    },
+    {
+      "id": "spot-king-3rd",
+      "rank": 8,
+      "point": {
+        "lat": 37.7786,
+        "lng": -122.3893
+      },
+      "block_label": "King & 3rd",
+      "address": "King St & 3rd St, San Francisco, CA 94107",
+      "score": 0.6,
+      "verdict": "caution",
+      "why_one_line": "Ballpark gates make this a game-night play more than a lunch one.",
+      "foot_traffic": {
+        "level": "moderate",
+        "score": 0.66,
+        "basis": "bay_wheels",
+        "time_context": "Friday lunch",
+        "detail": "Quiet between events, then very busy on a game night."
+      },
+      "competition": {
+        "overlap_count": 1,
+        "saturation": "medium",
+        "menu_matches": [
+          "tacos"
+        ],
+        "price_tier": "$",
+        "detail": "One overlapping vendor already works the ballpark crowd."
+      },
+      "legality": {
+        "pass": true,
+        "status": "conditional",
+        "rule": "Ballpark event-day placement rules apply",
+        "detail": "Distance checks pass; event-day curb rules change on game days.",
+        "cite": "dpw-182101"
+      },
+      "closure": {
+        "active": false,
+        "detail": "No active closure intersects this block.",
+        "source": null
+      },
+      "travel_minutes": 13,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.7786,
+            "lng": -122.3893
+          },
+          "suitability": "verify",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "Non-hydrant placement checks pass at this point. Verify posted curb and parking signs before stopping or operating."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "hot dogs",
+              "count": 3
+            },
+            {
+              "cuisine": "tacos",
+              "count": 2
+            },
+            {
+              "cuisine": "beer",
+              "count": 4
+            }
+          ],
+          "menu_overlap_count": 1,
+          "opportunity": "some_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.7786,
+            "lng": -122.3893
+          },
+          "mode": "driving",
+          "minutes": 13,
+          "estimated": true
+        }
+      },
+      "event_opportunity": {
+        "event_name": "SF Giants vs Dodgers",
+        "venue": "Oracle Park",
+        "start": "2026-07-10T18:45:00",
+        "expected_attendance": 40000,
+        "event_url": "https://www.ticketmaster.com/event/123",
+        "promoter_name": null
+      },
+      "outreach_draft": {
+        "subject": "Food vendor inquiry for SF Giants vs Dodgers",
+        "body": "Hello event team,\n\nWe'd like to ask about bringing our food truck to SF Giants vs Dodgers at Oracle Park. Please share vendor requirements, availability, fees, and next steps.\n\nThank you,"
+      }
+    },
+    {
+      "id": "spot-harrison-8th",
+      "rank": 9,
+      "point": {
+        "lat": 37.7734,
+        "lng": -122.409
+      },
+      "block_label": "Harrison & 8th",
+      "address": "Harrison St & 8th St, San Francisco, CA 94103",
+      "score": 0.4,
+      "verdict": "good",
+      "why_one_line": "No competition, but not enough foot traffic to carry a lunch service.",
+      "foot_traffic": {
+        "level": "low",
+        "score": 0.34,
+        "basis": "bay_wheels",
+        "time_context": "Friday lunch",
+        "detail": "Light midday activity — mostly through-traffic, few walkers."
+      },
+      "competition": {
+        "overlap_count": 0,
+        "saturation": "low",
+        "menu_matches": [],
+        "price_tier": "$",
+        "detail": "Nothing nearby overlaps your menu, but few customers either."
+      },
+      "legality": {
+        "pass": true,
+        "status": "pass",
+        "rule": "75 ft restaurant, 7 ft hydrant, and 500 ft school clearances",
+        "detail": "All measured placement checks pass at this point.",
+        "cite": "dpw-182101"
+      },
+      "closure": {
+        "active": false,
+        "detail": "No active closure intersects this block.",
+        "source": null
+      },
+      "travel_minutes": 9,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.7734,
+            "lng": -122.409
+          },
+          "suitability": "recommended",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "Non-hydrant placement checks pass at this point. Verify posted curb and parking signs before stopping or operating."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "coffee",
+              "count": 1
+            }
+          ],
+          "menu_overlap_count": 0,
+          "opportunity": "low_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.7734,
+            "lng": -122.409
+          },
+          "mode": "driving",
+          "minutes": 9,
+          "estimated": true
+        }
+      },
+      "event_opportunity": null,
+      "outreach_draft": null
+    },
+    {
+      "id": "spot-market-montgomery",
+      "rank": 10,
+      "point": {
+        "lat": 37.7894,
+        "lng": -122.4013
+      },
+      "block_label": "Market & Montgomery",
+      "address": "Market St & Montgomery St, San Francisco, CA 94104",
+      "score": 0.72,
+      "verdict": "caution",
+      "why_one_line": "The biggest crowd downtown — and the most rivals chasing it.",
+      "foot_traffic": {
+        "level": "high",
+        "score": 0.91,
+        "basis": "bay_wheels",
+        "time_context": "Friday lunch",
+        "detail": "The heaviest downtown lunch crowd in this window."
+      },
+      "competition": {
+        "overlap_count": 3,
+        "saturation": "high",
+        "menu_matches": [
+          "tacos",
+          "burritos"
+        ],
+        "price_tier": "$",
+        "detail": "Three overlapping vendors already compete for this crowd."
+      },
+      "legality": {
+        "pass": true,
+        "status": "conditional",
+        "rule": "Keep the BART entrance and transit stop clear",
+        "detail": "Distance checks pass; the sidewalk is narrow and tightly signed.",
+        "cite": "dpw-182101"
+      },
+      "closure": {
+        "active": false,
+        "detail": "No active closure intersects this block.",
+        "source": null
+      },
+      "travel_minutes": 8,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.7894,
+            "lng": -122.4013
+          },
+          "suitability": "verify",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "Non-hydrant placement checks pass at this point. Verify posted curb and parking signs before stopping or operating."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "tacos",
+              "count": 5
+            },
+            {
+              "cuisine": "coffee",
+              "count": 6
+            },
+            {
+              "cuisine": "burritos",
+              "count": 3
+            }
+          ],
+          "menu_overlap_count": 3,
+          "opportunity": "high_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.7894,
+            "lng": -122.4013
+          },
+          "mode": "driving",
+          "minutes": 8,
+          "estimated": true
+        }
+      },
+      "event_opportunity": null,
+      "outreach_draft": null
+    },
+    {
+      "id": "spot-embarcadero-ferry",
+      "rank": 11,
+      "point": {
+        "lat": 37.7955,
+        "lng": -122.3937
+      },
+      "block_label": "Embarcadero & Ferry Building",
+      "address": "The Embarcadero & Market St, San Francisco, CA 94111",
+      "score": 0.7,
+      "verdict": "caution",
+      "why_one_line": "Heavy waterfront traffic, but the marketplace sets a high bar.",
+      "foot_traffic": {
+        "level": "high",
+        "score": 0.84,
+        "basis": "bay_wheels",
+        "time_context": "Friday lunch",
+        "detail": "Ferry arrivals and waterfront walkers keep this busy midday."
+      },
+      "competition": {
+        "overlap_count": 2,
+        "saturation": "high",
+        "menu_matches": [
+          "tacos"
+        ],
+        "price_tier": "$",
+        "detail": "The marketplace itself is your competition here."
+      },
+      "legality": {
+        "pass": true,
+        "status": "conditional",
+        "rule": "Port of San Francisco jurisdiction — separate placement approval",
+        "detail": "Distance checks pass; Port frontage needs its own sign-off.",
+        "cite": "dpw-182101"
+      },
+      "closure": {
+        "active": false,
+        "detail": "No active closure intersects this block.",
+        "source": null
+      },
+      "travel_minutes": 14,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.7955,
+            "lng": -122.3937
+          },
+          "suitability": "verify",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "Non-hydrant placement checks pass at this point. Verify posted curb and parking signs before stopping or operating."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "seafood",
+              "count": 4
+            },
+            {
+              "cuisine": "coffee",
+              "count": 5
+            },
+            {
+              "cuisine": "tacos",
+              "count": 2
+            }
+          ],
+          "menu_overlap_count": 2,
+          "opportunity": "some_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.7955,
+            "lng": -122.3937
+          },
+          "mode": "driving",
+          "minutes": 14,
+          "estimated": true
+        }
+      },
+      "event_opportunity": null,
+      "outreach_draft": null
+    },
+    {
+      "id": "spot-grove-larkin",
+      "rank": 12,
+      "point": {
+        "lat": 37.779,
+        "lng": -122.4177
+      },
+      "block_label": "Grove & Larkin",
+      "address": "Grove St & Larkin St, San Francisco, CA 94102",
+      "score": 0.6,
+      "verdict": "good",
+      "why_one_line": "Civic Center regulars with no one selling what you sell.",
+      "foot_traffic": {
+        "level": "moderate",
+        "score": 0.55,
+        "basis": "bay_wheels",
+        "time_context": "Friday lunch",
+        "detail": "Civic Center workers give a steady, predictable midday flow."
+      },
+      "competition": {
+        "overlap_count": 0,
+        "saturation": "low",
+        "menu_matches": [],
+        "price_tier": "$",
+        "detail": "No direct menu match anywhere on this plaza."
+      },
+      "legality": {
+        "pass": true,
+        "status": "pass",
+        "rule": "75 ft restaurant, 7 ft hydrant, and 500 ft school clearances",
+        "detail": "All measured placement checks pass at this point.",
+        "cite": "dpw-182101"
+      },
+      "closure": {
+        "active": false,
+        "detail": "No active closure intersects this block.",
+        "source": null
+      },
+      "travel_minutes": 15,
+      "area_insights": {
+        "parking": {
+          "point": {
+            "lat": 37.779,
+            "lng": -122.4177
+          },
+          "suitability": "recommended",
+          "permit_checks": [
+            {
+              "rule": "restaurant entrance setback",
+              "pass": true,
+              "required_ft": 75,
+              "actual_ft": 118,
+              "cite": "dpw-182101"
+            },
+            {
+              "rule": "middle school setback",
+              "pass": true,
+              "required_ft": 500,
+              "actual_ft": 690,
+              "cite": "dpw-182101"
+            }
+          ],
+          "note": "Non-hydrant placement checks pass at this point. Verify posted curb and parking signs before stopping or operating."
+        },
+        "local_cuisine": {
+          "nearby": [
+            {
+              "cuisine": "coffee",
+              "count": 3
+            },
+            {
+              "cuisine": "sandwiches",
+              "count": 2
+            }
+          ],
+          "menu_overlap_count": 0,
+          "opportunity": "low_direct_overlap"
+        },
+        "navigation": {
+          "destination": {
+            "lat": 37.779,
+            "lng": -122.4177
+          },
+          "mode": "driving",
+          "minutes": 15,
           "estimated": true
         }
       },

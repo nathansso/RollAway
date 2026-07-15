@@ -24,7 +24,7 @@ import closureFixture from '../fixtures/get_closures.json'
 import permitFixture from '../fixtures/permit_checklist.json'
 import { isWithinSanFrancisco } from './sfBounds'
 import { parseMenu } from './profile'
-import { footTrafficSummary } from './recommendations'
+import { MAX_RECOMMENDATIONS, footTrafficSummary } from './recommendations'
 import { endpointUrl } from './config'
 import type { MenuItem } from '../types/contract'
 
@@ -248,7 +248,7 @@ export function validateRecommendationResponse(
     value.contract_version !== 2 ||
     !isRecord(value.generated_for) ||
     !Array.isArray(value.recommendations) ||
-    value.recommendations.length > 5 ||
+    value.recommendations.length > MAX_RECOMMENDATIONS ||
     !value.recommendations.every(isRecommendation)
   ) {
     return null
@@ -354,7 +354,7 @@ export function adaptNativeRecommendations(
   body: unknown,
   request: RecommendSpotsRequest,
 ): RecommendSpotsResponse | null {
-  if (!isRecord(body) || !Array.isArray(body.spots) || body.spots.length > 5) {
+  if (!isRecord(body) || !Array.isArray(body.spots) || body.spots.length > MAX_RECOMMENDATIONS) {
     return null
   }
   const recommendations: RecommendationSpot[] = []

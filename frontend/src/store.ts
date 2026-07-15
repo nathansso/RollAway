@@ -12,7 +12,7 @@ import {
   type AuthIntent,
 } from './lib/auth'
 import { isWithinSanFrancisco } from './lib/sfBounds'
-import { normalizeRecommendations } from './lib/recommendations'
+import { MAX_RECOMMENDATIONS, normalizeRecommendations } from './lib/recommendations'
 import { createNowWhen, isValidCustomWindow } from './lib/when'
 import { loadJson, loadStringArray, saveJson } from './lib/storage'
 import { EMPTY_FORM_STATE, type PermitFormState } from './components/permits/permitForms'
@@ -193,9 +193,12 @@ export const useAppStore = create<AppState>((set, get) => {
       set({
         appPhase: 'ready',
         // #31: normalize verdicts by relative quality, then keep a wider
-        // candidate pool (up to 12) so the map feels populated. The tray only
-        // renders tiles for the top 3; every pin stays clickable for details.
-        recommendations: normalizeRecommendations(response.recommendations).slice(0, 12),
+        // candidate pool so the map feels populated. The tray only renders
+        // tiles for the top 3; every pin stays clickable for details.
+        recommendations: normalizeRecommendations(response.recommendations).slice(
+          0,
+          MAX_RECOMMENDATIONS,
+        ),
         recommendationStatus: 'success',
       })
     } catch (error) {

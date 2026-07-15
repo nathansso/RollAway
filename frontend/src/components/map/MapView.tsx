@@ -63,7 +63,9 @@ export function FallbackMap() {
           {vendorMarkerLabel(selectedVendorFeature.properties)}
         </div>
       )}
-      {recommendations.map((spot, index) => (
+      {/* Top 3 only: this schematic lays pins out by index, not by geography, so
+          the wider candidate pool would march straight off the preview. */}
+      {recommendations.slice(0, 3).map((spot, index) => (
         <button
           key={spot.id}
           type="button"

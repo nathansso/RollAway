@@ -1232,6 +1232,11 @@ button:disabled {
   right: max(0.75rem, env(safe-area-inset-right));
   top: max(0.75rem, env(safe-area-inset-top));
   z-index: 150;
+  /* Purely a status notice (no interactive children), pinned over the header.
+     Without this it swallows taps meant for the controls underneath — offline,
+     that blocked "Edit profile", the very permit tools the banner says still
+     work. */
+  pointer-events: none;
   display: flex;
   max-width: 40rem;
   margin-inline: auto;

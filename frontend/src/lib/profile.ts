@@ -157,17 +157,24 @@ export function validateProfile(value: unknown): value is VendorProfile {
   return isValidEmailShape(String(contact.email)) && isValidUsPhone(String(contact.phone))
 }
 
+// Validate an already-parsed stored profile, applying the migrations a profile
+// written by an older build needs. Profiles saved before the cuisine field
+// existed are defaulted rather than rejected — rejecting one sends a returning
+// vendor back through onboarding as if they were brand new.
+export function readStoredProfile(value: unknown): VendorProfile | null {
+  const migrated =
+    isRecord(value) &&
+    value.schema_version === PROFILE_SCHEMA_VERSION &&
+    value.cuisine === undefined
+      ? { ...value, cuisine: 'american' }
+      : value
+  return validateProfile(migrated) ? migrated : null
+}
+
 export function parseStoredProfile(raw: string | null): VendorProfile | null {
   if (!raw) return null
   try {
-    const parsed: unknown = JSON.parse(raw)
-    const migrated =
-      isRecord(parsed) &&
-      parsed.schema_version === PROFILE_SCHEMA_VERSION &&
-      parsed.cuisine === undefined
-        ? { ...parsed, cuisine: 'american' }
-        : parsed
-    return validateProfile(migrated) ? migrated : null
+    return readStoredProfile(JSON.parse(raw))
   } catch {
     return null
   }

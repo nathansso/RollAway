@@ -22,13 +22,27 @@ export default defineConfig({
       VITE_FIXTURE_DELAY_MS: '1100',
       VITE_MAPBOX_TOKEN: '',
       VITE_USE_FIXTURES: 'true',
+      // Honor a seeded profile so the specs can drive the returning visitor
+      // (straight to the map). The app otherwise always opens on onboarding.
+      VITE_FORCE_FIRST_TIME_USER: 'false',
       VITE_RECOMMEND_SPOTS_URL: 'https://rollaway-business.invalid/recommendations',
       VITE_VENDORS_URL: 'https://rollaway-business.invalid/vendors',
       VITE_CLOSURES_URL: 'https://rollaway-business.invalid/closures',
       VITE_PERMIT_CHECKLIST_URL: 'https://rollaway-business.invalid/permits',
+      // Blank so the uploaded .txt menu parses in-browser. extractMenu ignores
+      // VITE_USE_FIXTURES and calls MENU_EXTRACT_URL whenever one is set, so a
+      // developer's .env.development.local would otherwise point these specs at
+      // the real extractor and the menu step would never resolve.
+      VITE_MENU_EXTRACT_URL: '',
       // Non-empty so #14/#17 Street View + Places autocomplete render; the actual
       // Google calls are intercepted by page.route mocks in the specs.
       VITE_GOOGLE_MAPS_BROWSER_KEY: 'test-browser-key',
+      // Keep auth OFF: these specs cover the map, not the sign-in gate. The dev
+      // server loads .env.development.local, so a developer with real Supabase
+      // credentials would otherwise hit the auth wall here instead of the map.
+      // Blanking wins because Vite lets process.env override .env files.
+      VITE_SUPABASE_URL: '',
+      VITE_SUPABASE_ANON_KEY: '',
     },
     reuseExistingServer: false,
   },

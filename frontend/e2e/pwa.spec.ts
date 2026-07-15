@@ -59,8 +59,9 @@ test('production PWA shell and fixture data reload offline', async ({
     )
     return navigator.serviceWorker.ready
   })
+  // #14 removed the session-setup step this used to click through ("Find places
+  // to roll"): a stored profile now boots straight to the map and auto-searches.
   await page.reload()
-  await page.getByRole('button', { name: 'Find places to roll' }).click()
   await expect(page.getByText('2nd & Howard', { exact: true })).toBeVisible()
   await expect
     .poll(
@@ -88,7 +89,6 @@ test('production PWA shell and fixture data reload offline', async ({
   await context.setOffline(true)
   await page.reload()
   await expect(page.getByText(/Offline\. Fixture recommendations/)).toBeVisible()
-  await page.getByRole('button', { name: 'Find places to roll' }).click()
   await expect(page.getByText('2nd & Howard', { exact: true })).toBeVisible()
   // Permit checklist now lives behind the profile, not a trip-page tab.
   await page.getByRole('button', { name: /Edit profile/ }).click()

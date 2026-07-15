@@ -1,6 +1,16 @@
 import { create } from 'zustand'
 import { apiClient, ApiClientError } from './lib/apiClient'
-import { PROFILE_STORAGE_KEY, validateProfile } from './lib/profile'
+import { PROFILE_STORAGE_KEY, readStoredProfile, validateProfile } from './lib/profile'
+import { isAuthConfigured, getSupabase } from './lib/supabase'
+import {
+  AuthMessageError,
+  getProfileRow,
+  sendMagicLink,
+  signOut as authSignOutRequest,
+  takeIntent,
+  upsertProfileRow,
+  type AuthIntent,
+} from './lib/auth'
 import { isWithinSanFrancisco } from './lib/sfBounds'
 import { normalizeRecommendations } from './lib/recommendations'
 import { createNowWhen, isValidCustomWindow } from './lib/when'
@@ -36,6 +46,10 @@ const PERMIT_FORMS_KEY = 'rollaway.permit-forms.v1'
 let latestRecommendationRequest = 0
 let latestPermitRequest = 0
 let latestBaseRequest = 0
+let latestLocationRequest = 0
+// Bind the Supabase auth listener exactly once (StrictMode double-invokes the
+// init effect, and initAuth may be called from more than one mount).
+let authListenerBound = false
 
 function permitProgressKey(profile: VendorProfile | null): string {
   return `${PERMIT_PROGRESS_KEY}.${profile?.vendor_type ?? 'none'}`
@@ -55,6 +69,17 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof ApiClientError ? error.message : fallback
 }
 
+// The full VendorProfile cached in localStorage (Wave 2: this stays the source
+// of truth for the rich profile; the Supabase `profiles` row is only the
+// new/returning signal + a few reusable defaults).
+function loadStoredProfile(): VendorProfile | null {
+  return readStoredProfile(loadJson<unknown>(PROFILE_STORAGE_KEY, null))
+}
+
+// disabled = Supabase not configured (dev/fixtures/e2e/pre-cutover): the app
+// runs exactly as before. unknown = configured, session not yet resolved.
+export type AuthStatus = 'disabled' | 'unknown' | 'signed_out' | 'signed_in'
+
 interface AppState {
   appPhase: AppPhase
   continueToSession: () => void
@@ -67,6 +92,19 @@ interface AppState {
   openProfileEditor: () => void
   closeProfileEditor: () => void
   saveProfile: (profile: VendorProfile) => boolean
+
+  // Wave 2 auth (#39/#50)
+  authStatus: AuthStatus
+  authEmail: string | null
+  authError: string | null
+  magicLinkSentTo: string | null
+  // A localStorage profile eligible to import on first sign-in (offer in UI).
+  authImportProfile: VendorProfile | null
+  initAuth: () => void
+  sendAuthMagicLink: (email: string, intent: AuthIntent) => Promise<void>
+  authSignOut: () => Promise<void>
+  clearAuthError: () => void
+  dismissProfileImport: () => void
 
   when: SessionWhen
   setWhen: (when: SessionWhen) => void
@@ -104,11 +142,20 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set, get) => {
-  // Every launch starts as a brand-new, first-time user: ignore any previously
-  // stored profile so the app always opens on the onboarding/initialization page
-  // and walks through landing -> profile setup -> map from scratch.
-  const initialProfile: VendorProfile | null = null
-  const initialPhase: AppPhase = 'profile'
+  // Demo default: every launch starts as a brand-new, first-time user, ignoring
+  // any stored profile so the app always opens on onboarding and walks through
+  // profile setup -> map from scratch.
+  //
+  // Set VITE_FORCE_FIRST_TIME_USER=false to honor a stored profile and boot
+  // straight to the map instead. That is the auth-off stand-in for the
+  // returning-user routing resolveAuthRouting performs once Supabase is
+  // configured, and it is how the e2e specs exercise the returning visitor.
+  // It only applies when auth is off: with auth on, resolveAuthRouting decides
+  // the landing phase after the session resolves, whatever this computes.
+  const forceFirstTimeUser =
+    String(import.meta.env.VITE_FORCE_FIRST_TIME_USER ?? 'true').toLowerCase() !== 'false'
+  const initialProfile: VendorProfile | null = forceFirstTimeUser ? null : loadStoredProfile()
+  const initialPhase: AppPhase = initialProfile ? 'loading_recommendations' : 'profile'
 
   const startRecommendations = async () => {
     const { profile, location, when, recommendationStatus, locationStatus } = get()
@@ -202,6 +249,43 @@ export const useAppStore = create<AppState>((set, get) => {
     saveJson(permitFormsKey(get().profile), permitForms)
   }
 
+  // Wave 2: decide where a freshly-authenticated user lands. A `profiles` row =
+  // returning -> straight to the recommendation map (auto-running the first
+  // search) when a valid local profile exists, else onboarding to rebuild it.
+  // No row = new -> onboarding, offering to import any pre-auth local profile.
+  const resolveAuthRouting = async (userId: string, email: string | null): Promise<void> => {
+    takeIntent() // consume the round-trip intent (routing is driven by the row)
+    let row = null
+    try {
+      row = await getProfileRow(userId)
+    } catch {
+      row = null // a transient read failure shouldn't trap the user out of the app
+    }
+    const stored = loadStoredProfile()
+    if (row && stored) {
+      set({
+        authStatus: 'signed_in',
+        authEmail: email,
+        authImportProfile: null,
+        profile: stored,
+        profileEditorOpen: false,
+        appPhase: 'loading_recommendations',
+        completedPermitItems: loadStringArray(permitProgressKey(stored)),
+        permitForms: loadPermitForms(permitFormsKey(stored)),
+      })
+      return
+    }
+    set({
+      authStatus: 'signed_in',
+      authEmail: email,
+      // Returning-but-no-local-profile and brand-new both go to onboarding;
+      // only a new user with a pre-auth local profile gets the import offer.
+      authImportProfile: row ? null : stored,
+      profileEditorOpen: true,
+      appPhase: 'profile',
+    })
+  }
+
   return {
     appPhase: initialPhase,
     continueToSession: () => {
@@ -243,8 +327,63 @@ export const useAppStore = create<AppState>((set, get) => {
       latestRecommendationRequest += 1
       latestPermitRequest += 1
       saveJson(PROFILE_STORAGE_KEY, profile)
+      // Wave 2: mirror the profile subset to Supabase when signed in (best
+      // effort — RLS scopes the row; a failure never blocks the local save).
+      const { authStatus } = get()
+      if (authStatus === 'signed_in') {
+        const supabase = getSupabase()
+        void supabase?.auth.getUser().then(({ data }) => {
+          if (data.user) void upsertProfileRow(data.user.id, profile).catch(() => {})
+        })
+      }
       return true
     },
+
+    authStatus: isAuthConfigured() ? 'unknown' : 'disabled',
+    authEmail: null,
+    authError: null,
+    magicLinkSentTo: null,
+    authImportProfile: null,
+    initAuth: () => {
+      const supabase = getSupabase()
+      if (!supabase) {
+        set({ authStatus: 'disabled' })
+        return
+      }
+      if (authListenerBound) return
+      authListenerBound = true
+      // onAuthStateChange emits INITIAL_SESSION immediately (supabase-js v2),
+      // then SIGNED_IN when the magic-link redirect is consumed by
+      // detectSessionInUrl — so this one subscription covers boot + login.
+      supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT' || !session?.user) {
+          set({ authStatus: 'signed_out', authEmail: null })
+          return
+        }
+        void resolveAuthRouting(session.user.id, session.user.email ?? null)
+      })
+    },
+    sendAuthMagicLink: async (email, intent) => {
+      set({ authError: null })
+      try {
+        await sendMagicLink(email, intent)
+        set({ magicLinkSentTo: email.trim() })
+      } catch (error) {
+        set({
+          authError:
+            error instanceof AuthMessageError
+              ? error.message
+              : 'Could not send the sign-in link. Check the email and try again.',
+        })
+        throw error
+      }
+    },
+    authSignOut: async () => {
+      await authSignOutRequest()
+      set({ authStatus: 'signed_out', authEmail: null, magicLinkSentTo: null, authError: null })
+    },
+    clearAuthError: () => set({ authError: null }),
+    dismissProfileImport: () => set({ authImportProfile: null }),
 
     when: createNowWhen(),
     setWhen: (when) => {
@@ -280,6 +419,13 @@ export const useAppStore = create<AppState>((set, get) => {
         return
       }
       latestRecommendationRequest += 1
+      // Only the newest location request may apply its result. Two can be in
+      // flight at once (StrictMode re-runs the mount effect with the same
+      // render's values, so both see locationStatus 'idle'; a user can also tap
+      // the pin twice). Both callbacks clear recommendations, so a stale one
+      // landing after the search succeeded wiped the results and left an empty
+      // map: appPhase is 'ready' by then, so the auto-search never re-fires.
+      const locationRequestId = ++latestLocationRequest
       set({
         locationStatus: 'requesting',
         originLabel: null,
@@ -291,6 +437,7 @@ export const useAppStore = create<AppState>((set, get) => {
       })
       navigator.geolocation.getCurrentPosition(
         ({ coords }) => {
+          if (locationRequestId !== latestLocationRequest) return
           latestRecommendationRequest += 1
           const location = { lat: coords.latitude, lng: coords.longitude }
           const outsideSanFrancisco = !isWithinSanFrancisco(location)
@@ -307,6 +454,7 @@ export const useAppStore = create<AppState>((set, get) => {
           })
         },
         (error) => {
+          if (locationRequestId !== latestLocationRequest) return
           latestRecommendationRequest += 1
           set({
             appPhase: get().appPhase,

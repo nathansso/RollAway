@@ -15,8 +15,11 @@ const api = vi.hoisted(() => ({
   getClosures: vi.fn(),
 }))
 
-vi.mock('./lib/apiClient', () => ({
-  ApiClientError: class ApiClientError extends Error {},
+// Stub only the network client. The module also exports pure helpers (e.g.
+// estimateTravel, which viewport discovery uses to score what it finds), and
+// replacing those with nothing takes real code down with the fake.
+vi.mock('./lib/apiClient', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./lib/apiClient')>()),
   apiClient: api,
 }))
 
@@ -444,6 +447,67 @@ describe('guided app store phases', () => {
       'not_submitted',
     )
     expect(store.getState().permitForms['pw-location-application'].submittedAt).toBeNull()
+  })
+
+  // #49: the viewport scan is additive. These cover the store's guards around
+  // it; lib/discover.test.ts covers the generator itself.
+  it('adds pins for the region panned to, without disturbing the ranked search', async () => {
+    const store = await loadStore(validProfile)
+    await store.getState().startRecommendations()
+    const ranked = store.getState().recommendations
+
+    store.getState().discoverInViewport({
+      southwest: { lat: 37.7875, lng: -122.404 },
+      northeast: { lat: 37.7955, lng: -122.397 },
+    })
+
+    expect(store.getState().discovered.length).toBeGreaterThan(0)
+    // The tray's top 3 must not move under the vendor while they explore.
+    expect(store.getState().recommendations).toEqual(ranked)
+  })
+
+  it('finds nothing in a region that does not clear the quality floor', async () => {
+    const store = await loadStore(validProfile)
+    await store.getState().startRecommendations()
+
+    // Outer Sunset: no modeled crowd, so no pins rather than a fresh green set.
+    store.getState().discoverInViewport({
+      southwest: { lat: 37.7498, lng: -122.4976 },
+      northeast: { lat: 37.7578, lng: -122.4896 },
+    })
+
+    expect(store.getState().discovered).toEqual([])
+  })
+
+  it('ignores a viewport scan before the ranked search has landed', async () => {
+    const store = await loadStore(validProfile)
+    store.getState().discoverInViewport({
+      southwest: { lat: 37.7875, lng: -122.404 },
+      northeast: { lat: 37.7955, lng: -122.397 },
+    })
+    expect(store.getState().discovered).toEqual([])
+  })
+
+  it('drops found pins when a new search invalidates them', async () => {
+    const store = await loadStore(validProfile)
+    await store.getState().startRecommendations()
+    store.getState().discoverInViewport({
+      southwest: { lat: 37.7875, lng: -122.404 },
+      northeast: { lat: 37.7955, lng: -122.397 },
+    })
+    expect(store.getState().discovered.length).toBeGreaterThan(0)
+
+    // Found pins are travel-scored from an origin, so a new time window (which
+    // re-runs the search) must not leave stale ones on the map.
+    store.getState().setWhen({
+      preset: 'custom',
+      date: '2026-07-12',
+      day: 'sun',
+      time_from: '17:00',
+      time_to: '20:00',
+      label: 'Sunday dinner',
+    })
+    expect(store.getState().discovered).toEqual([])
   })
 
   it('reloads per-vendor-type form state and isolates it from other types', async () => {

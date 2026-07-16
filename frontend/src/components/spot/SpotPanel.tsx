@@ -151,10 +151,14 @@ function Details({ spot }: { spot: RecommendationSpot }) {
 export default function SpotPanel() {
   const selectedId = useAppStore((state) => state.selectedSpotId)
   const spots = useAppStore((state) => state.recommendations)
+  const discovered = useAppStore((state) => state.discovered)
   const location = useAppStore((state) => state.location)
   const selectSpot = useAppStore((state) => state.selectSpot)
   const panelRef = useRef<HTMLElement>(null)
-  const spot = spots.find((candidate) => candidate.id === selectedId)
+  // #49: a pin found while exploring opens the same sheet as a ranked one.
+  const spot =
+    spots.find((candidate) => candidate.id === selectedId) ??
+    discovered.find((candidate) => candidate.id === selectedId)
   useDialogFocus(panelRef, () => selectSpot(null), true, Boolean(spot))
 
   if (!spot) return null

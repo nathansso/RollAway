@@ -139,4 +139,26 @@ test('fixture mode renders Mapbox with only intercepted fake-token traffic', asy
   expect(styleRequests.every((url) => url.includes('access_token=pk.'))).toBe(true)
   expect(businessRequests).toEqual([])
   expect(browserErrors).toEqual([])
+
+  // #49: panning scouts the region the vendor moved to and adds pins for it.
+  // Covers the wiring specifically — that a real drag reaches the store through
+  // the debounce — which the store and generator unit tests cannot see.
+  const before = await page.locator('.rank-marker').count()
+  const box = await map.boundingBox()
+  if (!box) throw new Error('map has no box')
+  // Drag downward, which pans the view NORTH toward the Financial District.
+  // (Dragging up walks the view south into Potrero Hill, which is quiet enough
+  // that the quality floor correctly finds nothing there.)
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.3)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.72, { steps: 14 })
+  await page.mouse.up()
+  await expect
+    .poll(() => page.locator('.rank-marker').count(), { timeout: 10_000 })
+    .toBeGreaterThan(before)
+  // Found pins are additive: the tray stays the ranked top 3.
+  await expect(
+    page.locator('.recommendation-tray button[aria-label^="Open details for suggested spot"]'),
+  ).toHaveCount(3)
+  expect(browserErrors).toEqual([])
 })

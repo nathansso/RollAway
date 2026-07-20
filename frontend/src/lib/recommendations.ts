@@ -1,6 +1,15 @@
 import type { RecommendationSpot, Verdict } from '../types/contract'
 
 /**
+ * How many candidates the map will hold. Sized for the map rather than the
+ * list: the tray only ever renders tiles for the top 3, and the rest render as
+ * smaller "minor" pins (#31), so a wider pool costs nothing on screen. Every
+ * producer is held to the same ceiling — the fixture, the live validator, and
+ * the adapter — so a backend that widens its K can flow straight through.
+ */
+export const MAX_RECOMMENDATIONS = 12
+
+/**
  * #32: a rough, vendor-facing read on how busy a spot is likely to be, keyed off
  * the modeled traffic `level` and lightly off the daypart in `timeContext`.
  * Intentionally vague — it replaces the internal "estimated from nearby Bay

@@ -12,7 +12,8 @@ import {
   type AuthIntent,
 } from './lib/auth'
 import { isWithinSanFrancisco } from './lib/sfBounds'
-import { normalizeRecommendations } from './lib/recommendations'
+import { MAX_RECOMMENDATIONS, normalizeRecommendations } from './lib/recommendations'
+import { mergeDiscovered, synthesizeViewportSpots, type ViewportBounds } from './lib/discover'
 import { createNowWhen, isValidCustomWindow } from './lib/when'
 import { loadJson, loadStringArray, saveJson } from './lib/storage'
 import { EMPTY_FORM_STATE, type PermitFormState } from './components/permits/permitForms'
@@ -125,6 +126,12 @@ interface AppState {
   recommendations: RecommendationSpot[]
   startRecommendations: () => Promise<void>
   requestRecommendations: () => Promise<void>
+  /**
+   * #49: extra spots turned up by panning around, kept apart from the ranked
+   * search so exploring never reshuffles the top 3 out from under the vendor.
+   */
+  discovered: RecommendationSpot[]
+  discoverInViewport: (bounds: ViewportBounds) => void
   selectedSpotId: string | null
   selectSpot: (id: string | null) => void
 
@@ -193,9 +200,12 @@ export const useAppStore = create<AppState>((set, get) => {
       set({
         appPhase: 'ready',
         // #31: normalize verdicts by relative quality, then keep a wider
-        // candidate pool (up to 12) so the map feels populated. The tray only
-        // renders tiles for the top 3; every pin stays clickable for details.
-        recommendations: normalizeRecommendations(response.recommendations).slice(0, 12),
+        // candidate pool so the map feels populated. The tray only renders
+        // tiles for the top 3; every pin stays clickable for details.
+        recommendations: normalizeRecommendations(response.recommendations).slice(
+          0,
+          MAX_RECOMMENDATIONS,
+        ),
         recommendationStatus: 'success',
       })
     } catch (error) {
@@ -321,6 +331,8 @@ export const useAppStore = create<AppState>((set, get) => {
         completedPermitItems: loadStringArray(permitProgressKey(profile)),
         permitForms: loadPermitForms(permitFormsKey(profile)),
         recommendations: [],
+        // Found pins are tied to the origin and window that turned them up.
+        discovered: [],
         recommendationStatus: 'idle',
         selectedSpotId: null,
       })
@@ -395,6 +407,8 @@ export const useAppStore = create<AppState>((set, get) => {
         appPhase: get().appPhase,
         when,
         recommendations: [],
+        // Found pins are tied to the origin and window that turned them up.
+        discovered: [],
         recommendationStatus: 'idle',
         recommendationError: null,
         selectedSpotId: null,
@@ -430,6 +444,8 @@ export const useAppStore = create<AppState>((set, get) => {
         locationStatus: 'requesting',
         originLabel: null,
         recommendations: [],
+        // Found pins are tied to the origin and window that turned them up.
+        discovered: [],
         recommendationStatus: 'idle',
         recommendationError: null,
         selectedSpotId: null,
@@ -449,6 +465,7 @@ export const useAppStore = create<AppState>((set, get) => {
               ? 'Your location is outside San Francisco. Using the SoMa demo origin.'
               : null,
             recommendations: [],
+            discovered: [],
             recommendationStatus: 'idle',
             selectedSpotId: null,
           })
@@ -462,6 +479,7 @@ export const useAppStore = create<AppState>((set, get) => {
             location: SOMA_FALLBACK,
             locationNotice: null,
             recommendations: [],
+            discovered: [],
             recommendationStatus: 'idle',
             selectedSpotId: null,
           })
@@ -484,6 +502,8 @@ export const useAppStore = create<AppState>((set, get) => {
           ? 'That address is outside San Francisco. Using the SoMa demo origin.'
           : null,
         recommendations: [],
+        // Found pins are tied to the origin and window that turned them up.
+        discovered: [],
         recommendationStatus: 'idle',
         recommendationError: null,
         selectedSpotId: null,
@@ -522,6 +542,28 @@ export const useAppStore = create<AppState>((set, get) => {
     recommendations: [],
     startRecommendations,
     requestRecommendations: startRecommendations,
+
+    discovered: [],
+    discoverInViewport: (bounds) => {
+      const { recommendations, discovered, location, when, recommendationStatus } = get()
+      // Nothing to add to until the ranked search has landed — and a viewport
+      // the vendor is only passing through on the way to their results isn't
+      // one they asked about.
+      if (recommendationStatus !== 'success') return
+      const found = synthesizeViewportSpots(bounds, {
+        origin: location,
+        when,
+        // Ranked and already-found pins both keep new ones at arm's length.
+        existing: [...recommendations, ...discovered],
+        vendors: get().vendors,
+      })
+      if (found.length === 0) return
+      const focus = {
+        lat: (bounds.southwest.lat + bounds.northeast.lat) / 2,
+        lng: (bounds.southwest.lng + bounds.northeast.lng) / 2,
+      }
+      set({ discovered: mergeDiscovered(discovered, found, focus) })
+    },
     selectedSpotId: null,
     selectSpot: (selectedSpotId) => set({ selectedSpotId }),
 

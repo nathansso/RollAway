@@ -13,6 +13,7 @@ import {
   validatePermitChecklist,
   validateRecommendationResponse,
 } from './apiClient'
+import { MAX_RECOMMENDATIONS } from './recommendations'
 
 const request: RecommendSpotsRequest = {
   user_profile: {
@@ -54,12 +55,18 @@ describe('fixture API client', () => {
     const response = await apiClient.recommendSpots(request, { delayMs: 0 })
 
     expect(fetchSpy).not.toHaveBeenCalled()
-    expect(response.recommendations).toHaveLength(3)
-    expect(response.recommendations.map((spot) => spot.block_label)).toEqual([
+    // A pool wide enough to exercise the minor pins (#31) and viewport spread,
+    // but never wider than the map will hold.
+    expect(response.recommendations.length).toBeGreaterThanOrEqual(10)
+    expect(response.recommendations.length).toBeLessThanOrEqual(MAX_RECOMMENDATIONS)
+    expect(response.recommendations.slice(0, 3).map((spot) => spot.block_label)).toEqual([
       '2nd & Howard',
       'Folsom & 1st',
       'Mission & 5th',
     ])
+    expect(new Set(response.recommendations.map((spot) => spot.id)).size).toBe(
+      response.recommendations.length,
+    )
     expect(response.recommendations[0].foot_traffic.basis).toBe('bay_wheels')
     expect(response.recommendations[0].travel_minutes).toBeGreaterThanOrEqual(3)
     expect(response.recommendations[0].travel_distance_miles).toBeGreaterThanOrEqual(0)
@@ -73,6 +80,13 @@ describe('fixture API client', () => {
         miles: spot.travel_distance_miles,
       }).toEqual(estimateTravel(spot.point, request.location))
     }
+  })
+
+  // The fixture path returns without validating, so nothing else stops the
+  // fixture drifting out of the contract the live path is held to.
+  it('serves a fixture the live validator would accept', async () => {
+    const response = await apiClient.recommendSpots(request, { delayMs: 0 })
+    expect(validateRecommendationResponse(response)).not.toBeNull()
   })
 
   it('returns vendors, closures, and permit guidance without fetch', async () => {

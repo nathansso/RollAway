@@ -3,6 +3,7 @@ import { ChevronIcon, CloseIcon, FileIcon, PermitIcon } from '../common/Icons'
 import BrandMark from '../common/BrandMark'
 import { SAMPLE_MENUS } from '../../fixtures/sampleMenus'
 import { derivePriceTier, formatUsPhone, formatUsPhoneLocal, parseMenu } from '../../lib/profile'
+import { inferCuisine } from '../../lib/cuisine'
 import { apiClient, ApiClientError } from '../../lib/apiClient'
 import { extractPdfText, renderPdfFirstPageToPng } from '../../lib/pdfText'
 import AddressAutocomplete from '../common/AddressAutocomplete'
@@ -108,6 +109,9 @@ export default function ProfileEditor() {
   const [menuNotice, setMenuNotice] = useState('')
   const [menuViewOpen, setMenuViewOpen] = useState(false)
   const [menuUrl, setMenuUrl] = useState('')
+  // #44: the menu decides the cuisine tag — but only until the vendor overrules
+  // it. Once they pick one by hand, a later upload must not silently undo that.
+  const [cuisineChosenByHand, setCuisineChosenByHand] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
   const phoneRef = useRef<HTMLInputElement>(null)
   const firstLaunch = existing === null
@@ -181,12 +185,25 @@ export default function ProfileEditor() {
         setMenuNotice('No menu items found. Try a clearer photo, a text file, or a menu link.')
         return
       }
+      // #44: tag the cuisine from what the menu actually says.
+      const detected = cuisineChosenByHand ? null : inferCuisine(plain_text, items)
       setDraft((current) => ({
         ...current,
+        cuisine: detected ?? current.cuisine,
         menu: { raw: plain_text, items, price_tier: derivePriceTier(items) },
       }))
       setMenuStatus('success')
-      setMenuNotice(`Extracted ${items.length} item${items.length === 1 ? '' : 's'}.`)
+      const extracted = `Extracted ${items.length} item${items.length === 1 ? '' : 's'}.`
+      const detectedLabel = detected
+        ? SAMPLE_MENUS.find((sample) => sample.id === detected)?.label
+        : null
+      // Say so when we change the tag: a silent edit to a field they already
+      // walked past is worse than no detection at all.
+      setMenuNotice(
+        detectedLabel
+          ? `${extracted} Looks like ${detectedLabel} — change the cuisine above if that's off.`
+          : extracted,
+      )
       setMenuViewOpen(true)
     } catch (extractionError) {
       setMenuStatus('error')
@@ -356,12 +373,13 @@ export default function ProfileEditor() {
               <select
                 className={fieldClass}
                 value={draft.cuisine}
-                onChange={(event) =>
+                onChange={(event) => {
+                  setCuisineChosenByHand(true)
                   setDraft((current) => ({
                     ...current,
                     cuisine: event.target.value as CuisineId,
                   }))
-                }
+                }}
               >
                 {SAMPLE_MENUS.map((sample) => (
                   <option key={sample.id} value={sample.id}>

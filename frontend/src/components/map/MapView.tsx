@@ -22,6 +22,9 @@ import { syncClosureOverlay, syncVendorOverlay } from './mapOverlays'
 const MAPBOX_TOKEN = String(import.meta.env.VITE_MAPBOX_TOKEN ?? '')
 const MAP_ENABLED = Boolean(MAPBOX_TOKEN)
 
+/** Long enough to let a drag or a pinch settle before scouting the new view. */
+const DISCOVER_DEBOUNCE_MS = 400
+
 export function FallbackMap() {
   const vendors = useAppStore((state) => state.vendors)
   const closures = useAppStore((state) => state.closures)
@@ -63,7 +66,9 @@ export function FallbackMap() {
           {vendorMarkerLabel(selectedVendorFeature.properties)}
         </div>
       )}
-      {recommendations.map((spot, index) => (
+      {/* Top 3 only: this schematic lays pins out by index, not by geography, so
+          the wider candidate pool would march straight off the preview. */}
+      {recommendations.slice(0, 3).map((spot, index) => (
         <button
           key={spot.id}
           type="button"
@@ -121,6 +126,7 @@ export default function MapView({ onViewReadyChange }: MapViewProps) {
   const vendors = useAppStore((state) => state.vendors)
   const closures = useAppStore((state) => state.closures)
   const recommendations = useAppStore((state) => state.recommendations)
+  const discovered = useAppStore((state) => state.discovered)
   const location = useAppStore((state) => state.location)
   const locationStatus = useAppStore((state) => state.locationStatus)
   const selectedSpotId = useAppStore((state) => state.selectedSpotId)
@@ -212,9 +218,10 @@ export default function MapView({ onViewReadyChange }: MapViewProps) {
     const map = mapRef.current
     if (!map || !mapReady) return
     spotMarkers.current.forEach((marker) => marker.remove())
-    // #31: render every candidate as a pin (top 3 dominant, the rest as smaller
-    // "minor" markers) — all clickable — but only fit the camera to the top 3.
-    spotMarkers.current = recommendations.map((spot, index) => {
+    // #31/#49: every candidate draws a pin — the ranked top 3 dominant, the rest
+    // of the pool and anything found while exploring as smaller "minor" markers.
+    // All of them stay clickable.
+    spotMarkers.current = [...recommendations, ...discovered].map((spot, index) => {
       const element = buildSpotMarkerElement(
         spot,
         () => useAppStore.getState().selectSpot(spot.id),
@@ -224,18 +231,53 @@ export default function MapView({ onViewReadyChange }: MapViewProps) {
         .setLngLat([spot.point.lng, spot.point.lat])
         .addTo(map)
     })
-    if (recommendations.length > 0) {
-      const bounds = new mapboxgl.LngLatBounds()
-      getFitCoordinates(recommendations.slice(0, 3), location).forEach((coordinate) =>
-        bounds.extend(coordinate),
-      )
-      map.fitBounds(bounds, {
-        padding: { top: 190, right: 55, bottom: 230, left: 55 },
-        maxZoom: 15.5,
-        duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 700,
-      })
-    }
+  }, [recommendations, discovered, mapReady])
+
+  // Framing is deliberately separate from drawing, and deliberately ignores
+  // `discovered`: pins found while panning must never drag the camera back to
+  // the top 3 the moment they land.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !mapReady || recommendations.length === 0) return
+    const bounds = new mapboxgl.LngLatBounds()
+    getFitCoordinates(recommendations.slice(0, 3), location).forEach((coordinate) =>
+      bounds.extend(coordinate),
+    )
+    map.fitBounds(bounds, {
+      padding: { top: 190, right: 55, bottom: 230, left: 55 },
+      maxZoom: 15.5,
+      duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 700,
+    })
   }, [location, recommendations, mapReady])
+
+  // #49: scout the region the vendor pans to, so the map keeps rewarding
+  // exploration instead of stopping at the edge of the original result.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !mapReady) return
+    let timer: number | undefined
+    const onMoveEnd = (event: { originalEvent?: unknown }) => {
+      // Only when the vendor moved the map themselves. The programmatic fit that
+      // follows a search fires moveend too, and that is the app framing their
+      // results — not them going looking.
+      if (!event.originalEvent) return
+      window.clearTimeout(timer)
+      // A drag or pinch emits a burst of moveend; scan once they settle.
+      timer = window.setTimeout(() => {
+        const view = map.getBounds()
+        if (!view) return
+        useAppStore.getState().discoverInViewport({
+          southwest: { lat: view.getSouth(), lng: view.getWest() },
+          northeast: { lat: view.getNorth(), lng: view.getEast() },
+        })
+      }, DISCOVER_DEBOUNCE_MS)
+    }
+    map.on('moveend', onMoveEnd)
+    return () => {
+      window.clearTimeout(timer)
+      map.off('moveend', onMoveEnd)
+    }
+  }, [mapReady])
 
   useEffect(() => {
     const map = mapRef.current

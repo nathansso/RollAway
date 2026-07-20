@@ -3,7 +3,7 @@ import { act, cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiClient } from '../../lib/apiClient'
-import { normalizeRecommendations } from '../../lib/recommendations'
+import { MAX_RECOMMENDATIONS, normalizeRecommendations } from '../../lib/recommendations'
 import { useAppStore } from '../../store'
 import type { RecommendationSpot } from '../../types/contract'
 import {
@@ -52,8 +52,8 @@ beforeEach(async () => {
     },
     { delayMs: 0 },
   )
-  // Mirror what the store does: normalize verdicts and keep the top 3.
-  spots = normalizeRecommendations(response.recommendations).slice(0, 3)
+  // Mirror what the store does: normalize verdicts and keep the whole pin pool.
+  spots = normalizeRecommendations(response.recommendations).slice(0, MAX_RECOMMENDATIONS)
   useAppStore.setState({
     vendors: await apiClient.getVendors(state.location, state.when),
     recommendations: spots,
@@ -66,8 +66,18 @@ afterEach(cleanup)
 
 describe('map result interaction', () => {
   it('fits recommendations and only includes an SF origin', () => {
-    expect(getFitCoordinates(spots, { lat: 37.7793, lng: -122.4013 })).toHaveLength(4)
-    expect(getFitCoordinates(spots, { lat: 37.8044, lng: -122.2712 })).toHaveLength(3)
+    // MapView frames the camera on the top 3, not the whole pin pool, so the
+    // wider pool never drags the initial view out over the rest of the city.
+    const topThree = spots.slice(0, 3)
+    expect(getFitCoordinates(topThree, { lat: 37.7793, lng: -122.4013 })).toHaveLength(4)
+    expect(getFitCoordinates(topThree, { lat: 37.8044, lng: -122.2712 })).toHaveLength(3)
+  })
+
+  it('renders the pool as pins while the tray stays a top-3 list', () => {
+    render(<FallbackMap />)
+    expect(spots.length).toBeGreaterThan(3)
+    // The schematic fallback lays pins out by index, so it stays at the top 3.
+    expect(screen.getAllByRole('button', { name: /Suggested spot:/ })).toHaveLength(3)
   })
 
   it('shows estimated city minutes and miles in recommendation cards', () => {
